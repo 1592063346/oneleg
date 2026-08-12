@@ -1,0 +1,14 @@
+{
+  "name": "deck-stats",
+  "version": "1.0.0",
+  "description": "卡组比赛数据可视化网站",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "serve": "npx --yes http-server -p 8080 -c-1 ."
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}
