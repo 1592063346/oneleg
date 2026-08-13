@@ -215,6 +215,31 @@
     .viz-tooltip .tt-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
     .viz-tooltip .tt-dot { width: 10px; height: 10px; border-radius: 3px; flex: none; }
     .viz-tooltip .tt-num { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 600; }
+
+    /* 移动端优化 */
+    @media (max-width: 768px) {
+      body { padding: 12px; }
+      .container { padding: 16px; }
+      .pie-view-inner { padding: 12px; }
+      .detail-header h2 { font-size: 18px; }
+      .meta-row { gap: 6px; }
+      .badge { font-size: 12px; padding: 4px 10px; }
+      .rankings { padding: 10px 12px; }
+      .rank-label { min-width: 60px; font-size: 14px; }
+      .rank-item { font-size: 14px; }
+      .deck-badge { font-size: 12px; padding: 2px 8px; }
+    }
+
+    @media (max-width: 480px) {
+      body { padding: 8px; }
+      .container { padding: 12px; }
+      h1 { font-size: 20px; }
+      .pie-view-inner { padding: 10px; }
+      .detail-header h2 { font-size: 16px; }
+      .rankings { padding: 8px 10px; }
+      .ranking-line { flex-direction: column; gap: 4px; align-items: flex-start; }
+      .rank-label { min-width: auto; }
+    }
   </style>
 </head>
 <body>
