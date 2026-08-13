@@ -118,7 +118,9 @@ function buildPieView(state: State): HTMLElement {
   listWrap.className = "match-dropdown-list";
   listWrap.style.display = "none";
   const list = document.createElement("ul");
-  state.matches.forEach((m, i) => {
+  // 倒序遍历：最新的比赛在上面
+  for (let i = state.matches.length - 1; i >= 0; i--) {
+    const m = state.matches[i];
     const li = document.createElement("li");
     if (i === state.selectedMatch) li.classList.add("active");
     const dateSpan = document.createElement("span");
@@ -132,7 +134,7 @@ function buildPieView(state: State): HTMLElement {
       renderBody(state);
     });
     list.appendChild(li);
-  });
+  }
   listWrap.appendChild(list);
 
   btn.addEventListener("click", (ev) => {
