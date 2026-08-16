@@ -324,6 +324,12 @@ function othersColor(): string {
 
 /** 卡组对应背景图路径（pic 文件夹，按名称查找；others 亦适用） */
 function imageHref(name: string): string {
+  // 优先使用打包时内联的图片 data URL（用于静态版本）
+  const imageMap = (window as any).__IMAGE_MAP__;
+  if (imageMap && imageMap[name]) {
+    return imageMap[name];
+  }
+  // 回退到相对路径（用于开发模式）
   return `./pic/${encodeURIComponent(name)}.png`;
 }
 

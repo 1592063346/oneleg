@@ -1,6 +1,3 @@
-// @ts-ignore
-import html2canvas from "html2canvas";
-
 /**
  * 将 SVG 转换为 data URL（包含所有内联样式和图片）
  */
@@ -9,25 +6,46 @@ async function svgToDataUrl(svg: SVGSVGElement): Promise<string> {
 
   // 将所有 image 元素的外部 href 转换为 data URL
   const images = clone.querySelectorAll("image");
-  for (const img of Array.from(images)) {
+  const imagePromises = Array.from(images).map(async (img) => {
     const href = img.getAttribute("href") || img.getAttributeNS("http://www.w3.org/1999/xlink", "href");
     if (href && !href.startsWith("data:")) {
       try {
-        // 加载图片并转换为 data URL
-        const response = await fetch(href);
-        const blob = await response.blob();
-        const dataUrl = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.readAsDataURL(blob);
+        // 使用 Image 元素加载图片（避免 fetch 的 CORS 限制）
+        const image = new Image();
+        image.crossOrigin = "anonymous"; // 尝试跨域
+
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          image.onload = () => {
+            // 创建临时 canvas 将图片转换为 data URL
+            const canvas = document.createElement("canvas");
+            canvas.width = image.naturalWidth;
+            canvas.height = image.naturalHeight;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) {
+              reject(new Error("无法创建 canvas context"));
+              return;
+            }
+            ctx.drawImage(image, 0, 0);
+            try {
+              resolve(canvas.toDataURL("image/png"));
+            } catch (err) {
+              reject(err);
+            }
+          };
+          image.onerror = () => reject(new Error("图片加载失败"));
+          image.src = href;
         });
+
         img.setAttribute("href", dataUrl);
         img.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", dataUrl);
       } catch (err) {
         console.warn("Failed to load image:", href, err);
       }
     }
-  }
+  });
+
+  // 等待所有图片加载完成
+  await Promise.all(imagePromises);
 
   const serializer = new XMLSerializer();
   const svgString = serializer.serializeToString(clone);

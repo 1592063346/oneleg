@@ -1,11 +1,12 @@
 import * as esbuild from "esbuild";
-import { readFileSync, writeFileSync, cpSync, mkdirSync } from "fs";
+import { readFileSync, writeFileSync, cpSync, mkdirSync, readdirSync } from "fs";
+import { join } from "path";
 
 // 确保 release 目录存在
 mkdirSync("release", { recursive: true });
 
 // 先打包 JS
-await esbuild.build({
+const result = await esbuild.build({
   entryPoints: ["src/app.ts"],
   bundle: true,
   outfile: "release/bundle.js",
@@ -13,25 +14,49 @@ await esbuild.build({
   target: "es2020",
   minify: true,
   sourcemap: false,
+  logLevel: "info",
 });
+
+// 读取 pic 文件夹中的所有图片并转换为 data URL
+const picDir = "pic";
+const imageMap = {};
+const imageFiles = readdirSync(picDir).filter(f => f.endsWith(".png"));
+
+for (const filename of imageFiles) {
+  const filePath = join(picDir, filename);
+  const buffer = readFileSync(filePath);
+  const base64 = buffer.toString("base64");
+  const dataUrl = `data:image/png;base64,${base64}`;
+  // 使用文件名（不含扩展名）作为 key
+  const name = filename.replace(".png", "");
+  imageMap[name] = dataUrl;
+}
 
 // 读取 data.json 并内联到 bundle.js 前面
 const data = readFileSync("data.json", "utf-8");
 const bundle = readFileSync("release/bundle.js", "utf-8");
 
-// 把 data.json 挂载到 window.__DATA__
-const inlined = `window.__DATA__ = ${data};\n${bundle}`;
+// 把 data.json 和图片 map 挂载到 window
+const inlined = `window.__DATA__ = ${data};
+window.__IMAGE_MAP__ = ${JSON.stringify(imageMap)};
+${bundle}`;
 writeFileSync("release/bundle.js", inlined);
 
-// 复制并更新 index.html（将模块引用改为普通脚本）
+// 复制并更新 index.html（将模块引用改为普通脚本，移除 importmap）
 let html = readFileSync("index.html", "utf-8");
 html = html.replace(
   '<script type="module" src="./dist/app.js"></script>',
   '<script src="./bundle.js"></script>'
 );
+// 移除 importmap（静态版本不需要）
+html = html.replace(
+  /<script type="importmap">[\s\S]*?<\/script>\s*/,
+  ''
+);
 writeFileSync("release/index.html", html);
 
-// 复制图片文件夹
+// 复制图片文件夹（为了开发模式兼容）
 cpSync("pic", "release/pic", { recursive: true });
 
-console.log("✅ 打包完成: release/ (包含 index.html, bundle.js, pic/)");
+console.log(`✅ 打包完成: release/ (包含 index.html, bundle.js, pic/)`);
+console.log(`   已内联 ${imageFiles.length} 张图片 (${Object.keys(imageMap).join(", ")})`);
