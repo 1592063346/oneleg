@@ -30,7 +30,7 @@ interface Partition {
 }
 
 /**
- * 按数量从多到少分层统计：逐个“数量档位”尝试加入，
+ * 按数量从多到少分层统计：逐个"数量档位"尝试加入，
  * 若加入某档位后累计已 > 总数的 75%，则该档位及之后全部归入 others。
  * 若这样会导致无法展示任何具体卡组，则不做 others 划分（全部展示）。
  */
@@ -71,7 +71,7 @@ export function partitionDecks(decks: DeckCount[]): Partition {
 
 /**
  * 渲染某场比赛的卡组饼图分布。
- * colorMap 提供”卡组名 -> 固定色槽”，使颜色跟随卡组身份而非本场排名。
+ * colorMap 提供"卡组名 -> 固定色槽"，使颜色跟随卡组身份而非本场排名。
  * rankings 为排名信息（冠亚四强），合并到同一框内。
  */
 export function renderPie(match: Match, colorMap: Map<string, number>, rankings?: HTMLElement): HTMLElement {
@@ -121,6 +121,8 @@ export function renderPie(match: Match, colorMap: Map<string, number>, rankings?
 
   const chartCol = document.createElement("div");
   chartCol.className = "pie-wrap";
+  chartCol.style.position = "relative"; // 为导出按钮定位
+  chartCol.setAttribute("data-export-target", "true"); // 标记饼图部分为可导出区域
   chartCol.appendChild(buildSvg(match, slices));
   container.appendChild(chartCol);
 
@@ -187,7 +189,7 @@ function buildSvg(match: Match, slices: Slice[]): SVGSVGElement {
     const cDist = alpha > 1e-6 ? (2 / 3) * R * (Math.sin(alpha) / alpha) : (2 / 3) * R;
     const centroid = polarToCartesian(CX, CY, cDist, mid);
 
-    // 图片尺寸：以质心为中心，取“质心到扇形所有边界点（含圆心尖端）的最大距离”的两倍，
+    // 图片尺寸：以质心为中心，取"质心到扇形所有边界点（含圆心尖端）的最大距离"的两倍，
     // 保证在图片中心对齐饼块质心的同时，仍完全覆盖整个饼块，不露出纯色。
     const half = wedgeMaxRadius(centroid, s.start, s.end);
     const size = half * 2;
@@ -208,7 +210,7 @@ function buildSvg(match: Match, slices: Slice[]): SVGSVGElement {
     svg.appendChild(image);
   });
 
-  // 引导线标签：每块饼旁标注“名称 数量（占比）”
+  // 引导线标签：每块饼旁标注"名称 数量（占比）"
   drawLeaderLabels(svg, slices);
   return svg;
 }

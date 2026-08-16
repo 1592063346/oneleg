@@ -4,6 +4,7 @@ import { allDeckNames, loadData, totalDecks } from "./data.js";
 import { buildColorMap, seriesColor } from "./palette.js";
 import { renderPie } from "./pie.js";
 import { renderLine } from "./line.js";
+import { createExportButton } from "./export.js";
 
 type View = "pie" | "trend";
 
@@ -178,7 +179,16 @@ function buildPieView(state: State): HTMLElement {
 
   // 排名展示：传递给 renderPie 以合并到同一框内
   const rankings = buildRankings(match);
-  wrap.appendChild(renderPie(match, state.colorMap, rankings));
+  const pieContainer = renderPie(match, state.colorMap, rankings);
+
+  // 添加导出按钮到饼图部分（而非整个容器）
+  const chartWrap = pieContainer.querySelector("[data-export-target]");
+  if (chartWrap) {
+    const exportBtn = createExportButton(chartWrap as HTMLElement, match.title);
+    chartWrap.appendChild(exportBtn);
+  }
+
+  wrap.appendChild(pieContainer);
   return wrap;
 }
 

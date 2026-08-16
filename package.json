@@ -10,5 +10,8 @@
   },
   "devDependencies": {
     "esbuild": "^0.28.2"
+  },
+  "dependencies": {
+    "html2canvas": "^1.4.1"
   }
 }

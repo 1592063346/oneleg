@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head><title>Import Check</title></head>
+<body>
+<h1>Checking imports...</h1>
+<div id="log"></div>
+<script type="module">
+const log = document.getElementById('log');
+function addLog(msg) {
+  log.innerHTML += '<p>' + msg + '</p>';
+  console.log(msg);
+}
+
+try {
+  addLog('Step 1: Starting...');
+  
+  addLog('Step 2: Importing html2canvas...');
+  const h2c = await import('html2canvas');
+  addLog('Step 3: html2canvas imported: ' + typeof h2c);
+  addLog('Step 3a: default export: ' + typeof h2c.default);
+  
+  addLog('Step 4: Importing export.js...');
+  const exp = await import('./dist/export.js');
+  addLog('Step 5: export.js imported: ' + JSON.stringify(Object.keys(exp)));
+  
+  addLog('Step 6: Importing app.js...');
+  await import('./dist/app.js');
+  addLog('Step 7: app.js loaded successfully!');
+  
+} catch(err) {
+  addLog('ERROR: ' + err.message);
+  addLog('Stack: ' + err.stack);
+  console.error(err);
+}
+</script>
+</body>
+</html>

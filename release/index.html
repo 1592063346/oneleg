@@ -4,6 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>万籁阁游戏王比赛数据</title>
+  <script type="importmap">
+  {
+    "imports": {
+      "html2canvas": "./node_modules/html2canvas/dist/html2canvas.esm.js"
+    }
+  }
+  </script>
   <style>
     .viz-root {
       color-scheme: light;
@@ -183,13 +190,22 @@
     /* 饼图 + others 明细合并为同一个框，中间用细分隔线隔开 */
     .pie-view-inner {
       background: var(--surface-1); border: 1px solid var(--border);
-      border-radius: 14px; padding: 20px;
+      border-radius: 14px; padding: 20px; position: relative;
     }
     /* 饼图整体居中，标签直接标注在饼块旁 */
     .pie-title { text-align: center; margin: 4px 0 8px; font-size: 17px; font-weight: 700; }
-    .pie-wrap { display: flex; justify-content: center; }
+    .pie-wrap { display: flex; justify-content: center; position: relative; }
     .pie-view-inner svg { height: auto; }
     .pie-wrap svg { width: 100%; max-width: 760px; height: auto; }
+
+    /* 导出按钮 */
+    .export-btn-wrap { position: absolute; top: 8px; right: 8px; z-index: 10; }
+    .export-btn { padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--surface-2); color: var(--text-primary); font: inherit;
+      cursor: pointer; font-size: 14px; font-weight: 500;
+      transition: background 0.15s; }
+    .export-btn:hover { background: var(--surface-1); }
+    .export-btn:active { background: var(--border); }
     .line-wrap svg { max-width: 100%; height: auto; }
 
     /* 折线图图例（趋势模式仍使用） */
