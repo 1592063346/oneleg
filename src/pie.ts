@@ -12,6 +12,37 @@ const CY = H / 2;
 const R = 175;
 const OTHERS_LABEL = "others";
 
+// 图片中心配置
+interface ImageCenterConfig {
+  center: [number, number];
+  size: [number, number];
+}
+let imageCenters: Record<string, ImageCenterConfig> = {};
+
+// 加载图片中心配置
+async function loadImageCenters(): Promise<void> {
+  // 优先使用打包时内联的数据（静态版本）
+  const inlinedCenters = (window as any).__IMAGE_CENTERS__;
+  if (inlinedCenters) {
+    imageCenters = inlinedCenters;
+    return;
+  }
+
+  // 回退到 fetch（开发模式）
+  try {
+    const response = await fetch("./pic/center.json");
+    if (response.ok) {
+      const data = await response.json();
+      imageCenters = data.centers || {};
+    }
+  } catch (err) {
+    console.warn("Failed to load image centers:", err);
+  }
+}
+
+// 初始化时加载
+loadImageCenters();
+
 interface Slice {
   name: string;
   num: number;
@@ -145,6 +176,9 @@ function buildSvg(match: Match, slices: Slice[]): SVGSVGElement {
   svg.appendChild(defs);
   const uid = Math.random().toString(36).slice(2, 8);
 
+  // 追踪调试信息（已禁用）
+  // const debugInfo: Array<{ name: string; centerX: number; centerY: number; mid: number }> = [];
+
   slices.forEach((s, i) => {
     const d = arcPath(CX, CY, R, s.start, s.end);
     const path = el("path", {
@@ -177,29 +211,175 @@ function buildSvg(match: Match, slices: Slice[]): SVGSVGElement {
     });
     svg.appendChild(path);
 
-    // 饼块背景图：裁剪到扇形范围；图片中心对齐饼块质心，使可见部分居中；加载失败则移除，露出纯色
+    // 饼块背景图：根据 center.json 中指定的图片中心进行定位
     const clipId = `slice-${uid}-${i}`;
     const clip = el("clipPath", { id: clipId });
     clip.appendChild(el("path", { d }));
     defs.appendChild(clip);
 
-    // 扇形面积质心，位于角平分线上，距圆心 (2/3)R·sin(α)/α（α 为半张角）
+    // 角平分线的角度
     const mid = (s.start + s.end) / 2;
-    const alpha = (((s.end - s.start) / 2) * Math.PI) / 180;
-    const cDist = alpha > 1e-6 ? (2 / 3) * R * (Math.sin(alpha) / alpha) : (2 / 3) * R;
-    const centroid = polarToCartesian(CX, CY, cDist, mid);
+    const sweep = s.end - s.start;
 
-    // 图片尺寸：以质心为中心，取"质心到扇形所有边界点（含圆心尖端）的最大距离"的两倍，
-    // 保证在图片中心对齐饼块质心的同时，仍完全覆盖整个饼块，不露出纯色。
-    const half = wedgeMaxRadius(centroid, s.start, s.end);
-    const size = half * 2;
+    // 获取图片的自定义中心点（相对于图片左上角的坐标）
+    const customCenterConfig = imageCenters[s.name];
+
+    let imgX: number, imgY: number, imgSize: number;
+
+    if (Math.abs(sweep - 360) < 0.001) {
+      // 情况1：整圆，图片中心直接对齐圆心
+      imgSize = R * 2.5; // 足够大以覆盖整个圆
+      imgX = CX - imgSize / 2;
+      imgY = CY - imgSize / 2;
+
+      // 如果有自定义中心，调整图片位置使自定义中心对齐圆心
+      if (customCenterConfig) {
+        const [centerX, centerY] = customCenterConfig.center;
+        const [originalWidth, originalHeight] = customCenterConfig.size;
+        // 使用宽度和高度的平均值作为缩放基准
+        const originalSize = (originalWidth + originalHeight) / 2;
+        const scaleRatio = imgSize / originalSize;
+        imgX = CX - centerX * scaleRatio;
+        imgY = CY - centerY * scaleRatio;
+      }
+    } else {
+      // 情况2：扇形，图片的自定义中心必须在角平分线上
+
+      if (customCenterConfig) {
+        const [centerX, centerY] = customCenterConfig.center;
+        const [originalWidth, originalHeight] = customCenterConfig.size;
+
+        // 归一化中心坐标（使用实际图片尺寸）
+        const normCenterX = centerX / originalWidth;
+        const normCenterY = centerY / originalHeight;
+
+        // 角平分线的单位方向向量
+        // 注意：polarToCartesian 已经处理了 -90 转换，所以这里直接用 mid 角度
+        const midRad = ((mid - 90) * Math.PI) / 180;
+        const dirX = Math.cos(midRad);
+        const dirY = Math.sin(midRad);
+
+        // 需要覆盖的关键点（固定）
+        const keyPoints = [
+          { x: CX, y: CY }, // 圆心
+          polarToCartesian(CX, CY, R, s.start), // 圆弧起点
+          polarToCartesian(CX, CY, R, s.end), // 圆弧终点
+        ];
+
+        // 在圆弧上密集采样，确保覆盖所有点
+        const numSamples = 20;
+        for (let i = 1; i < numSamples; i++) {
+          const angle = s.start + (s.end - s.start) * (i / numSamples);
+          keyPoints.push(polarToCartesian(CX, CY, R, angle));
+        }
+
+        // 在角平分线上搜索最优位置
+        // 图片中心位置 = (CX, CY) + t * (dirX, dirY)
+        // 对于每个关键点，计算需要的最小缩放比例
+
+        const findMinImgSize = (t: number): number => {
+          const imgCenterX = CX + t * dirX;
+          const imgCenterY = CY + t * dirY;
+
+          let maxImgSize = 0;
+          for (const pt of keyPoints) {
+            // 点相对于图片中心的偏移
+            const dx = pt.x - imgCenterX;
+            const dy = pt.y - imgCenterY;
+
+            // 使用 preserveAspectRatio="none"，图片被拉伸成正方形 imgSize × imgSize
+            // 点在拉伸后图片中的归一化坐标：
+            // nx = normCenterX + dx / imgSize
+            // ny = normCenterY + dy / imgSize
+            // 要求 0 <= nx <= 1 且 0 <= ny <= 1
+
+            let minImgSizeX = 0;
+            if (dx > 0) {
+              if (1 - normCenterX > 1e-6) {
+                minImgSizeX = dx / (1 - normCenterX);
+              } else {
+                minImgSizeX = Infinity;
+              }
+            } else if (dx < 0) {
+              if (normCenterX > 1e-6) {
+                minImgSizeX = -dx / normCenterX;
+              } else {
+                minImgSizeX = Infinity;
+              }
+            }
+
+            let minImgSizeY = 0;
+            if (dy > 0) {
+              if (1 - normCenterY > 1e-6) {
+                minImgSizeY = dy / (1 - normCenterY);
+              } else {
+                minImgSizeY = Infinity;
+              }
+            } else if (dy < 0) {
+              if (normCenterY > 1e-6) {
+                minImgSizeY = -dy / normCenterY;
+              } else {
+                minImgSizeY = Infinity;
+              }
+            }
+
+            maxImgSize = Math.max(maxImgSize, minImgSizeX, minImgSizeY);
+          }
+
+          return maxImgSize;
+        };
+
+        // 三分搜索找到最小图片尺寸对应的 t
+        // t 的范围：从圆心(0)到圆弧(R)，图片中心必须在饼块内
+        let left = 0;
+        let right = R;
+        const eps = 0.1;
+
+        while (right - left > eps) {
+          const m1 = left + (right - left) / 3;
+          const m2 = right - (right - left) / 3;
+          const size1 = findMinImgSize(m1);
+          const size2 = findMinImgSize(m2);
+
+          if (size1 > size2) {
+            left = m1;
+          } else {
+            right = m2;
+          }
+        }
+
+        const bestT = (left + right) / 2;
+        imgSize = findMinImgSize(bestT);
+
+        // 计算最终图片位置
+        const imgCenterX = CX + bestT * dirX;
+        const imgCenterY = CY + bestT * dirY;
+        imgX = imgCenterX - normCenterX * imgSize;
+        imgY = imgCenterY - normCenterY * imgSize;
+
+
+
+
+
+      } else {
+        // 没有自定义中心，使用原来的逻辑（质心对齐）
+        const alpha = (((s.end - s.start) / 2) * Math.PI) / 180;
+        const cDist = alpha > 1e-6 ? (2 / 3) * R * (Math.sin(alpha) / alpha) : (2 / 3) * R;
+        const centroid = polarToCartesian(CX, CY, cDist, mid);
+        const half = wedgeMaxRadius(centroid, s.start, s.end);
+        imgSize = half * 2;
+        imgX = centroid.x - half;
+        imgY = centroid.y - half;
+      }
+    }
+
     const image = el("image", {
       href: imageHref(s.name),
-      x: centroid.x - half,
-      y: centroid.y - half,
-      width: size,
-      height: size,
-      preserveAspectRatio: "xMidYMid slice",
+      x: imgX,
+      y: imgY,
+      width: imgSize,
+      height: imgSize,
+      preserveAspectRatio: "none", // 拉伸填充，不保持宽高比，确保自定义中心位置精确
       "clip-path": `url(#${clipId})`,
       "pointer-events": "none",
     });
@@ -212,6 +392,7 @@ function buildSvg(match: Match, slices: Slice[]): SVGSVGElement {
 
   // 引导线标签：每块饼旁标注"名称 数量（占比）"
   drawLeaderLabels(svg, slices);
+
   return svg;
 }
 

@@ -32,13 +32,17 @@ for (const filename of imageFiles) {
   imageMap[name] = dataUrl;
 }
 
+// 读取 center.json（图片中心配置）
+const centerData = JSON.parse(readFileSync("pic/center.json", "utf-8"));
+
 // 读取 data.json 并内联到 bundle.js 前面
 const data = readFileSync("data.json", "utf-8");
 const bundle = readFileSync("release/bundle.js", "utf-8");
 
-// 把 data.json 和图片 map 挂载到 window
+// 把 data.json、图片 map 和 center.json 挂载到 window
 const inlined = `window.__DATA__ = ${data};
 window.__IMAGE_MAP__ = ${JSON.stringify(imageMap)};
+window.__IMAGE_CENTERS__ = ${JSON.stringify(centerData.centers)};
 ${bundle}`;
 writeFileSync("release/bundle.js", inlined);
 
@@ -55,8 +59,7 @@ html = html.replace(
 );
 writeFileSync("release/index.html", html);
 
-// 复制图片文件夹（为了开发模式兼容）
-cpSync("pic", "release/pic", { recursive: true });
+// 不复制 pic 文件夹（所有资源已内联到 bundle.js）
 
-console.log(`✅ 打包完成: release/ (包含 index.html, bundle.js, pic/)`);
-console.log(`   已内联 ${imageFiles.length} 张图片 (${Object.keys(imageMap).join(", ")})`);
+console.log(`✅ 打包完成: release/ (index.html, bundle.js)`);
+console.log(`   已内联 ${imageFiles.length} 张图片 + center.json`);
