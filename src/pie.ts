@@ -1,7 +1,7 @@
 import type { DeckCount, Match } from "./types.js";
 import { totalDecks } from "./data.js";
 import { seriesColor } from "./palette.js";
-import { arcPath, el, polarToCartesian, svgRoot } from "./svg.js";
+import { arcPath, arcRingPath, el, polarToCartesian, svgRoot } from "./svg.js";
 import { hideTooltip, showTooltip } from "./tooltip.js";
 
 // 画布留出两侧空间给引导标签；饼图在画布中水平居中
@@ -51,6 +51,7 @@ interface Slice {
   end: number;
   color: string;
   isOthers: boolean;
+  subdecks?: Array<{ deck: string; num: number }>;
 }
 
 interface Partition {
@@ -124,14 +125,14 @@ export function renderPie(match: Match, colorMap: Map<string, number>, rankings?
   // 组装扇区：先展示的卡组，最后（若有）others
   const slices: Slice[] = [];
   let angle = 0;
-  const pushSlice = (name: string, num: number, color: string, isOthers: boolean) => {
+  const pushSlice = (name: string, num: number, color: string, isOthers: boolean, subdecks?: Array<{ deck: string; num: number }>) => {
     const pct = num / total;
     const sweep = pct * 360;
-    slices.push({ name, num, pct, start: angle, end: angle + sweep, color, isOthers });
+    slices.push({ name, num, pct, start: angle, end: angle + sweep, color, isOthers, subdecks });
     angle += sweep;
   };
   for (const d of shown) {
-    pushSlice(d.name, d.num, seriesColor(colorMap.get(d.name) ?? 0), false);
+    pushSlice(d.name, d.num, seriesColor(colorMap.get(d.name) ?? 0), false, d.subdecks);
   }
   if (othersSum > 0) {
     pushSlice(OTHERS_LABEL, othersSum, othersColor(), true);
@@ -331,8 +332,13 @@ function buildSvg(match: Match, slices: Slice[]): SVGSVGElement {
 
         // 三分搜索找到最小图片尺寸对应的 t
         // t 的范围：从圆心(0)到圆弧(R)，图片中心必须在饼块内
-        let left = 0;
-        let right = R;
+        // let left = 0;
+        // let right = R;
+
+        // t 的范围：(0.25R, 0.75R)
+        // 不选择 (0, R) 因为不希望图片中心位于过于边缘的位置
+        let left = 0.25 * R;
+        let right = 0.75 * R;
         const eps = 0.1;
 
         while (right - left > eps) {
@@ -390,10 +396,208 @@ function buildSvg(match: Match, slices: Slice[]): SVGSVGElement {
     svg.appendChild(image);
   });
 
+  // 渲染子卡组（双层饼图）
+  renderSubdecks(svg, slices, defs, uid, surface);
+
   // 引导线标签：每块饼旁标注"名称 数量（占比）"
   drawLeaderLabels(svg, slices);
 
   return svg;
+}
+
+/** 渲染子卡组在外圈 (0.8R 到 R) */
+function renderSubdecks(
+  svg: SVGSVGElement,
+  slices: Slice[],
+  defs: SVGDefsElement,
+  uid: string,
+  surface: string
+): void {
+  const innerR = 0.8 * R;
+  const outerR = R;
+  const subdeckImgR = 0.9 * R; // 子卡组图片中心距离圆心的距离
+
+  slices.forEach((parentSlice, sliceIdx) => {
+    if (!parentSlice.subdecks || parentSlice.subdecks.length === 0) {
+      return; // 没有子卡组，跳过
+    }
+
+    const subdeckTotal = parentSlice.subdecks.reduce((sum, sd) => sum + sd.num, 0);
+
+    // 子卡组占据父卡组的末尾部分
+    // 父卡组总角度
+    const parentSweep = parentSlice.end - parentSlice.start;
+    // 子卡组总角度 = 父卡组角度 * (子卡组总数 / 父卡组总数)
+    const subdeckSweep = parentSweep * (subdeckTotal / parentSlice.num);
+    // 子卡组起始角度 = 父卡组结束角度 - 子卡组总角度
+    const subdeckStartAngle = parentSlice.end - subdeckSweep;
+
+    let currentAngle = subdeckStartAngle;
+
+    // 边界线向内偏移的角度（度）
+    const angleOffset = 0.2;
+
+    parentSlice.subdecks.forEach((subdeck, subIdx) => {
+      const subPct = subdeck.num / subdeckTotal;
+      const subSweep = subdeckSweep * subPct;
+      const subStart = currentAngle;
+      const subEnd = currentAngle + subSweep;
+
+      // 创建子卡组的环形扇区路径
+      const subPath = arcRingPath(CX, CY, innerR, outerR, subStart, subEnd);
+
+      // 裁剪路径
+      const clipId = `subdeck-${uid}-${sliceIdx}-${subIdx}`;
+      const clip = el("clipPath", { id: clipId });
+      clip.appendChild(el("path", { d: subPath }));
+      defs.appendChild(clip);
+
+      // 子卡组图片
+      const subMid = (subStart + subEnd) / 2;
+      const customCenterConfig = imageCenters[subdeck.deck];
+
+      if (customCenterConfig) {
+        const [centerX, centerY] = customCenterConfig.center;
+        const [originalWidth, originalHeight] = customCenterConfig.size;
+
+        const normCenterX = centerX / originalWidth;
+        const normCenterY = centerY / originalHeight;
+
+        // 子卡组图片中心位于角平分线上的 0.9R 处
+        const imgCenterPos = polarToCartesian(CX, CY, subdeckImgR, subMid);
+
+        // 计算需要覆盖的关键点：环形扇区的所有顶点和边界采样点
+        const keyPoints = [
+          polarToCartesian(CX, CY, innerR, subStart),
+          polarToCartesian(CX, CY, innerR, subEnd),
+          polarToCartesian(CX, CY, outerR, subStart),
+          polarToCartesian(CX, CY, outerR, subEnd),
+        ];
+
+        // 在内弧和外弧上采样
+        const numSamples = 10;
+        for (let i = 1; i < numSamples; i++) {
+          const angle = subStart + (subEnd - subStart) * (i / numSamples);
+          keyPoints.push(polarToCartesian(CX, CY, innerR, angle));
+          keyPoints.push(polarToCartesian(CX, CY, outerR, angle));
+        }
+
+        // 计算所需的最小图片尺寸
+        let maxImgSize = 0;
+        for (const pt of keyPoints) {
+          const dx = pt.x - imgCenterPos.x;
+          const dy = pt.y - imgCenterPos.y;
+
+          let minImgSizeX = 0;
+          if (dx > 0) {
+            if (1 - normCenterX > 1e-6) {
+              minImgSizeX = dx / (1 - normCenterX);
+            } else {
+              minImgSizeX = Infinity;
+            }
+          } else if (dx < 0) {
+            if (normCenterX > 1e-6) {
+              minImgSizeX = -dx / normCenterX;
+            } else {
+              minImgSizeX = Infinity;
+            }
+          }
+
+          let minImgSizeY = 0;
+          if (dy > 0) {
+            if (1 - normCenterY > 1e-6) {
+              minImgSizeY = dy / (1 - normCenterY);
+            } else {
+              minImgSizeY = Infinity;
+            }
+          } else if (dy < 0) {
+            if (normCenterY > 1e-6) {
+              minImgSizeY = -dy / normCenterY;
+            } else {
+              minImgSizeY = Infinity;
+            }
+          }
+
+          maxImgSize = Math.max(maxImgSize, minImgSizeX, minImgSizeY);
+        }
+
+        const imgSize = maxImgSize;
+        const imgX = imgCenterPos.x - normCenterX * imgSize;
+        const imgY = imgCenterPos.y - normCenterY * imgSize;
+
+        const image = el("image", {
+          href: imageHref(subdeck.deck),
+          x: imgX,
+          y: imgY,
+          width: imgSize,
+          height: imgSize,
+          preserveAspectRatio: "none",
+          "clip-path": `url(#${clipId})`,
+          "pointer-events": "none",
+        });
+        image.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", imageHref(subdeck.deck));
+        image.addEventListener("error", () => image.remove());
+        svg.appendChild(image);
+      }
+
+      // 绘制子卡组分隔线（白色）
+      // 条件1：不是第一个子卡组 - 绘制左边界
+      // 条件2：是第一个子卡组但子卡组总数 < 父卡组总数 - 绘制左边界（与父卡组非边界的分隔）
+      // 条件3：是第一个子卡组且 subdeckTotal == parentSlice.num - 绘制左边界（与父卡组边界重合）
+      if (subIdx > 0 || subdeckTotal < parentSlice.num || (subIdx === 0 && subdeckTotal === parentSlice.num)) {
+        // 判断是否与父卡组边界重合（第一个子卡组且占满父卡组）
+        const isAtParentBoundary = (subIdx === 0 && subdeckTotal === parentSlice.num);
+        // 如果与父卡组边界重合，向内偏移；否则不偏移
+        const angleToUse = isAtParentBoundary ? subStart + angleOffset : subStart;
+        const lineStart = polarToCartesian(CX, CY, innerR, angleToUse);
+        const lineEnd = polarToCartesian(CX, CY, outerR, angleToUse);
+        const separatorLine = el("line", {
+          x1: lineStart.x,
+          y1: lineStart.y,
+          x2: lineEnd.x,
+          y2: lineEnd.y,
+          stroke: surface,
+          "stroke-width": 1,
+          "stroke-linejoin": "round",
+        });
+        svg.appendChild(separatorLine);
+      }
+
+      // 如果是最后一个子卡组，绘制右边界（与父卡组边界重合）
+      if (subIdx === parentSlice.subdecks!.length - 1) {
+        // 最后一个子卡组的右边界总是与父卡组边界重合，向内偏移
+        const angleToUse = subEnd - angleOffset;
+        const lineStart = polarToCartesian(CX, CY, innerR, angleToUse);
+        const lineEnd = polarToCartesian(CX, CY, outerR, angleToUse);
+        const separatorLine = el("line", {
+          x1: lineStart.x,
+          y1: lineStart.y,
+          x2: lineEnd.x,
+          y2: lineEnd.y,
+          stroke: surface,
+          "stroke-width": 1,
+          "stroke-linejoin": "round",
+        });
+        svg.appendChild(separatorLine);
+      }
+
+      currentAngle = subEnd;
+    });
+
+    // 绘制子卡组区域的内圈边界线（白色圆弧，只是圆弧不是扇形）
+    const innerArcStart = polarToCartesian(CX, CY, innerR, subdeckStartAngle);
+    const innerArcEnd = polarToCartesian(CX, CY, innerR, parentSlice.end);
+    const largeArc = (parentSlice.end - subdeckStartAngle) > 180 ? 1 : 0;
+    const innerArcPath = `M ${innerArcStart.x} ${innerArcStart.y} A ${innerR} ${innerR} 0 ${largeArc} 1 ${innerArcEnd.x} ${innerArcEnd.y}`;
+    const innerArcLine = el("path", {
+      d: innerArcPath,
+      fill: "none",
+      stroke: surface,
+      "stroke-width": 1,
+      "stroke-linejoin": "round",
+    });
+    svg.appendChild(innerArcLine);
+  });
 }
 
 /** 从给定中心点到扇形所有边界点的最大距离（含圆心尖端与外弧采样），用于保证完全覆盖 */
@@ -476,6 +680,25 @@ function drawLeaderLabels(svg: SVGSVGElement, slices: Slice[]): void {
     );
     svg.appendChild(nameText);
     svg.appendChild(valText);
+
+    // 如果有子卡组，添加第三行
+    if (s.subdecks && s.subdecks.length > 0) {
+      const subdeckParts = s.subdecks.map(sd => `${sd.deck}${s.name} ${sd.num}`);
+      const subdeckText = `${subdeckParts.join('；')}`;
+      const subdeckLine = el(
+        "text",
+        {
+          x: textX,
+          y: p1.y + 26,
+          "text-anchor": right ? "start" : "end",
+          "dominant-baseline": "central",
+          fill: leader,
+          "font-size": 12,
+        },
+        [subdeckText]
+      );
+      svg.appendChild(subdeckLine);
+    }
   }
 }
 

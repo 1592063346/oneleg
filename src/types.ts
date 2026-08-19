@@ -4,6 +4,7 @@
 export interface DeckCount {
   name: string;
   num: number;
+  subdecks?: Array<{ deck: string; num: number }>;
 }
 
 /** 选手及其使用的卡组 */
