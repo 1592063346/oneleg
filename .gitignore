@@ -1,4 +1,5 @@
 node_modules/
+pic_others/
 dist/
 
 npm-debug.log*
