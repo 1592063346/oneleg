@@ -49,7 +49,8 @@ npx tsc && node build.js
     // {"name": "光与暗的仪式", "num": 5, "subdecks": [{"deck": "烙印", "num": 2}, {"deck": "黑魔导", "num": 1}]}
     {"name": "卡组名", "num": 数量, "subdecks": [{"deck": 子卡组名, "num": 数量}, ...]},
     ...
-  ]
+  ],
+  "deck_num": 30 // 可选项，一般是根据 decks 直接计算，但是有时候环境可能没有统计，便需要一个参赛人数的裸数据
 }
 ```
 

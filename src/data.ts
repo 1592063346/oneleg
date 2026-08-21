@@ -51,5 +51,8 @@ export function deckCountIn(match: Match, name: string): number {
 
 /** 某场比赛的卡组总数 */
 export function totalDecks(match: Match): number {
+  if (match.deck_num) {
+    return match.deck_num;
+  }
   return match.decks.reduce((sum, d) => sum + d.num, 0);
 }

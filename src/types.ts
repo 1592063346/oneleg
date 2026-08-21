@@ -35,6 +35,8 @@ export interface Match {
   "3_4th": Player[];
   /** 该场比赛各卡组数量 */
   decks: DeckCount[];
+  /** 该场比赛卡组总数（参赛人数，该数据一般为 decks 未统计时的备用数据） */
+  deck_num?: number;
 }
 
 /** data.json 的顶层结构 */

@@ -110,15 +110,29 @@ export function renderPie(match: Match, colorMap: Map<string, number>, rankings?
   const container = document.createElement("div");
   container.className = "pie-view-inner";
 
-  const total = totalDecks(match);
-  if (total === 0) {
+  const chartTitle = document.createElement("h3");
+  chartTitle.className = "pie-title";
+  chartTitle.textContent = "比赛结果与环境分布";
+  container.appendChild(chartTitle);
+
+  // 排名信息（若有）插入饼图前，用短横线分隔
+  if (rankings) {
+    container.appendChild(rankings);
+    const divider = document.createElement("hr");
+    divider.className = "pie-divider";
+    container.appendChild(divider);
+  }
+
+  // const total = totalDecks(match);
+  if (match.decks.length === 0) {
     const empty = document.createElement("p");
     empty.className = "empty-note";
-    empty.textContent = "本场比赛暂无卡组数据。";
+    empty.textContent = "本场比赛暂无环境卡组数据。";
     container.appendChild(empty);
     return container;
   }
 
+  const total = totalDecks(match);
   const { shown, others } = partitionDecks(match.decks);
   const othersSum = others.reduce((s, d) => s + d.num, 0);
 
@@ -136,19 +150,6 @@ export function renderPie(match: Match, colorMap: Map<string, number>, rankings?
   }
   if (othersSum > 0) {
     pushSlice(OTHERS_LABEL, othersSum, othersColor(), true);
-  }
-
-  const chartTitle = document.createElement("h3");
-  chartTitle.className = "pie-title";
-  chartTitle.textContent = "比赛结果与环境分布";
-  container.appendChild(chartTitle);
-
-  // 排名信息（若有）插入饼图前，用短横线分隔
-  if (rankings) {
-    container.appendChild(rankings);
-    const divider = document.createElement("hr");
-    divider.className = "pie-divider";
-    container.appendChild(divider);
   }
 
   const chartCol = document.createElement("div");
