@@ -3,6 +3,7 @@ import { totalDecks } from "./data.js";
 import { seriesColor } from "./palette.js";
 import { arcPath, arcRingPath, el, polarToCartesian, svgRoot } from "./svg.js";
 import { hideTooltip, showTooltip } from "./tooltip.js";
+import { createExportButton } from "./export.js";
 
 // 画布留出两侧空间给引导标签；饼图在画布中水平居中
 const W = 760;
@@ -169,51 +170,39 @@ export function renderPie(match: Match, colorMap: Map<string, number>, rankings?
   loadingMsg.textContent = "饼图渲染中……";
   container.appendChild(loadingMsg);
 
-  // 创建饼图容器（先隐藏）
-  const chartCol = document.createElement("div");
-  chartCol.className = "pie-wrap";
-  chartCol.style.position = "relative";
-  chartCol.style.opacity = "0";
-  chartCol.style.transition = "opacity 0.3s ease";
-  chartCol.setAttribute("data-export-target", "true");
-
-  // 先构建 SVG（但不可见）
-  const svg = buildSvg(match, slices);
-  chartCol.appendChild(svg);
-  container.appendChild(chartCol);
-
-  // others 明细（也先隐藏）
-  let othersDetailEl: HTMLElement | null = null;
-  if (others.length > 0) {
-    othersDetailEl = buildOthersDetail(others, othersSum);
-    othersDetailEl.style.opacity = "0";
-    othersDetailEl.style.transition = "opacity 0.3s ease";
-    container.appendChild(othersDetailEl);
-  }
-
-  // 等待 SVG 中的所有图片加载完成
-  const images = svg.querySelectorAll("image");
-  const imageLoadPromises = Array.from(images).map((img) => {
+  // 使用 HTML Image 对象预加载所有图片到浏览器缓存
+  const imageLoadPromises = Array.from(imageUrls).map((url) => {
     return new Promise<void>((resolve) => {
-      // 如果图片已经加载完成
-      if ((img as any).complete) {
-        resolve();
-        return;
-      }
-      // 等待加载完成或失败
-      img.addEventListener("load", () => resolve());
-      img.addEventListener("error", () => resolve());
-      // 设置超时，避免无限等待
+      const img = new Image();
+      img.onload = () => resolve();
+      img.onerror = () => resolve(); // 加载失败也继续（保留纯色底）
+      // 超时保护（20秒）
       setTimeout(() => resolve(), 20000);
+      img.src = url; // 开始加载
     });
   });
 
-  // 所有图片加载完成后显示饼图
+  // 所有图片预加载完成后，再构建和显示饼图
   Promise.all(imageLoadPromises).then(() => {
+    // 移除加载提示
     loadingMsg.remove();
-    chartCol.style.opacity = "1";
-    if (othersDetailEl) {
-      othersDetailEl.style.opacity = "1";
+
+    // 现在构建饼图（此时图片已在浏览器缓存中）
+    const chartCol = document.createElement("div");
+    chartCol.className = "pie-wrap";
+    chartCol.style.position = "relative";
+    chartCol.setAttribute("data-export-target", "true");
+    chartCol.appendChild(buildSvg(match, slices));
+
+    // 添加导出按钮
+    const exportBtn = createExportButton(chartCol, match.title);
+    chartCol.appendChild(exportBtn);
+
+    container.appendChild(chartCol);
+
+    // others 明细
+    if (others.length > 0) {
+      container.appendChild(buildOthersDetail(others, othersSum));
     }
   });
 
