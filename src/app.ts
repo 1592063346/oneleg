@@ -5,6 +5,7 @@ import { buildColorMap, seriesColor } from "./palette.js";
 import { renderPie } from "./pie.js";
 import { renderLine } from "./line.js";
 import { createExportButton } from "./export.js";
+import { loadDeckFile, createDeckModal } from "./deck.js";
 
 type View = "pie" | "trend";
 
@@ -195,8 +196,8 @@ function buildPieView(state: State): HTMLElement {
 function buildRankings(match: Match): HTMLElement {
   const rankings = document.createElement("div");
   rankings.className = "rankings";
-  rankings.appendChild(buildRankingLine("🥇 冠军", match["1st"]));
-  rankings.appendChild(buildRankingLine("🥈 亚军", match["2nd"]));
+  rankings.appendChild(buildRankingLine("🥇 冠军", match["1st"], match));
+  rankings.appendChild(buildRankingLine("🥈 亚军", match["2nd"], match));
   const top4 = document.createElement("div");
   top4.className = "ranking-line";
   const top4Label = document.createElement("span");
@@ -210,9 +211,36 @@ function buildRankings(match: Match): HTMLElement {
     item.className = "rank-item";
     const playerName = document.createElement("span");
     playerName.textContent = p.id;
+
+    // 卡组徽章：如果有 deck_file，则包含可点击的"构筑预览"链接
     const deckBadge = document.createElement("span");
     deckBadge.className = "deck-badge";
-    deckBadge.textContent = p.deck;
+
+    if (p.deck_file) {
+      const deckName = document.createElement("span");
+      deckName.textContent = p.deck;
+      const divider = document.createElement("span");
+      divider.className = "deck-badge-divider";
+      const previewLink = document.createElement("span");
+      previewLink.className = "deck-preview-link";
+      previewLink.textContent = "构筑预览";
+      previewLink.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        previewLink.textContent = "加载中...";
+        const deck = await loadDeckFile(match.date, p.id);
+        if (deck) {
+          const modal = createDeckModal(deck);
+          document.body.appendChild(modal);
+        } else {
+          alert("无法加载卡组文件");
+        }
+        previewLink.textContent = "构筑预览";
+      });
+      deckBadge.append(deckName, divider, previewLink);
+    } else {
+      deckBadge.textContent = p.deck;
+    }
+
     item.append(playerName, " ", deckBadge);
     top4List.appendChild(item);
   });
@@ -225,7 +253,7 @@ function matchTypeColor(type: MatchType): string {
   return { 积分赛: "purple", 娱乐赛: "green", 王中王邀请赛: "orange" }[type] || "";
 }
 
-function buildRankingLine(label: string, player: Player): HTMLElement {
+function buildRankingLine(label: string, player: Player, match: Match): HTMLElement {
   const line = document.createElement("div");
   line.className = "ranking-line";
   const rankLabel = document.createElement("span");
@@ -235,9 +263,36 @@ function buildRankingLine(label: string, player: Player): HTMLElement {
   item.className = "rank-item";
   const playerName = document.createElement("span");
   playerName.textContent = player.id;
+
+  // 卡组徽章：如果有 deck_file，则包含可点击的"构筑预览"链接
   const deckBadge = document.createElement("span");
   deckBadge.className = "deck-badge";
-  deckBadge.textContent = player.deck;
+
+  if (player.deck_file) {
+    const deckName = document.createElement("span");
+    deckName.textContent = player.deck;
+    const divider = document.createElement("span");
+    divider.className = "deck-badge-divider";
+    const previewLink = document.createElement("span");
+    previewLink.className = "deck-preview-link";
+    previewLink.textContent = "构筑预览";
+    previewLink.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      previewLink.textContent = "加载中...";
+      const deck = await loadDeckFile(match.date, player.id);
+      if (deck) {
+        const modal = createDeckModal(deck);
+        document.body.appendChild(modal);
+      } else {
+        alert("无法加载卡组文件");
+      }
+      previewLink.textContent = "构筑预览";
+    });
+    deckBadge.append(deckName, divider, previewLink);
+  } else {
+    deckBadge.textContent = player.deck;
+  }
+
   item.append(playerName, " ", deckBadge);
   line.append(rankLabel, item);
   return line;

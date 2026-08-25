@@ -256,6 +256,104 @@
       .ranking-line { flex-direction: column; gap: 4px; align-items: flex-start; }
       .rank-label { min-width: auto; }
     }
+
+    /* 卡组徽章分隔符 */
+    .deck-badge-divider {
+      display: inline-block;
+      width: 1px;
+      height: 0.9em;
+      background: currentColor;
+      margin: 0 6px;
+      vertical-align: middle;
+      opacity: 0.4;
+    }
+
+    /* 卡组预览链接 */
+    .deck-preview-link {
+      color: #5b9bd5;
+      text-decoration: underline;
+      cursor: pointer;
+      transition: color 0.15s;
+    }
+    .deck-preview-link:hover {
+      color: #3a7cbd;
+    }
+
+    /* 卡组弹窗 */
+    .deck-modal {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      z-index: 100; display: flex; align-items: center; justify-content: center;
+    }
+    .deck-modal-overlay {
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px);
+    }
+    .deck-modal-content {
+      position: relative; z-index: 1;
+      background: var(--surface-1); border: 1px solid var(--border);
+      border-radius: 14px;
+      max-height: 85vh; display: flex; flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+    .deck-modal-header {
+      padding: 20px 24px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px; position: relative;
+    }
+    .deck-modal-header h3 {
+      margin: 0; font-size: 18px; font-weight: 700; flex: 1;
+    }
+    .deck-modal-subtitle {
+      margin: 4px 0 0; font-size: 13px; color: var(--text-secondary);
+    }
+    .deck-modal-close {
+      position: absolute; top: 16px; right: 16px;
+      border: 0; background: transparent; color: var(--text-secondary);
+      font-size: 32px; line-height: 1; cursor: pointer; padding: 0;
+      width: 32px; height: 32px; border-radius: 6px;
+      transition: background 0.15s, color 0.15s;
+    }
+    .deck-modal-close:hover { background: var(--page); color: var(--text-primary); }
+    .deck-modal-body {
+      padding: 20px 24px; overflow-y: auto; flex: 1;
+    }
+    .deck-section { margin-bottom: 24px; }
+    .deck-section:last-child { margin-bottom: 0; }
+    .deck-section-header {
+      margin-bottom: 12px; font-size: 15px;
+      color: var(--text-primary);
+    }
+    .deck-count { color: var(--text-secondary); font-weight: 400; }
+    .deck-grid {
+      display: grid; grid-template-columns: repeat(10, 44px);
+      gap: 0; justify-content: start;
+      line-height: 0;
+    }
+    .deck-card-link {
+      display: block; overflow: hidden;
+      transition: transform 0.15s, box-shadow 0.15s, z-index 0s;
+      position: relative;
+    }
+    .deck-card-link:hover {
+      transform: scale(1.15);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+      z-index: 10;
+    }
+
+    .deck-card-image {
+      display: block; width: 44px; height: 64px; object-fit: cover;
+    }
+
+    @media (max-width: 768px) {
+      .deck-modal-content { width: 95%; max-height: 90vh; }
+      .deck-modal-header { padding: 16px 18px; }
+      .deck-modal-body { padding: 16px 18px; }
+      .deck-grid { grid-template-columns: repeat(8, 44px); }
+    }
+
+    @media (max-width: 480px) {
+      .deck-grid { grid-template-columns: repeat(5, 44px); gap: 6px; }
+      .deck-modal-header h3 { font-size: 16px; }
+    }
   </style>
 </head>
 <body>

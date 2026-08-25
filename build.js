@@ -35,14 +35,32 @@ for (const filename of imageFiles) {
 // 读取 center.json（图片中心配置）
 const centerData = JSON.parse(readFileSync("data/pic/center.json", "utf-8"));
 
+// 读取 data/deck 文件夹中的所有 .ydk 文件
+const deckDir = "data/deck";
+const deckMap = {};
+try {
+  const deckFiles = readdirSync(deckDir).filter(f => f.endsWith(".ydk"));
+  for (const filename of deckFiles) {
+    const filePath = join(deckDir, filename);
+    const content = readFileSync(filePath, "utf-8");
+    // 使用文件名（不含扩展名）作为 key
+    const name = filename.replace(".ydk", "");
+    deckMap[name] = content;
+  }
+  console.log(`   已内联 ${deckFiles.length} 个卡组文件`);
+} catch (err) {
+  console.log(`   跳过卡组文件（目录不存在或为空）`);
+}
+
 // 读取 data.json 并内联到 bundle.js 前面
 const data = readFileSync("data/data.json", "utf-8");
 const bundle = readFileSync("release/bundle.js", "utf-8");
 
-// 把 data.json、图片 map 和 center.json 挂载到 window
+// 把 data.json、图片 map、center.json 和卡组文件 map 挂载到 window
 const inlined = `window.__DATA__ = ${data};
 window.__IMAGE_MAP__ = ${JSON.stringify(imageMap)};
 window.__IMAGE_CENTERS__ = ${JSON.stringify(centerData.centers)};
+window.__DECK_MAP__ = ${JSON.stringify(deckMap)};
 ${bundle}`;
 writeFileSync("release/bundle.js", inlined);
 

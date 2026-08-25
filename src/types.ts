@@ -11,6 +11,7 @@ export interface DeckCount {
 export interface Player {
   id: string;
   deck: string;
+  deck_file?: boolean; // 是否有卡组文件
 }
 
 /** 比赛类型 */
