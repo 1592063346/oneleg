@@ -20,15 +20,15 @@ const result = await esbuild.build({
 // 读取 pic 文件夹中的所有图片并转换为 data URL
 const picDir = "pic";
 const imageMap = {};
-const imageFiles = readdirSync(picDir).filter(f => f.endsWith(".png"));
+const imageFiles = readdirSync(picDir).filter(f => f.endsWith(".webp"));
 
 for (const filename of imageFiles) {
   const filePath = join(picDir, filename);
   const buffer = readFileSync(filePath);
   const base64 = buffer.toString("base64");
-  const dataUrl = `data:image/png;base64,${base64}`;
+  const dataUrl = `data:image/webp;base64,${base64}`;
   // 使用文件名（不含扩展名）作为 key
-  const name = filename.replace(".png", "");
+  const name = filename.replace(".webp", "");
   imageMap[name] = dataUrl;
 }
 

@@ -106,8 +106,14 @@ export function partitionDecks(decks: DeckCount[]): Partition {
  * 渲染某场比赛的卡组饼图分布。
  * colorMap 提供"卡组名 -> 固定色槽"，使颜色跟随卡组身份而非本场排名。
  * rankings 为排名信息（冠亚四强），合并到同一框内。
+ * loadOthersImage 控制是否为 others 加载图片，默认为 false（纯色）。
  */
-export function renderPie(match: Match, colorMap: Map<string, number>, rankings?: HTMLElement): HTMLElement {
+export function renderPie(
+  match: Match,
+  colorMap: Map<string, number>,
+  rankings?: HTMLElement,
+  loadOthersImage: boolean = false
+): HTMLElement {
   const container = document.createElement("div");
   container.className = "pie-view-inner";
 
@@ -153,13 +159,15 @@ export function renderPie(match: Match, colorMap: Map<string, number>, rankings?
     pushSlice(OTHERS_LABEL, othersSum, othersColor(), true);
   }
 
-  // 收集所有需要加载的图片 URL
+  // 收集所有需要加载的图片 URL（根据 loadOthersImage 参数决定是否加载 others）
   const imageUrls = new Set<string>();
   for (const slice of slices) {
-    imageUrls.add(imageHref(slice.name));
-    if (slice.subdecks) {
-      for (const subdeck of slice.subdecks) {
-        imageUrls.add(imageHref(subdeck.deck));
+    if (loadOthersImage || !slice.isOthers) {
+      imageUrls.add(imageHref(slice.name));
+      if (slice.subdecks) {
+        for (const subdeck of slice.subdecks) {
+          imageUrls.add(imageHref(subdeck.deck));
+        }
       }
     }
   }
@@ -192,7 +200,7 @@ export function renderPie(match: Match, colorMap: Map<string, number>, rankings?
     chartCol.className = "pie-wrap";
     chartCol.style.position = "relative";
     chartCol.setAttribute("data-export-target", "true");
-    chartCol.appendChild(buildSvg(match, slices));
+    chartCol.appendChild(buildSvg(match, slices, loadOthersImage));
 
     // 添加导出按钮
     const exportBtn = createExportButton(chartCol, match.title);
@@ -209,7 +217,7 @@ export function renderPie(match: Match, colorMap: Map<string, number>, rankings?
   return container;
 }
 
-function buildSvg(match: Match, slices: Slice[]): SVGSVGElement {
+function buildSvg(match: Match, slices: Slice[], loadOthersImage: boolean): SVGSVGElement {
   const svg = svgRoot(W, H);
   svg.setAttribute("aria-label", `${match.title} 卡组分布饼图`);
   const surface =
@@ -256,19 +264,21 @@ function buildSvg(match: Match, slices: Slice[]): SVGSVGElement {
     svg.appendChild(path);
 
     // 饼块背景图：根据 center.json 中指定的图片中心进行定位
-    const clipId = `slice-${uid}-${i}`;
-    const clip = el("clipPath", { id: clipId });
-    clip.appendChild(el("path", { d }));
-    defs.appendChild(clip);
+    // 根据 loadOthersImage 参数决定是否为 others 添加背景图
+    if (loadOthersImage || !s.isOthers) {
+      const clipId = `slice-${uid}-${i}`;
+      const clip = el("clipPath", { id: clipId });
+      clip.appendChild(el("path", { d }));
+      defs.appendChild(clip);
 
-    // 角平分线的角度
-    const mid = (s.start + s.end) / 2;
-    const sweep = s.end - s.start;
+      // 角平分线的角度
+      const mid = (s.start + s.end) / 2;
+      const sweep = s.end - s.start;
 
-    // 获取图片的自定义中心点（相对于图片左上角的坐标）
-    const customCenterConfig = imageCenters[s.name];
+      // 获取图片的自定义中心点（相对于图片左上角的坐标）
+      const customCenterConfig = imageCenters[s.name];
 
-    let imgX: number, imgY: number, imgSize: number;
+      let imgX: number, imgY: number, imgSize: number;
 
     if (Math.abs(sweep - 360) < 0.001) {
       // 情况1：整圆，图片中心直接对齐圆心
@@ -422,21 +432,22 @@ function buildSvg(match: Match, slices: Slice[]): SVGSVGElement {
       }
     }
 
-    const image = el("image", {
-      href: imageHref(s.name),
-      x: imgX,
-      y: imgY,
-      width: imgSize,
-      height: imgSize,
-      preserveAspectRatio: "none", // 拉伸填充，不保持宽高比，确保自定义中心位置精确
-      "clip-path": `url(#${clipId})`,
-      "pointer-events": "none",
-    });
-    // 兼容旧属性以防万一
-    image.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", imageHref(s.name));
-    // 加载失败（无对应图片）时移除图片，保留纯色底
-    image.addEventListener("error", () => image.remove());
-    svg.appendChild(image);
+      const image = el("image", {
+        href: imageHref(s.name),
+        x: imgX,
+        y: imgY,
+        width: imgSize,
+        height: imgSize,
+        preserveAspectRatio: "none", // 拉伸填充，不保持宽高比，确保自定义中心位置精确
+        "clip-path": `url(#${clipId})`,
+        "pointer-events": "none",
+      });
+      // 兼容旧属性以防万一
+      image.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", imageHref(s.name));
+      // 加载失败（无对应图片）时移除图片，保留纯色底
+      image.addEventListener("error", () => image.remove());
+      svg.appendChild(image);
+    }
   });
 
   // 渲染子卡组（双层饼图）
@@ -769,15 +780,15 @@ function othersColor(): string {
   );
 }
 
-/** 卡组对应背景图路径（pic 文件夹，按名称查找；others 亦适用） */
+/** 卡组对应背景图路径（pic 文件夹，按名称查找） */
 function imageHref(name: string): string {
   // 优先使用打包时内联的图片 data URL（用于静态版本）
   const imageMap = (window as any).__IMAGE_MAP__;
   if (imageMap && imageMap[name]) {
     return imageMap[name];
   }
-  // 回退到相对路径（用于开发模式）
-  return `./pic/${encodeURIComponent(name)}.png`;
+  // 回退到相对路径（用于开发模式），使用 webp 格式
+  return `./pic/${encodeURIComponent(name)}.webp`;
 }
 
 function escapeHtml(s: string): string {
