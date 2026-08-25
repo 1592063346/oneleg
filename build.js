@@ -17,8 +17,8 @@ const result = await esbuild.build({
   logLevel: "info",
 });
 
-// 读取 pic 文件夹中的所有图片并转换为 data URL
-const picDir = "pic";
+// 读取 data/pic 文件夹中的所有图片并转换为 data URL
+const picDir = "data/pic";
 const imageMap = {};
 const imageFiles = readdirSync(picDir).filter(f => f.endsWith(".webp"));
 
@@ -33,10 +33,10 @@ for (const filename of imageFiles) {
 }
 
 // 读取 center.json（图片中心配置）
-const centerData = JSON.parse(readFileSync("pic/center.json", "utf-8"));
+const centerData = JSON.parse(readFileSync("data/pic/center.json", "utf-8"));
 
 // 读取 data.json 并内联到 bundle.js 前面
-const data = readFileSync("data.json", "utf-8");
+const data = readFileSync("data/data.json", "utf-8");
 const bundle = readFileSync("release/bundle.js", "utf-8");
 
 // 把 data.json、图片 map 和 center.json 挂载到 window

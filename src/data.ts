@@ -12,7 +12,7 @@ export async function loadData(): Promise<Match[]> {
   }
 
   // 回退到 fetch（开发模式）
-  const res = await fetch("./data.json", { cache: "no-cache" });
+  const res = await fetch("./data/data.json", { cache: "no-cache" });
   if (!res.ok) {
     throw new Error(`无法加载 data.json（HTTP ${res.status}）`);
   }

@@ -31,7 +31,7 @@ async function loadImageCenters(): Promise<void> {
 
   // 回退到 fetch（开发模式）
   try {
-    const response = await fetch("./pic/center.json");
+    const response = await fetch("./data/pic/center.json");
     if (response.ok) {
       const data = await response.json();
       imageCenters = data.centers || {};
@@ -788,7 +788,7 @@ function imageHref(name: string): string {
     return imageMap[name];
   }
   // 回退到相对路径（用于开发模式），使用 webp 格式
-  return `./pic/${encodeURIComponent(name)}.webp`;
+  return `./data/pic/${encodeURIComponent(name)}.webp`;
 }
 
 function escapeHtml(s: string): string {
