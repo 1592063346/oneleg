@@ -152,17 +152,70 @@ export function renderPie(match: Match, colorMap: Map<string, number>, rankings?
     pushSlice(OTHERS_LABEL, othersSum, othersColor(), true);
   }
 
+  // 收集所有需要加载的图片 URL
+  const imageUrls = new Set<string>();
+  for (const slice of slices) {
+    imageUrls.add(imageHref(slice.name));
+    if (slice.subdecks) {
+      for (const subdeck of slice.subdecks) {
+        imageUrls.add(imageHref(subdeck.deck));
+      }
+    }
+  }
+
+  // 创建加载提示
+  const loadingMsg = document.createElement("p");
+  loadingMsg.className = "empty-note";
+  loadingMsg.textContent = "饼图渲染中……";
+  container.appendChild(loadingMsg);
+
+  // 创建饼图容器（先隐藏）
   const chartCol = document.createElement("div");
   chartCol.className = "pie-wrap";
-  chartCol.style.position = "relative"; // 为导出按钮定位
-  chartCol.setAttribute("data-export-target", "true"); // 标记饼图部分为可导出区域
-  chartCol.appendChild(buildSvg(match, slices));
+  chartCol.style.position = "relative";
+  chartCol.style.opacity = "0";
+  chartCol.style.transition = "opacity 0.3s ease";
+  chartCol.setAttribute("data-export-target", "true");
+
+  // 先构建 SVG（但不可见）
+  const svg = buildSvg(match, slices);
+  chartCol.appendChild(svg);
   container.appendChild(chartCol);
 
-  // others 明细
+  // others 明细（也先隐藏）
+  let othersDetailEl: HTMLElement | null = null;
   if (others.length > 0) {
-    container.appendChild(buildOthersDetail(others, othersSum));
+    othersDetailEl = buildOthersDetail(others, othersSum);
+    othersDetailEl.style.opacity = "0";
+    othersDetailEl.style.transition = "opacity 0.3s ease";
+    container.appendChild(othersDetailEl);
   }
+
+  // 等待 SVG 中的所有图片加载完成
+  const images = svg.querySelectorAll("image");
+  const imageLoadPromises = Array.from(images).map((img) => {
+    return new Promise<void>((resolve) => {
+      // 如果图片已经加载完成
+      if ((img as any).complete) {
+        resolve();
+        return;
+      }
+      // 等待加载完成或失败
+      img.addEventListener("load", () => resolve());
+      img.addEventListener("error", () => resolve());
+      // 设置超时，避免无限等待
+      setTimeout(() => resolve(), 20000);
+    });
+  });
+
+  // 所有图片加载完成后显示饼图
+  Promise.all(imageLoadPromises).then(() => {
+    loadingMsg.remove();
+    chartCol.style.opacity = "1";
+    if (othersDetailEl) {
+      othersDetailEl.style.opacity = "1";
+    }
+  });
 
   return container;
 }
