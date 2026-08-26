@@ -223,7 +223,7 @@ function buildRankings(match: Match): HTMLElement {
       divider.className = "deck-badge-divider";
       const previewLink = document.createElement("span");
       previewLink.className = "deck-preview-link";
-      previewLink.textContent = "构筑预览";
+      previewLink.textContent = "查看构筑";
       previewLink.addEventListener("click", async (e) => {
         e.stopPropagation();
         previewLink.textContent = "加载中...";

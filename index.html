@@ -303,11 +303,21 @@
     .deck-modal-header h3 {
       margin: 0; font-size: 18px; font-weight: 700; flex: 1;
     }
+    .deck-modal-header-buttons {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .deck-modal-help {
+      border: 0; background: transparent; color: var(--text-secondary);
+      font-size: 20px; line-height: 1; cursor: help; padding: 0;
+      width: 28px; height: 28px; border-radius: 6px;
+      transition: background 0.15s, color 0.15s;
+      font-weight: bold;
+    }
+    .deck-modal-help:hover { background: var(--page); color: var(--text-primary); }
     .deck-modal-subtitle {
       margin: 4px 0 0; font-size: 13px; color: var(--text-secondary);
     }
     .deck-modal-close {
-      position: absolute; top: 16px; right: 16px;
       border: 0; background: transparent; color: var(--text-secondary);
       font-size: 32px; line-height: 1; cursor: pointer; padding: 0;
       width: 32px; height: 32px; border-radius: 6px;
@@ -325,7 +335,7 @@
     }
     .deck-count { color: var(--text-secondary); font-weight: 400; }
     .deck-grid {
-      display: grid; grid-template-columns: repeat(10, 44px);
+      display: grid; grid-template-columns: repeat(10, 60px);
       gap: 0; justify-content: start;
       line-height: 0;
     }
@@ -341,18 +351,18 @@
     }
 
     .deck-card-image {
-      display: block; width: 44px; height: 64px; object-fit: cover;
+      display: block; width: 60px; height: 88px; object-fit: cover;
     }
 
     @media (max-width: 768px) {
       .deck-modal-content { width: 95%; max-height: 90vh; }
       .deck-modal-header { padding: 16px 18px; }
       .deck-modal-body { padding: 16px 18px; }
-      .deck-grid { grid-template-columns: repeat(8, 44px); }
+      .deck-grid { grid-template-columns: repeat(9, 60px); }
     }
 
-    @media (max-width: 480px) {
-      .deck-grid { grid-template-columns: repeat(5, 44px); gap: 0; }
+    @media (max-width: 660px) {
+      .deck-grid { grid-template-columns: repeat(8, 60px); gap: 0; }
       .deck-modal-header h3 { font-size: 16px; }
     }
   </style>

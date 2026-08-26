@@ -1,4 +1,5 @@
 // 卡组文件解析和展示
+// 单张卡片展示大小为 60px*88px，index.html 里的 .deck-card-image 有相同配置
 
 export interface DeckData {
   main: number[];
@@ -78,7 +79,7 @@ export async function loadDeckFile(date: string, playerName: string): Promise<De
  * 获取卡片缩略图 URL
  */
 function getCardImageUrl(cardId: number): string {
-  return `https://cdn.233.momobako.com/ygoimg/jp/${cardId}.webp!thumb`;
+  return `https://cdn.233.momobako.com/ygoimg/jp/${cardId}.webp!half`;
 }
 
 /**
@@ -110,9 +111,10 @@ export function createDeckModal(deck: DeckData): HTMLElement {
 
   // 计算最大卡片数量，用于确定弹窗宽度
   const maxCards = Math.max(deck.main.length, deck.extra.length, deck.side.length);
-  const cardsPerRow = Math.min(maxCards, 10);
-  // 每张卡 44px + 间距，加上内边距
-  const contentWidth = cardsPerRow * 44 + 24 * 2;
+  // 限制在 8-10 列之间
+  const cardsPerRow = Math.max(8, Math.min(maxCards, 10));
+  // 每张卡 60px，加上内边距
+  const contentWidth = cardsPerRow * 60 + 24 * 2;
   content.style.width = `${contentWidth}px`;
   content.style.maxWidth = '90%';
 
