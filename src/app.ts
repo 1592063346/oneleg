@@ -212,7 +212,7 @@ function buildRankings(match: Match): HTMLElement {
     const playerName = document.createElement("span");
     playerName.textContent = p.id;
 
-    // 卡组徽章：如果有 deck_file，则包含可点击的"构筑预览"链接
+    // 卡组徽章：如果有 deck_file，则包含可点击的"查看构筑"链接
     const deckBadge = document.createElement("span");
     deckBadge.className = "deck-badge";
 
@@ -234,7 +234,7 @@ function buildRankings(match: Match): HTMLElement {
         } else {
           alert("无法加载卡组文件");
         }
-        previewLink.textContent = "构筑预览";
+        previewLink.textContent = "查看构筑";
       });
       deckBadge.append(deckName, divider, previewLink);
     } else {
@@ -264,7 +264,7 @@ function buildRankingLine(label: string, player: Player, match: Match): HTMLElem
   const playerName = document.createElement("span");
   playerName.textContent = player.id;
 
-  // 卡组徽章：如果有 deck_file，则包含可点击的"构筑预览"链接
+  // 卡组徽章：如果有 deck_file，则包含可点击的"查看构筑"链接
   const deckBadge = document.createElement("span");
   deckBadge.className = "deck-badge";
 
@@ -275,7 +275,7 @@ function buildRankingLine(label: string, player: Player, match: Match): HTMLElem
     divider.className = "deck-badge-divider";
     const previewLink = document.createElement("span");
     previewLink.className = "deck-preview-link";
-    previewLink.textContent = "构筑预览";
+    previewLink.textContent = "查看构筑";
     previewLink.addEventListener("click", async (e) => {
       e.stopPropagation();
       previewLink.textContent = "加载中...";
@@ -286,7 +286,7 @@ function buildRankingLine(label: string, player: Player, match: Match): HTMLElem
       } else {
         alert("无法加载卡组文件");
       }
-      previewLink.textContent = "构筑预览";
+      previewLink.textContent = "查看构筑";
     });
     deckBadge.append(deckName, divider, previewLink);
   } else {
