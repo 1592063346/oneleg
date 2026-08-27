@@ -52,7 +52,7 @@ export function parseYdk(content: string): DeckData {
  * 加载卡组文件
  */
 export async function loadDeckFile(date: string, playerName: string): Promise<DeckData | null> {
-  const filename = `${date.replace(/-/g, '')}_${playerName}`;
+  const filename = `${date.replace(/\//g, '')}_${playerName}`;
 
   // 检查是否有内联数据（打包后会挂载到 window.__DECK_MAP__）
   const deckMap = (window as any).__DECK_MAP__;
