@@ -17,6 +17,7 @@ interface State {
   selectedMatch: number; // 饼图选中的比赛索引
   selectedDecks: string[]; // 趋势图已添加的卡组（有序）
   selectedTypes: Set<MatchType>; // 趋势图选中的比赛类型
+  dateRange: { start: string; end: string } | null; // 趋势图日期区间筛选
 }
 
 const app = document.getElementById("app")!;
@@ -41,6 +42,7 @@ async function main(): Promise<void> {
     selectedMatch: matches.length - 1, // 默认最近一场
     selectedDecks: [], // 趋势图默认空，由用户搜索添加
     selectedTypes: new Set(MATCH_TYPES), // 默认全部类型
+    dateRange: null, // 默认不限制日期
   };
 
   renderShell(state);
@@ -331,6 +333,54 @@ function buildTrendView(state: State): HTMLElement {
   const wrap = document.createElement("div");
   wrap.className = "trend-view";
 
+  // 日期区间筛选
+  const dateRow = document.createElement("div");
+  dateRow.className = "controls date-filter";
+  const dateLabel = document.createElement("span");
+  dateLabel.className = "controls-label";
+  dateLabel.textContent = "比赛日期：";
+
+  const startInput = document.createElement("input");
+  startInput.type = "date";
+  startInput.className = "date-input";
+  if (state.dateRange) startInput.value = state.dateRange.start;
+
+  const dateSep = document.createElement("span");
+  dateSep.textContent = " 至 ";
+  dateSep.className = "date-separator";
+
+  const endInput = document.createElement("input");
+  endInput.type = "date";
+  endInput.className = "date-input";
+  if (state.dateRange) endInput.value = state.dateRange.end;
+
+  const clearBtn = document.createElement("button");
+  clearBtn.className = "date-clear-btn";
+  clearBtn.textContent = "清除";
+  clearBtn.addEventListener("click", () => {
+    state.dateRange = null;
+    startInput.value = "";
+    endInput.value = "";
+    renderTrendChart(state, chartHost);
+  });
+
+  const updateDateRange = () => {
+    const start = startInput.value;
+    const end = endInput.value;
+    if (start && end) {
+      state.dateRange = { start, end };
+    } else if (!start && !end) {
+      state.dateRange = null;
+    }
+    renderTrendChart(state, chartHost);
+  };
+
+  startInput.addEventListener("change", updateDateRange);
+  endInput.addEventListener("change", updateDateRange);
+
+  dateRow.append(dateLabel, startInput, dateSep, endInput, clearBtn);
+  wrap.appendChild(dateRow);
+
   // 类型筛选
   const typeRow = document.createElement("div");
   typeRow.className = "controls type-filter";
@@ -396,7 +446,49 @@ function buildTrendView(state: State): HTMLElement {
   input.addEventListener("change", () => {
     if (state.names.includes(input.value.trim())) addDeck(input.value);
   });
-  searchRow.append(sLabel, input, datalist);
+
+  // "查看全部上位卡组"按钮
+  const showAllBtn = document.createElement("button");
+  showAllBtn.className = "deck-action-btn";
+  showAllBtn.textContent = "查看全部上位卡组";
+  showAllBtn.addEventListener("click", () => {
+    // 清空当前已展示卡组
+    state.selectedDecks = [];
+
+    // 获取当前筛选条件下的所有比赛
+    let matches = state.matches.filter((m) => state.selectedTypes.has(m.type));
+    if (state.dateRange) {
+      const { start, end } = state.dateRange;
+      const startFormatted = start.replace(/-/g, '/');
+      const endFormatted = end.replace(/-/g, '/');
+      matches = matches.filter((m) => m.date >= startFormatted && m.date <= endFormatted);
+    }
+
+    // 收集所有上位卡组（去重）
+    const allDecks = new Set<string>();
+    matches.forEach((m) => {
+      allDecks.add(m["1st"].deck);
+      allDecks.add(m["2nd"].deck);
+      m["3_4th"].forEach((p) => allDecks.add(p.deck));
+    });
+
+    // 添加到已展示卡组（按字母顺序）
+    state.selectedDecks = Array.from(allDecks).sort();
+    renderChips(chipRow, state, chartHost);
+    renderTrendChart(state, chartHost);
+  });
+
+  // "清空卡组"按钮
+  const clearDecksBtn = document.createElement("button");
+  clearDecksBtn.className = "deck-action-btn deck-action-clear";
+  clearDecksBtn.textContent = "清空卡组";
+  clearDecksBtn.addEventListener("click", () => {
+    state.selectedDecks = [];
+    renderChips(chipRow, state, chartHost);
+    renderTrendChart(state, chartHost);
+  });
+
+  searchRow.append(sLabel, input, datalist, showAllBtn, clearDecksBtn);
   wrap.appendChild(searchRow);
 
   const chartHost = document.createElement("div");
@@ -441,7 +533,17 @@ function renderChips(host: HTMLElement, state: State, chartHost: HTMLElement): v
 
 function renderTrendChart(state: State, host: HTMLElement): void {
   host.innerHTML = "";
-  const matches = state.matches.filter((m) => state.selectedTypes.has(m.type));
+  let matches = state.matches.filter((m) => state.selectedTypes.has(m.type));
+
+  // 应用日期区间筛选
+  if (state.dateRange) {
+    const { start, end } = state.dateRange;
+    // 将输入的日期格式（YYYY-MM-DD）转换为斜杠格式（YYYY/MM/DD）以匹配数据
+    const startFormatted = start.replace(/-/g, '/');
+    const endFormatted = end.replace(/-/g, '/');
+    matches = matches.filter((m) => m.date >= startFormatted && m.date <= endFormatted);
+  }
+
   host.appendChild(renderLine(matches, state.selectedDecks, state.colorMap));
 }
 
