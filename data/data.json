@@ -473,7 +473,7 @@
             "title": "2026/08/30 万籁阁娱乐赛",
             "type": "娱乐赛",
             "1st": {"id": "Stalker", "deck": "耀圣", "deck_file": true},
-            "2nd": {"id": "琇莹", "deck": "黯蜜"},
+            "2nd": {"id": "琇莹", "deck": "黯蜜", "deck_file": true},
             "3_4th": [{"id": "帖", "deck": "活死人的呼声"}, {"id": "Cosmos", "deck": "光与暗的仪式"}],
             "decks": [
             ],
