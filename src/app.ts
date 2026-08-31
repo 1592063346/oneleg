@@ -59,7 +59,7 @@ function renderShell(state: State): void {
   nav.className = "menu";
   const title = document.createElement("span");
   title.className = "brand";
-  title.textContent = "万籁阁游戏王比赛数据一览";
+  title.textContent = "万籁阁游戏王 OCG 比赛数据站";
   nav.appendChild(title);
 
   const tabs = document.createElement("div");

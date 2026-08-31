@@ -5,6 +5,7 @@ export interface DeckData {
   main: number[];
   extra: number[];
   side: number[];
+  fileName?: string; // 用于下载时的文件名
 }
 
 /**
@@ -57,7 +58,9 @@ export async function loadDeckFile(date: string, playerName: string): Promise<De
   // 检查是否有内联数据（打包后会挂载到 window.__DECK_MAP__）
   const deckMap = (window as any).__DECK_MAP__;
   if (deckMap && deckMap[filename]) {
-    return parseYdk(deckMap[filename]);
+    const deck = parseYdk(deckMap[filename]);
+    deck.fileName = filename;
+    return deck;
   }
 
   // 回退到 fetch（开发模式）
@@ -68,7 +71,9 @@ export async function loadDeckFile(date: string, playerName: string): Promise<De
       return null;
     }
     const content = await response.text();
-    return parseYdk(content);
+    const deck = parseYdk(content);
+    deck.fileName = filename;
+    return deck;
   } catch (err) {
     console.error('Error loading deck file:', err);
     return null;
@@ -87,6 +92,43 @@ function getCardImageUrl(cardId: number): string {
  */
 function getCardDetailUrl(cardId: number): string {
   return `https://ygocdb.com/card/${cardId}`;
+}
+
+/**
+ * 下载卡组文件
+ */
+function downloadDeckFile(deck: DeckData): void {
+  // 构建 YDK 文件内容
+  let ydkContent = '#created by ...\n';
+
+  // 主卡组
+  ydkContent += '#main\n';
+  deck.main.forEach(cardId => {
+    ydkContent += `${cardId}\n`;
+  });
+
+  // 额外卡组
+  ydkContent += '#extra\n';
+  deck.extra.forEach(cardId => {
+    ydkContent += `${cardId}\n`;
+  });
+
+  // 副卡组
+  ydkContent += '!side\n';
+  deck.side.forEach(cardId => {
+    ydkContent += `${cardId}\n`;
+  });
+
+  // 创建 Blob 并触发下载
+  const blob = new Blob([ydkContent], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${deck.fileName || 'deck'}.ydk`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 /**
@@ -123,6 +165,14 @@ export function createDeckModal(deck: DeckData): HTMLElement {
   header.className = 'deck-modal-header';
   const title = document.createElement('h3');
   title.textContent = '构筑预览';
+
+  const downloadBtn = document.createElement('button');
+  downloadBtn.className = 'deck-download-btn';
+  downloadBtn.textContent = '下载构筑文件';
+  downloadBtn.addEventListener('click', () => {
+    downloadDeckFile(deck);
+  });
+
   const closeBtn = document.createElement('button');
   closeBtn.className = 'deck-modal-close';
   closeBtn.textContent = '×';
@@ -130,7 +180,7 @@ export function createDeckModal(deck: DeckData): HTMLElement {
     document.body.style.overflow = '';
     modal.remove();
   });
-  header.append(title, closeBtn);
+  header.append(title, downloadBtn, closeBtn);
 
   const body = document.createElement('div');
   body.className = 'deck-modal-body';

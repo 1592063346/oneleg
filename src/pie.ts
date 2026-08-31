@@ -175,7 +175,7 @@ export function renderPie(
   // 创建加载提示
   const loadingMsg = document.createElement("p");
   loadingMsg.className = "empty-note";
-  loadingMsg.textContent = "饼图渲染中……";
+  loadingMsg.textContent = "饼图加载中……";
   container.appendChild(loadingMsg);
 
   // 使用 HTML Image 对象预加载所有图片到浏览器缓存
