@@ -12,6 +12,8 @@ const CX = W / 2;
 const CY = H / 2;
 const R = 175;
 const OTHERS_LABEL = "others";
+// 占比低于该值的卡组也归入 others（饼块太小无法展示卡图）
+const MIN_SLICE_PCT = 0.025;
 
 // 图片中心配置
 interface ImageCenterConfig {
@@ -22,14 +24,6 @@ let imageCenters: Record<string, ImageCenterConfig> = {};
 
 // 加载图片中心配置
 async function loadImageCenters(): Promise<void> {
-  // 优先使用打包时内联的数据（静态版本）
-  const inlinedCenters = (window as any).__IMAGE_CENTERS__;
-  if (inlinedCenters) {
-    imageCenters = inlinedCenters;
-    return;
-  }
-
-  // 回退到 fetch（开发模式）
   try {
     const response = await fetch("./data/pic/center.json");
     if (response.ok) {
@@ -85,7 +79,7 @@ export function partitionDecks(decks: DeckCount[]): Partition {
   let cutAt = tiers.length; // 从该档位起归入 others
   for (let t = 0; t < tiers.length; t++) {
     const tierSum = tiers[t].reduce((s, d) => s + d.num, 0);
-    if (acc + tierSum > threshold) {
+    if (tierSum / total < MIN_SLICE_PCT || acc + tierSum > threshold) {
       cutAt = t;
       break;
     }
@@ -130,7 +124,29 @@ export function renderPie(
     container.appendChild(divider);
   }
 
-  // const total = totalDecks(match);
+  // 淘汰赛饼图（若有）：位于冠亚四强与环境总饼图之间，
+  // 上下各用一条横线隔开；不划分 others，全部展示。
+  const elim = match.elimination_decks;
+  if (elim && elim.length > 0) {
+    const elimTotal = elim.reduce((s, d) => s + d.num, 0);
+    container.appendChild(
+      buildPieSection(
+        match,
+        [...elim],
+        [],
+        elimTotal,
+        colorMap,
+        false,
+        `${match.title}淘汰赛`,
+        "淘汰赛卡组分布"
+      )
+    );
+
+    const divider = document.createElement("hr");
+    divider.className = "pie-divider";
+    container.appendChild(divider);
+  }
+
   if (match.decks.length === 0) {
     const empty = document.createElement("p");
     empty.className = "empty-note";
@@ -141,12 +157,40 @@ export function renderPie(
 
   const total = totalDecks(match);
   const { shown, others } = partitionDecks(match.decks);
+  container.appendChild(
+    buildPieSection(match, shown, others, total, colorMap, loadOthersImage, match.title, "总环境卡组分布")
+  );
+
+  return container;
+}
+
+/**
+ * 构建单个饼图区块（饼图 SVG + 导出按钮 + others 明细），图片预加载完成后再渲染。
+ * exportTitle 为导出图片的文件名基底；caption 为饼图左上角的标注文字。
+ */
+function buildPieSection(
+  match: Match,
+  shown: DeckCount[],
+  others: DeckCount[],
+  total: number,
+  colorMap: Map<string, number>,
+  loadOthersImage: boolean,
+  exportTitle: string,
+  caption: string
+): HTMLElement {
+  const host = document.createElement("div");
   const othersSum = others.reduce((s, d) => s + d.num, 0);
 
   // 组装扇区：先展示的卡组，最后（若有）others
   const slices: Slice[] = [];
   let angle = 0;
-  const pushSlice = (name: string, num: number, color: string, isOthers: boolean, subdecks?: Array<{ deck: string; num: number }>) => {
+  const pushSlice = (
+    name: string,
+    num: number,
+    color: string,
+    isOthers: boolean,
+    subdecks?: Array<{ deck: string; num: number }>
+  ) => {
     const pct = num / total;
     const sweep = pct * 360;
     slices.push({ name, num, pct, start: angle, end: angle + sweep, color, isOthers, subdecks });
@@ -176,7 +220,7 @@ export function renderPie(
   const loadingMsg = document.createElement("p");
   loadingMsg.className = "empty-note";
   loadingMsg.textContent = "饼图加载中……";
-  container.appendChild(loadingMsg);
+  host.appendChild(loadingMsg);
 
   // 使用 HTML Image 对象预加载所有图片到浏览器缓存
   const imageLoadPromises = Array.from(imageUrls).map((url) => {
@@ -202,19 +246,25 @@ export function renderPie(
     chartCol.setAttribute("data-export-target", "true");
     chartCol.appendChild(buildSvg(match, slices, loadOthersImage));
 
+    // 左上角标注文字（与导出按钮同一行）
+    const cap = document.createElement("div");
+    cap.className = "pie-caption";
+    cap.textContent = caption;
+    chartCol.appendChild(cap);
+
     // 添加导出按钮
-    const exportBtn = createExportButton(chartCol, match.title);
+    const exportBtn = createExportButton(chartCol, exportTitle);
     chartCol.appendChild(exportBtn);
 
-    container.appendChild(chartCol);
+    host.appendChild(chartCol);
 
     // others 明细
     if (others.length > 0) {
-      container.appendChild(buildOthersDetail(others, othersSum));
+      host.appendChild(buildOthersDetail(others, othersSum));
     }
   });
 
-  return container;
+  return host;
 }
 
 function buildSvg(match: Match, slices: Slice[], loadOthersImage: boolean): SVGSVGElement {
@@ -782,12 +832,6 @@ function othersColor(): string {
 
 /** 卡组对应背景图路径（pic 文件夹，按名称查找） */
 function imageHref(name: string): string {
-  // 优先使用打包时内联的图片 data URL（用于静态版本）
-  const imageMap = (window as any).__IMAGE_MAP__;
-  if (imageMap && imageMap[name]) {
-    return imageMap[name];
-  }
-  // 回退到相对路径（用于开发模式），使用 webp 格式
   return `./data/pic/${encodeURIComponent(name)}.webp`;
 }
 

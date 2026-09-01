@@ -66,6 +66,14 @@
       border-bottom: 1px solid var(--border); margin-bottom: 24px;
     }
     .brand { font-size: 18px; font-weight: 700; }
+    .brand-wrap { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .site-toggle {
+      font: inherit; font-size: 13px; padding: 6px 14px; border-radius: 999px;
+      border: 1px solid var(--border); background: var(--surface-1);
+      color: var(--text-secondary); cursor: pointer; white-space: nowrap;
+      transition: background .15s, color .15s, border-color .15s;
+    }
+    .site-toggle:hover { background: #2a78d6; color: #fff; border-color: #2a78d6; }
     .tabs { display: flex; gap: 4px; background: var(--surface-1);
       border: 1px solid var(--border); border-radius: 10px; padding: 4px; }
     .tab {
@@ -116,6 +124,12 @@
     .type-tag-purple { color: #8b5cf6; background: rgba(139, 92, 246, 0.12); }
     .type-tag-green { color: #10b981; background: rgba(16, 185, 129, 0.12); }
     .type-tag-orange { color: #f97316; background: rgba(249, 115, 22, 0.12); }
+    .type-tag-blue { color: #3b82f6; background: rgba(59, 130, 246, 0.12); }
+    .type-tag-red { color: #ef4444; background: rgba(239, 68, 68, 0.12); }
+    /* 分站比赛下拉：比赛名称 */
+    .match-dropdown-name { color: var(--text-primary);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .match-dropdown-list li .match-dropdown-name { min-width: 0; }
     .deck-picker { gap: 8px; }
     .chip {
       display: inline-flex; align-items: center; gap: 7px;
@@ -127,6 +141,8 @@
     .chip-type-purple > span { color: #8b5cf6; font-weight: 700; }
     .chip-type-green > span { color: #10b981; font-weight: 700; }
     .chip-type-orange > span { color: #f97316; font-weight: 700; }
+    .chip-type-blue > span { color: #3b82f6; font-weight: 700; }
+    .chip-type-red > span { color: #ef4444; font-weight: 700; }
 
     /* 详情 */
     .detail-header h2 { font-size: 20px; margin: 0 0 10px; }
@@ -140,6 +156,8 @@
     .badge-purple .badge-v { color: #8b5cf6; }
     .badge-green .badge-v { color: #10b981; }
     .badge-orange .badge-v { color: #f97316; }
+    .badge-blue .badge-v { color: #3b82f6; }
+    .badge-red .badge-v { color: #ef4444; }
 
     /* 排名展示（已合并到饼图框内） */
     .rankings { margin-bottom: 16px; }
@@ -223,6 +241,12 @@
       transition: background 0.15s; }
     .export-btn:hover { background: var(--surface-1); }
     .export-btn:active { background: var(--border); }
+    /* 饼图左上角标注（与右上角导出按钮同一行，不加粗） */
+    .pie-caption {
+      position: absolute; top: 8px; left: 12px; z-index: 10;
+      font-size: 14px; font-weight: normal; color: var(--text-primary);
+      padding: 9px 0; line-height: 1; pointer-events: none;
+    }
     .line-wrap svg { max-width: 100%; height: auto; }
 
     /* 折线图图例（趋势模式仍使用） */

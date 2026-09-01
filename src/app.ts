@@ -1,5 +1,5 @@
 import type { Match, MatchType, Player } from "./types.js";
-import { MATCH_TYPES } from "./types.js";
+import { MATCH_TYPES, EVENT_MATCH_TYPES } from "./types.js";
 import { allDeckNames, loadData, totalDecks } from "./data.js";
 import { buildColorMap, seriesColor } from "./palette.js";
 import { renderPie } from "./pie.js";
@@ -8,8 +8,45 @@ import { createExportButton } from "./export.js";
 import { loadDeckFile, createDeckModal } from "./deck.js";
 
 type View = "pie" | "trend";
+type Site = "main" | "event";
+
+/** 站点配置：主站与国内赛事数据站（分站）的差异集中在此 */
+interface SiteConfig {
+  site: Site;
+  title: string;
+  toggleLabel: string; // 标题旁切换按钮文案
+  dataPath: string;
+  deckDir: string;
+  matchTypes: MatchType[];
+  hasTrend: boolean; // 是否有“上位卡组统计”模式
+  showNameInDropdown: boolean; // 比赛下拉是否显示名称
+}
+
+const SITE_CONFIGS: Record<Site, SiteConfig> = {
+  main: {
+    site: "main",
+    title: "万籁阁游戏王 OCG 比赛数据站",
+    toggleLabel: "切换至国内大赛数据站",
+    dataPath: "./data/data.json",
+    deckDir: "./data/deck",
+    matchTypes: MATCH_TYPES,
+    hasTrend: true,
+    showNameInDropdown: false,
+  },
+  event: {
+    site: "event",
+    title: "中国大陆游戏王 OCG 赛事数据站",
+    toggleLabel: "回到主站",
+    dataPath: "./data/event_data.json",
+    deckDir: "./data/event_deck",
+    matchTypes: EVENT_MATCH_TYPES,
+    hasTrend: false,
+    showNameInDropdown: true,
+  },
+};
 
 interface State {
+  config: SiteConfig;
   matches: Match[];
   names: string[];
   colorMap: Map<string, number>;
@@ -21,11 +58,15 @@ interface State {
 }
 
 const app = document.getElementById("app")!;
+let currentState: State | null = null;
 
-async function main(): Promise<void> {
+async function loadSite(site: Site): Promise<void> {
+  const config = SITE_CONFIGS[site];
+  app.innerHTML = `<p class="empty-note">正在加载…</p>`;
+
   let matches: Match[];
   try {
-    matches = await loadData();
+    matches = await loadData(config.dataPath);
   } catch (err) {
     app.innerHTML = `<div class="error">加载数据失败：${
       err instanceof Error ? err.message : String(err)
@@ -35,21 +76,28 @@ async function main(): Promise<void> {
 
   const names = allDeckNames(matches);
   const state: State = {
+    config,
     matches,
     names,
     colorMap: buildColorMap(names),
     view: "pie",
     selectedMatch: matches.length - 1, // 默认最近一场
     selectedDecks: [], // 趋势图默认空，由用户搜索添加
-    selectedTypes: new Set(MATCH_TYPES), // 默认全部类型
+    selectedTypes: new Set(config.matchTypes), // 默认全部类型
     dateRange: null, // 默认不限制日期
   };
-
+  currentState = state;
   renderShell(state);
+}
+
+async function main(): Promise<void> {
+  await loadSite("main");
   // 主题切换后重绘（颜色跟随主题）
   window
     .matchMedia("(prefers-color-scheme: dark)")
-    .addEventListener("change", () => renderBody(state));
+    .addEventListener("change", () => {
+      if (currentState) renderBody(currentState);
+    });
 }
 
 function renderShell(state: State): void {
@@ -57,24 +105,38 @@ function renderShell(state: State): void {
 
   const nav = document.createElement("nav");
   nav.className = "menu";
+
+  // 标题 + 切换按钮
+  const brandWrap = document.createElement("div");
+  brandWrap.className = "brand-wrap";
   const title = document.createElement("span");
   title.className = "brand";
-  title.textContent = "万籁阁游戏王 OCG 比赛数据站";
-  nav.appendChild(title);
-
-  const tabs = document.createElement("div");
-  tabs.className = "tabs";
-  (["pie", "trend"] as View[]).forEach((v) => {
-    const btn = document.createElement("button");
-    btn.textContent = v === "pie" ? "比赛详情" : "上位卡组统计";
-    btn.className = "tab" + (state.view === v ? " active" : "");
-    btn.addEventListener("click", () => {
-      state.view = v;
-      renderShell(state);
-    });
-    tabs.appendChild(btn);
+  title.textContent = state.config.title;
+  const toggleBtn = document.createElement("button");
+  toggleBtn.className = "site-toggle";
+  toggleBtn.textContent = state.config.toggleLabel;
+  toggleBtn.addEventListener("click", () => {
+    loadSite(state.config.site === "main" ? "event" : "main");
   });
-  nav.appendChild(tabs);
+  brandWrap.append(title, toggleBtn);
+  nav.appendChild(brandWrap);
+
+  // 模式切换（仅主站有“上位卡组统计”）
+  if (state.config.hasTrend) {
+    const tabs = document.createElement("div");
+    tabs.className = "tabs";
+    (["pie", "trend"] as View[]).forEach((v) => {
+      const btn = document.createElement("button");
+      btn.textContent = v === "pie" ? "比赛详情" : "上位卡组统计";
+      btn.className = "tab" + (state.view === v ? " active" : "");
+      btn.addEventListener("click", () => {
+        state.view = v;
+        renderShell(state);
+      });
+      tabs.appendChild(btn);
+    });
+    nav.appendChild(tabs);
+  }
 
   app.appendChild(nav);
 
@@ -116,7 +178,7 @@ function buildPieView(state: State): HTMLElement {
   const btn = document.createElement("button");
   btn.className = "match-dropdown-btn";
   btn.type = "button";
-  updateDropdownBtn(btn, state.matches[state.selectedMatch]);
+  updateDropdownBtn(btn, state.matches[state.selectedMatch], state);
 
   const listWrap = document.createElement("div");
   listWrap.className = "match-dropdown-list";
@@ -129,10 +191,18 @@ function buildPieView(state: State): HTMLElement {
     if (i === state.selectedMatch) li.classList.add("active");
     const dateSpan = document.createElement("span");
     dateSpan.textContent = m.date;
+    li.appendChild(dateSpan);
+    // 分站：日期后附带比赛名称
+    if (state.config.showNameInDropdown) {
+      const nameSpan = document.createElement("span");
+      nameSpan.className = "match-dropdown-name";
+      nameSpan.textContent = m.title || "";
+      li.appendChild(nameSpan);
+    }
     const typeBadge = document.createElement("span");
     typeBadge.className = `type-tag type-tag-${matchTypeColor(m.type)}`;
     typeBadge.textContent = m.type;
-    li.append(dateSpan, typeBadge);
+    li.appendChild(typeBadge);
     li.addEventListener("click", () => {
       state.selectedMatch = i;
       renderBody(state);
@@ -181,7 +251,7 @@ function buildPieView(state: State): HTMLElement {
   wrap.appendChild(header);
 
   // 排名展示：传递给 renderPie 以合并到同一框内
-  const rankings = buildRankings(match);
+  const rankings = buildRankings(match, state);
   const pieContainer = renderPie(match, state.colorMap, rankings);
 
   // 添加导出按钮到饼图部分（而非整个容器）
@@ -195,11 +265,11 @@ function buildPieView(state: State): HTMLElement {
   return wrap;
 }
 
-function buildRankings(match: Match): HTMLElement {
+function buildRankings(match: Match, state: State): HTMLElement {
   const rankings = document.createElement("div");
   rankings.className = "rankings";
-  rankings.appendChild(buildRankingLine("🥇 冠军", match["1st"], match));
-  rankings.appendChild(buildRankingLine("🥈 亚军", match["2nd"], match));
+  rankings.appendChild(buildRankingLine("🥇 冠军", match["1st"], match, state));
+  rankings.appendChild(buildRankingLine("🥈 亚军", match["2nd"], match, state));
   const top4 = document.createElement("div");
   top4.className = "ranking-line";
   const top4Label = document.createElement("span");
@@ -229,7 +299,7 @@ function buildRankings(match: Match): HTMLElement {
       previewLink.addEventListener("click", async (e) => {
         e.stopPropagation();
         previewLink.textContent = "加载中...";
-        const deck = await loadDeckFile(match.date, p.id);
+        const deck = await loadDeckFile(match.date, p.id, state.config.deckDir);
         if (deck) {
           const modal = createDeckModal(deck);
           document.body.appendChild(modal);
@@ -252,10 +322,20 @@ function buildRankings(match: Match): HTMLElement {
 }
 
 function matchTypeColor(type: MatchType): string {
-  return { 积分赛: "purple", 娱乐赛: "green", 王中王邀请赛: "orange" }[type] || "";
+  return {
+    // 主站
+    积分赛: "purple",
+    娱乐赛: "green",
+    王中王邀请赛: "orange",
+    // 分站（国内赛事数据站）
+    城市巡回赛: "blue",
+    特别大会: "green",
+    "WCQ 预选赛": "orange",
+    WCQ: "red",
+  }[type] || "";
 }
 
-function buildRankingLine(label: string, player: Player, match: Match): HTMLElement {
+function buildRankingLine(label: string, player: Player, match: Match, state: State): HTMLElement {
   const line = document.createElement("div");
   line.className = "ranking-line";
   const rankLabel = document.createElement("span");
@@ -281,7 +361,7 @@ function buildRankingLine(label: string, player: Player, match: Match): HTMLElem
     previewLink.addEventListener("click", async (e) => {
       e.stopPropagation();
       previewLink.textContent = "加载中...";
-      const deck = await loadDeckFile(match.date, player.id);
+      const deck = await loadDeckFile(match.date, player.id, state.config.deckDir);
       if (deck) {
         const modal = createDeckModal(deck);
         document.body.appendChild(modal);
@@ -300,7 +380,7 @@ function buildRankingLine(label: string, player: Player, match: Match): HTMLElem
   return line;
 }
 
-function updateDropdownBtn(btn: HTMLButtonElement, match: Match | undefined): void {
+function updateDropdownBtn(btn: HTMLButtonElement, match: Match | undefined, state: State): void {
   if (!match) {
     btn.textContent = "（无比赛）";
     return;
@@ -308,20 +388,28 @@ function updateDropdownBtn(btn: HTMLButtonElement, match: Match | undefined): vo
   btn.innerHTML = "";
   const dateSpan = document.createElement("span");
   dateSpan.textContent = match.date;
+  btn.appendChild(dateSpan);
+  // 分站：日期后附带比赛名称
+  if (state.config.showNameInDropdown) {
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "match-dropdown-name";
+    nameSpan.textContent = match.title || "";
+    btn.appendChild(nameSpan);
+  }
   const typeBadge = document.createElement("span");
   typeBadge.className = `type-tag type-tag-${matchTypeColor(match.type)}`;
   typeBadge.textContent = match.type;
   const arrow = document.createElement("span");
   arrow.className = "dropdown-arrow";
   arrow.textContent = "▼";
-  btn.append(dateSpan, typeBadge, arrow);
+  btn.append(typeBadge, arrow);
 }
 
 function metaBadge(label: string, value: string): HTMLElement {
   const badge = document.createElement("span");
   badge.className = "badge";
   // 如果是类型徽章，加上对应颜色类
-  if (label === "类型" && MATCH_TYPES.includes(value as MatchType)) {
+  if (label === "类型" && matchTypeColor(value as MatchType)) {
     badge.classList.add(`badge-${matchTypeColor(value as MatchType)}`);
   }
   badge.innerHTML = `<span class="badge-k">${label}</span><span class="badge-v"></span>`;
@@ -388,7 +476,7 @@ function buildTrendView(state: State): HTMLElement {
   typeLabel.className = "controls-label";
   typeLabel.textContent = "比赛类型：";
   typeRow.appendChild(typeLabel);
-  MATCH_TYPES.forEach((t) => {
+  state.config.matchTypes.forEach((t) => {
     const chip = document.createElement("label");
     chip.className = `chip chip-type-${matchTypeColor(t)}`;
     const cb = document.createElement("input");

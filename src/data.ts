@@ -1,40 +1,39 @@
 import type { DataFile, Match } from "./types.js";
 
-/** 从 data.json 加载数据（优先使用内联数据,回退到 fetch） */
-export async function loadData(): Promise<Match[]> {
-  // 检查是否有内联数据（打包后会挂载到 window.__DATA__）
-  const inlined = (window as any).__DATA__;
-  if (inlined) {
-    const parsed = inlined as DataFile;
-    if (parsed && Array.isArray(parsed.decks)) {
-      return [...parsed.decks].sort((a, b) => a.date.localeCompare(b.date));
-    }
-  }
-
-  // 回退到 fetch（开发模式）
-  const res = await fetch("./data/data.json", { cache: "no-cache" });
+/** 从指定数据文件加载数据 */
+export async function loadData(path: string = "./data/data.json"): Promise<Match[]> {
+  const res = await fetch(path, { cache: "no-cache" });
   if (!res.ok) {
-    throw new Error(`无法加载 data.json（HTTP ${res.status}）`);
+    throw new Error(`无法加载数据文件 ${path}（HTTP ${res.status}）`);
   }
   const parsed = (await res.json()) as DataFile;
   if (!parsed || !Array.isArray(parsed.decks)) {
-    throw new Error("data.json 格式不正确：缺少 decks 数组");
+    throw new Error("数据文件格式不正确：缺少 decks 数组");
   }
   // 按日期升序排列，确保趋势图 x 轴按时间顺序
   return [...parsed.decks].sort((a, b) => a.date.localeCompare(b.date));
 }
 
-/** 收集所有比赛中四强使用的卡组名称（去重，按出现顺序稳定排序） */
+/**
+ * 收集所有比赛中出现过的卡组名称（去重，稳定顺序），用于建立"名称 -> 颜色"映射。
+ * 四强卡组优先排在前面，使主要卡组获得靠前、区分度高的颜色槽；
+ * 其余环境卡组（含淘汰赛卡组）随后加入，确保饼图每个卡组都有独立颜色。
+ */
 export function allDeckNames(matches: Match[]): string[] {
   const seen = new Set<string>();
   const names: string[] = [];
-  for (const match of matches) {
-    for (const deck of top4Decks(match)) {
-      if (!seen.has(deck)) {
-        seen.add(deck);
-        names.push(deck);
-      }
+  const add = (name: string) => {
+    if (!seen.has(name)) {
+      seen.add(name);
+      names.push(name);
     }
+  };
+  for (const match of matches) {
+    for (const deck of top4Decks(match)) add(deck);
+  }
+  for (const match of matches) {
+    for (const d of match.decks) add(d.name);
+    for (const d of match.elimination_decks ?? []) add(d.name);
   }
   return names;
 }

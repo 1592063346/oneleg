@@ -51,21 +51,17 @@ export function parseYdk(content: string): DeckData {
 
 /**
  * 加载卡组文件
+ * dir 为卡组文件夹路径（主站 ./data/deck，分站 ./data/event_deck）
  */
-export async function loadDeckFile(date: string, playerName: string): Promise<DeckData | null> {
+export async function loadDeckFile(
+  date: string,
+  playerName: string,
+  dir: string = "./data/deck"
+): Promise<DeckData | null> {
   const filename = `${date.replace(/\//g, '')}_${playerName}`;
 
-  // 检查是否有内联数据（打包后会挂载到 window.__DECK_MAP__）
-  const deckMap = (window as any).__DECK_MAP__;
-  if (deckMap && deckMap[filename]) {
-    const deck = parseYdk(deckMap[filename]);
-    deck.fileName = filename;
-    return deck;
-  }
-
-  // 回退到 fetch（开发模式）
   try {
-    const response = await fetch(`./data/deck/${encodeURIComponent(filename)}.ydk`);
+    const response = await fetch(`${dir}/${encodeURIComponent(filename)}.ydk`);
     if (!response.ok) {
       console.warn(`Failed to load deck file: ${filename}.ydk`);
       return null;

@@ -2,28 +2,15 @@
 
 ## 使用方式
 
-### 开发模式
-
-适合需要修改 `data/data.json` 或源码的场景。
-
 ```bash
 npm install
+npm run build
 npm run serve
 ```
 
 然后通过浏览器访问。
 
 改完代码记得先 `npm run build`。
-
-### 静态网页
-
-`release/` 文件夹包含已编译的静态网页，可以直接打开。
-
-编译得到的方法如下：
-
-```bash
-npx tsc && node build.js
-```
 
 ## 更新数据
 
@@ -55,6 +42,15 @@ npx tsc && node build.js
   "deck_num": 30 // 可选项，一般是根据上面的 decks 直接计算，但是有时候环境可能没有统计，便需要一个参赛人数的裸数据
 }
 ```
+
+### 更新国内大赛数据
+
+向 `data/event_data.json` 中添加新的比赛记录，格式整体上与上面一致，不过要注意：
+
+1. 比赛类型（`type`）：“城市巡回赛”、“特别大会”、“WCQ 预选赛”、“WCQ”。
+2. 选手构筑放置文件夹为 `data/event_deck/`。
+3. 新增字段 `elimination_decks`，表示淘汰赛卡组列表，格式与 `decks` 相同。
+4. 环境数据可能需要自己做一些处理……
 
 ### 添加卡组图片
 

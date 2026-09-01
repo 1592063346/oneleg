@@ -15,10 +15,21 @@ export interface Player {
 }
 
 /** 比赛类型 */
-export type MatchType = "娱乐赛" | "积分赛" | "王中王邀请赛";
+export type MatchType =
+  | "娱乐赛"
+  | "积分赛"
+  | "王中王邀请赛"
+  // 国内赛事数据站（分站）类型
+  | "城市巡回赛"
+  | "特别大会"
+  | "WCQ 预选赛"
+  | "WCQ";
 
-/** 全部比赛类型（用于趋势模式的类型筛选） */
+/** 主站全部比赛类型（用于趋势模式的类型筛选） */
 export const MATCH_TYPES: MatchType[] = ["娱乐赛", "积分赛", "王中王邀请赛"];
+
+/** 分站（国内赛事数据站）全部比赛类型 */
+export const EVENT_MATCH_TYPES: MatchType[] = ["城市巡回赛", "特别大会", "WCQ 预选赛", "WCQ"];
 
 /** 一场比赛的记录 */
 export interface Match {
@@ -36,6 +47,8 @@ export interface Match {
   "3_4th": Player[];
   /** 该场比赛各卡组数量 */
   decks: DeckCount[];
+  /** 进入淘汰赛的卡组情况（与 decks 格式相同，可选） */
+  elimination_decks?: DeckCount[];
   /** 该场比赛卡组总数（参赛人数，该数据一般为 decks 未统计时的备用数据） */
   deck_num?: number;
 }
