@@ -91,7 +91,18 @@ async function loadSite(site: Site): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  await loadSite("main");
+  // 根据 URL 路径决定加载哪个站点
+  const path = window.location.pathname;
+  const initialSite: Site = path === "/event" ? "event" : "main";
+  await loadSite(initialSite);
+
+  // 浏览器前进/后退时响应路由变化
+  window.addEventListener("popstate", () => {
+    const path = window.location.pathname;
+    const site: Site = path === "/event" ? "event" : "main";
+    loadSite(site);
+  });
+
   // 主题切换后重绘（颜色跟随主题）
   window
     .matchMedia("(prefers-color-scheme: dark)")
@@ -116,7 +127,10 @@ function renderShell(state: State): void {
   toggleBtn.className = "site-toggle";
   toggleBtn.textContent = state.config.toggleLabel;
   toggleBtn.addEventListener("click", () => {
-    loadSite(state.config.site === "main" ? "event" : "main");
+    const targetSite: Site = state.config.site === "main" ? "event" : "main";
+    const targetPath = targetSite === "event" ? "/event" : "/";
+    history.pushState(null, "", targetPath);
+    loadSite(targetSite);
   });
   brandWrap.append(title, toggleBtn);
   nav.appendChild(brandWrap);

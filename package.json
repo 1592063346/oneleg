@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
-    "serve": "npx --yes http-server -p 8080 -c-1 ."
+    "serve": "npx --yes http-server -p 8080 -c-1 --proxy http://localhost:8080? ."
   },
   "devDependencies": {
     "esbuild": "^0.28.2"
