@@ -9,7 +9,8 @@
     "serve": "npx --yes http-server -p 8080 -c-1 --proxy http://localhost:8080? ."
   },
   "devDependencies": {
-    "esbuild": "^0.28.2"
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2"
   },
   "dependencies": {
     "html2canvas": "^1.4.1"
