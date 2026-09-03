@@ -64,6 +64,7 @@
       display: flex; align-items: center; justify-content: space-between;
       gap: 16px; padding: 18px 0; flex-wrap: wrap;
       border-bottom: 1px solid var(--border); margin-bottom: 24px;
+      min-height: 88px;
     }
     .brand { font-size: 18px; font-weight: 700; }
     .brand-wrap { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
@@ -74,6 +75,12 @@
       transition: background .15s, color .15s, border-color .15s;
     }
     .site-toggle:hover { background: #2a78d6; color: #fff; border-color: #2a78d6; }
+    /* FAQ 链接（蓝色文本链接，无下划线） */
+    .faq-link {
+      font-size: 13px; color: #2a78d6; text-decoration: underline;
+      cursor: pointer; white-space: nowrap;
+    }
+    .faq-link:hover { color: #1e5fa8; }
     .tabs { display: flex; gap: 4px; background: var(--surface-1);
       border: 1px solid var(--border); border-radius: 10px; padding: 4px; }
     .tab {
@@ -413,6 +420,34 @@
     @media (max-width: 660px) {
       .deck-grid { grid-template-columns: repeat(8, 60px); gap: 0; }
       .deck-modal-header h3 { font-size: 16px; }
+    }
+
+    /* FAQ 页面 */
+    .faq-view {
+      /* padding: 20px; */
+      color: var(--text-primary); line-height: 1.6;
+    }
+    .faq-view h2 {
+      font-size: 24px; font-weight: 600; margin: 30px 0 20px;
+      color: var(--text-primary);
+    }
+    .faq-view h2:first-child { margin-top: 0; }
+    .faq-item { margin-bottom: 24px; }
+    .faq-item p { margin: 8px 0; }
+    .faq-item strong { font-weight: 600; color: var(--text-primary); }
+    .faq-view a {
+      color: #2a78d6; text-decoration: none;
+    }
+    .faq-view a:hover { color: #1e5fa8; }
+    .faq-links {
+      list-style: none; padding: 0; margin: 16px 0;
+    }
+    .faq-links li {
+      margin: 10px 0; padding-left: 20px; position: relative;
+    }
+    .faq-links li::before {
+      content: "•"; position: absolute; left: 0;
+      color: var(--text-secondary);
     }
   </style>
 </head>
