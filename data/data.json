@@ -402,9 +402,9 @@
             "date": "2026/08/16",
             "title": "2026/08/16 万籁阁积分赛",
             "type": "积分赛",
-            "1st": {"id": "Cosmos", "deck": "光与暗的仪式"},
-            "2nd": {"id": "超级输骰", "deck": "星宿"},
-            "3_4th": [{"id": "人有所操", "deck": "耀圣"}, {"id": "YL.dzd@iOs", "deck": "卡通"}],
+            "1st": {"id": "Cosmos", "deck": "光与暗的仪式", "deck_file": true},
+            "2nd": {"id": "超级输骰", "deck": "星宿", "deck_file": true},
+            "3_4th": [{"id": "人有所操", "deck": "耀圣", "deck_file": true}, {"id": "YL.dzd@iOs", "deck": "卡通", "deck_file": true}],
             "decks": [
                 {"name": "同步士", "num": 2},
                 {"name": "光与暗的仪式", "num": 2},
