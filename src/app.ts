@@ -1,6 +1,6 @@
 import type { Match, MatchType, Player } from "./types.js";
 import { MATCH_TYPES, EVENT_MATCH_TYPES } from "./types.js";
-import { allDeckNames, loadData, totalDecks } from "./data.js";
+import { allDeckNames, loadData, totalDecks, top4DeckNames } from "./data.js";
 import { buildColorMap, seriesColor } from "./palette.js";
 import { renderPie } from "./pie.js";
 import { renderLine } from "./line.js";
@@ -58,7 +58,8 @@ const SITE_CONFIGS: Record<Site, SiteConfig> = {
 interface State {
   config: SiteConfig;
   matches: Match[];
-  names: string[];
+  names: string[]; // 所有卡组名称（用于颜色映射）
+  trendDeckNames: string[]; // 四强上位卡组名称（用于趋势图搜索）
   colorMap: Map<string, number>;
   view: View;
   selectedMatch: number; // 饼图选中的比赛索引
@@ -80,6 +81,7 @@ async function loadSite(site: Site): Promise<void> {
       config,
       matches: [],
       names: [],
+      trendDeckNames: [],
       colorMap: new Map(),
       view: "pie",
       selectedMatch: 0,
@@ -103,10 +105,12 @@ async function loadSite(site: Site): Promise<void> {
   }
 
   const names = allDeckNames(matches);
+  const trendDeckNames = top4DeckNames(matches);
   const state: State = {
     config,
     matches,
     names,
+    trendDeckNames,
     colorMap: buildColorMap(names),
     view: "pie",
     selectedMatch: matches.length - 1, // 默认最近一场
@@ -582,7 +586,7 @@ function buildTrendView(state: State): HTMLElement {
   input.setAttribute("list", "deck-options");
   const datalist = document.createElement("datalist");
   datalist.id = "deck-options";
-  state.names.forEach((n) => {
+  state.trendDeckNames.forEach((n) => {
     const opt = document.createElement("option");
     opt.value = n;
     datalist.appendChild(opt);
@@ -591,7 +595,7 @@ function buildTrendView(state: State): HTMLElement {
   const addDeck = (raw: string) => {
     const name = raw.trim();
     if (!name) return;
-    if (!state.names.includes(name)) return; // 只接受已存在的卡组
+    if (!state.trendDeckNames.includes(name)) return; // 只接受已存在的上位卡组
     if (!state.selectedDecks.includes(name)) {
       state.selectedDecks.push(name);
       renderChips(chipRow, state, chartHost);
@@ -607,7 +611,7 @@ function buildTrendView(state: State): HTMLElement {
   });
   // 从 datalist 选中时（change）也直接添加
   input.addEventListener("change", () => {
-    if (state.names.includes(input.value.trim())) addDeck(input.value);
+    if (state.trendDeckNames.includes(input.value.trim())) addDeck(input.value);
   });
 
   // "查看全部上位卡组"按钮

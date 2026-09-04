@@ -15,6 +15,24 @@ export async function loadData(path: string = "./data/data.json"): Promise<Match
 }
 
 /**
+ * 收集所有比赛中四强使用的卡组名称（去重，按出现顺序稳定排序）。
+ * 用于上位卡组统计的趋势图。
+ */
+export function top4DeckNames(matches: Match[]): string[] {
+  const seen = new Set<string>();
+  const names: string[] = [];
+  for (const match of matches) {
+    for (const deck of top4Decks(match)) {
+      if (!seen.has(deck)) {
+        seen.add(deck);
+        names.push(deck);
+      }
+    }
+  }
+  return names;
+}
+
+/**
  * 收集所有比赛中出现过的卡组名称（去重，稳定顺序），用于建立"名称 -> 颜色"映射。
  * 四强卡组优先排在前面，使主要卡组获得靠前、区分度高的颜色槽；
  * 其余环境卡组（含淘汰赛卡组）随后加入，确保饼图每个卡组都有独立颜色。
