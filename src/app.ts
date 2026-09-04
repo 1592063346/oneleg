@@ -105,7 +105,7 @@ async function loadSite(site: Site): Promise<void> {
   }
 
   const names = allDeckNames(matches);
-  const trendDeckNames = top4DeckNames(matches);
+  const trendDeckNames = top4DeckNames(matches, config.matchTypes);
   const state: State = {
     config,
     matches,
@@ -348,55 +348,29 @@ function buildRankings(match: Match, state: State): HTMLElement {
   const rankings = document.createElement("div");
   rankings.className = "rankings";
   rankings.appendChild(buildRankingLine("🥇 冠军", match["1st"], match, state));
-  rankings.appendChild(buildRankingLine("🥈 亚军", match["2nd"], match, state));
-  const top4 = document.createElement("div");
-  top4.className = "ranking-line";
-  const top4Label = document.createElement("span");
-  top4Label.className = "rank-label";
-  top4Label.textContent = "🥉 四强";
-  top4.appendChild(top4Label);
-  const top4List = document.createElement("div");
-  top4List.className = "rank-players";
-  match["3_4th"].forEach((p) => {
-    const item = document.createElement("div");
-    item.className = "rank-item";
-    const playerName = document.createElement("span");
-    playerName.textContent = p.id;
 
-    // 卡组徽章：如果有 deck_file，则包含可点击的"查看构筑"链接
-    const deckBadge = document.createElement("span");
-    deckBadge.className = "deck-badge";
+  // 亚军（可选）
+  if (match["2nd"]) {
+    rankings.appendChild(buildRankingLine("🥈 亚军", match["2nd"], match, state));
+  }
 
-    if (p.deck_file) {
-      const deckName = document.createElement("span");
-      deckName.textContent = p.deck;
-      const divider = document.createElement("span");
-      divider.className = "deck-badge-divider";
-      const previewLink = document.createElement("span");
-      previewLink.className = "deck-preview-link";
-      previewLink.textContent = "查看构筑";
-      previewLink.addEventListener("click", async (e) => {
-        e.stopPropagation();
-        previewLink.textContent = "加载中...";
-        const deck = await loadDeckFile(match.date, p.id, state.config.deckDir);
-        if (deck) {
-          const modal = createDeckModal(deck);
-          document.body.appendChild(modal);
-        } else {
-          alert("无法加载卡组文件");
-        }
-        previewLink.textContent = "查看构筑";
-      });
-      deckBadge.append(deckName, divider, previewLink);
-    } else {
-      deckBadge.textContent = p.deck;
-    }
+  // 四强（可选）
+  if (match["3_4th"] && match["3_4th"].length > 0) {
+    const top4 = document.createElement("div");
+    top4.className = "ranking-line";
+    const top4Label = document.createElement("span");
+    top4Label.className = "rank-label";
+    top4Label.textContent = "🥉 四强";
+    top4.appendChild(top4Label);
+    const top4List = document.createElement("div");
+    top4List.className = "rank-players";
+    match["3_4th"].forEach((p) => {
+      top4List.appendChild(buildPlayerItem(p, match, state));
+    });
+    top4.appendChild(top4List);
+    rankings.appendChild(top4);
+  }
 
-    item.append(playerName, " ", deckBadge);
-    top4List.appendChild(item);
-  });
-  top4.appendChild(top4List);
-  rankings.appendChild(top4);
   return rankings;
 }
 
@@ -406,6 +380,7 @@ function matchTypeColor(type: MatchType): string {
     积分赛: "purple",
     娱乐赛: "green",
     王中王邀请赛: "orange",
+    特殊规则赛: "brown",
     // 分站（国内赛事数据站）
     城市巡回赛: "blue",
     特别大会: "green",
@@ -414,12 +389,7 @@ function matchTypeColor(type: MatchType): string {
   }[type] || "";
 }
 
-function buildRankingLine(label: string, player: Player, match: Match, state: State): HTMLElement {
-  const line = document.createElement("div");
-  line.className = "ranking-line";
-  const rankLabel = document.createElement("span");
-  rankLabel.className = "rank-label";
-  rankLabel.textContent = label;
+function buildPlayerItem(player: Player, match: Match, state: State): HTMLElement {
   const item = document.createElement("div");
   item.className = "rank-item";
   const playerName = document.createElement("span");
@@ -455,7 +425,16 @@ function buildRankingLine(label: string, player: Player, match: Match, state: St
   }
 
   item.append(playerName, " ", deckBadge);
-  line.append(rankLabel, item);
+  return item;
+}
+
+function buildRankingLine(label: string, player: Player, match: Match, state: State): HTMLElement {
+  const line = document.createElement("div");
+  line.className = "ranking-line";
+  const rankLabel = document.createElement("span");
+  rankLabel.className = "rank-label";
+  rankLabel.textContent = label;
+  line.append(rankLabel, buildPlayerItem(player, match, state));
   return line;
 }
 
@@ -635,8 +614,8 @@ function buildTrendView(state: State): HTMLElement {
     const allDecks = new Set<string>();
     matches.forEach((m) => {
       allDecks.add(m["1st"].deck);
-      allDecks.add(m["2nd"].deck);
-      m["3_4th"].forEach((p) => allDecks.add(p.deck));
+      if (m["2nd"]) allDecks.add(m["2nd"].deck);
+      if (m["3_4th"]) m["3_4th"].forEach((p) => allDecks.add(p.deck));
     });
 
     // 添加到已展示卡组（按字母顺序）

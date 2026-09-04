@@ -19,6 +19,7 @@ export type MatchType =
   | "娱乐赛"
   | "积分赛"
   | "王中王邀请赛"
+  | "特殊规则赛"
   // 国内赛事数据站（分站）类型
   | "城市巡回赛"
   | "特别大会"
@@ -42,9 +43,9 @@ export interface Match {
   /** 冠军 */
   "1st": Player;
   /** 亚军 */
-  "2nd": Player;
+  "2nd"?: Player;
   /** 四强 */
-  "3_4th": Player[];
+  "3_4th"?: Player[];
   /** 该场比赛各卡组数量 */
   decks: DeckCount[];
   /** 进入淘汰赛的卡组情况（与 decks 格式相同，可选） */
