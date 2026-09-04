@@ -33,7 +33,7 @@ export const EVENT_MATCH_TYPES: MatchType[] = ["城市巡回赛", "特别大会"
 
 /** 一场比赛的记录 */
 export interface Match {
-  /** 比赛时间，形如 "2026-08-05" */
+  /** 比赛时间，形如 "2026/08/05" */
   date: string;
   /** 比赛标题 */
   title: string;
