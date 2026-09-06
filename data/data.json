@@ -484,6 +484,7 @@
             "title": "2026/09/06 万籁阁 WCS2026 庆典活动",
             "type": "特殊规则赛",
             "1st": {"id": "小哼22声", "deck": "召唤兽", "deck_file": true},
+            "2nd": {"id": "Reborn", "deck": "耀圣", "deck_file": true},
             "decks": [
                 {"name": "驱魔姐妹", "num": 2},
                 {"name": "杀手旋律", "num": 2},
