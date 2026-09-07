@@ -26,6 +26,9 @@ export type MatchType =
   | "WCQ 预选赛"
   | "WCQ";
 
+/** 分站板块类型 */
+export type EventEdition = "ocg" | "sc";
+
 /** 主站全部比赛类型（用于趋势模式的类型筛选） */
 export const MATCH_TYPES: MatchType[] = ["娱乐赛", "积分赛", "王中王邀请赛"];
 

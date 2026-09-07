@@ -1,4 +1,4 @@
-import type { Match, MatchType, Player } from "./types.js";
+import type { Match, MatchType, Player, EventEdition } from "./types.js";
 import { MATCH_TYPES, EVENT_MATCH_TYPES } from "./types.js";
 import { allDeckNames, loadData, totalDecks, top4DeckNames } from "./data.js";
 import { buildColorMap, seriesColor } from "./palette.js";
@@ -20,7 +20,23 @@ interface SiteConfig {
   matchTypes: MatchType[];
   hasTrend: boolean; // 是否有“上位卡组统计”模式
   showNameInDropdown: boolean; // 比赛下拉是否显示名称
+  hasEditionToggle?: boolean; // 是否有板块切换（分站专用）
+  editionToggleLabel?: string; // 板块切换按钮文案
 }
+
+/** 分站板块配置 */
+const EVENT_EDITION_CONFIGS: Record<EventEdition, { dataPath: string; deckDir: string; label: string }> = {
+  ocg: {
+    dataPath: "./data/event_data_ocg.json",
+    deckDir: "./data/event_deck/ocg",
+    label: "OCG",
+  },
+  sc: {
+    dataPath: "./data/event_data_sc.json",
+    deckDir: "./data/event_deck/sc",
+    label: "简体中文",
+  },
+};
 
 const SITE_CONFIGS: Record<Site, SiteConfig> = {
   main: {
@@ -35,13 +51,15 @@ const SITE_CONFIGS: Record<Site, SiteConfig> = {
   },
   event: {
     site: "event",
-    title: "中国大陆游戏王 OCG 赛事数据站",
+    title: "中国大陆游戏王赛事数据站",
     toggleLabel: "回到主站",
-    dataPath: "./data/event_data.json",
-    deckDir: "./data/event_deck",
+    dataPath: "./data/event_data_ocg.json",
+    deckDir: "./data/event_deck/ocg",
     matchTypes: EVENT_MATCH_TYPES,
     hasTrend: false,
     showNameInDropdown: true,
+    hasEditionToggle: true,
+    editionToggleLabel: "OCG",
   },
   faq: {
     site: "faq",
@@ -66,6 +84,7 @@ interface State {
   selectedDecks: string[]; // 趋势图已添加的卡组（有序）
   selectedTypes: Set<MatchType>; // 趋势图选中的比赛类型
   dateRange: { start: string; end: string } | null; // 趋势图日期区间筛选
+  eventEdition?: EventEdition; // 分站当前板块（仅分站使用）
 }
 
 const app = document.getElementById("app")!;
@@ -117,6 +136,7 @@ async function loadSite(site: Site): Promise<void> {
     selectedDecks: [], // 趋势图默认空，由用户搜索添加
     selectedTypes: new Set(config.matchTypes), // 默认全部类型
     dateRange: null, // 默认不限制日期
+    eventEdition: site === "event" ? "ocg" : undefined, // 分站默认 OCG 板块
   };
   currentState = state;
   renderShell(state);
@@ -196,6 +216,45 @@ function renderShell(state: State): void {
   }
 
   nav.appendChild(brandWrap);
+
+  // 分站板块切换（OCG / 简体中文）
+  if (state.config.hasEditionToggle && state.eventEdition) {
+    const tabs = document.createElement("div");
+    tabs.className = "tabs";
+    (["ocg", "sc"] as EventEdition[]).forEach((edition) => {
+      const btn = document.createElement("button");
+      btn.textContent = EVENT_EDITION_CONFIGS[edition].label;
+      btn.className = "tab" + (state.eventEdition === edition ? " active" : "");
+      btn.addEventListener("click", async () => {
+        if (state.eventEdition === edition) return;
+        state.eventEdition = edition;
+        const editionConfig = EVENT_EDITION_CONFIGS[edition];
+        state.config.dataPath = editionConfig.dataPath;
+        state.config.deckDir = editionConfig.deckDir;
+        state.config.editionToggleLabel = editionConfig.label;
+
+        // 重新加载数据
+        app.innerHTML = `<p class="empty-note">正在加载…</p>`;
+        try {
+          const matches = await loadData(state.config.dataPath);
+          const names = allDeckNames(matches);
+          const trendDeckNames = top4DeckNames(matches, state.config.matchTypes);
+          state.matches = matches;
+          state.names = names;
+          state.trendDeckNames = trendDeckNames;
+          state.colorMap = buildColorMap(names);
+          state.selectedMatch = matches.length - 1;
+          renderShell(state);
+        } catch (err) {
+          app.innerHTML = `<div class="error">加载数据失败：${
+            err instanceof Error ? err.message : String(err)
+          }</div>`;
+        }
+      });
+      tabs.appendChild(btn);
+    });
+    nav.appendChild(tabs);
+  }
 
   // 模式切换（仅主站有“上位卡组统计”）
   if (state.config.hasTrend) {
@@ -701,7 +760,7 @@ function buildFaqView(): HTMLElement {
 
     <div class="faq-item">
       <p><strong>Q：这是什么网站？</strong></p>
-      <p>A：这是北京万籁阁（ONELEG）游戏王 OCG 比赛数据站，用于整理并展示所有由北京万籁阁举办的游戏王 OCG 比赛的结果与环境分布数据，并对上位结果进行统计。同时，网站有中国大陆游戏王 OCG 赛事数据分站，用于收集、整理并展示 WCS2026 后举办的所有国内大型 OCG 赛事的结果与环境分布数据。数据均会实时更新。</p>
+      <p>A：这是北京万籁阁（ONELEG）游戏王 OCG 比赛数据站，用于整理并展示所有由北京万籁阁举办的游戏王 OCG 比赛的结果与环境分布数据，并对上位结果进行统计。同时，网站有中国大陆游戏王赛事数据分站，用于收集、整理并展示 WCQ2026 后举办的所有国内大型赛事（包括 OCG 与简体中文环境）的结果与环境分布数据。数据均会实时更新。</p>
     </div>
 
     <div class="faq-item">
