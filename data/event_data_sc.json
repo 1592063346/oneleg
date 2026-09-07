@@ -4,9 +4,9 @@
             "date": "2026/07/25",
             "title": "中国城市巡回赛 2026 简体中文 苏州站",
             "type": "城市巡回赛",
-            "1st": {"id": "献给阿尔吉侬的花束", "deck": "绚岚"},
-            "2nd": {"id": "NiKo1997", "deck": "耀圣"},
-            "3_4th": [{"id": "小湫漓", "deck": "烙印"}, {"id": "SA@wkkp", "deck": "烙印"}],
+            "1st": {"id": "献给阿尔吉侬的花束", "deck": "绚岚", "deck_file": true},
+            "2nd": {"id": "NiKo1997", "deck": "耀圣", "deck_file": true},
+            "3_4th": [{"id": "小湫漓", "deck": "烙印", "deck_file": true}, {"id": "SA@wkkp", "deck": "烙印", "deck_file": true}],
             "decks": [
                 {"name": "耀圣", "num": 59},
                 {"name": "卡通", "num": 81, "subdecks": [{"deck": "雷热涡炉", "num": 27}]},
