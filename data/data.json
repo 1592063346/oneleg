@@ -502,6 +502,30 @@
                 {"name": "闪刀姬", "num": 2},
                 {"name": "冥铭途", "num": 1}
             ]
+        },
+        {
+            "date": "2026/09/13",
+            "title": "2026/09/13 万籁阁积分赛",
+            "type": "积分赛",
+            "1st": {"id": "呆槑呆槑呆", "deck": "烙印", "deck_file": true},
+            "2nd": {"id": "守银大师", "deck": "卡通", "deck_file": true},
+            "3_4th": [{"id": "boximiayu", "deck": "同步士", "deck_file": true}, {"id": "Cosmos", "deck": "光与暗的仪式", "deck_file": true}],
+            "decks": [
+                {"name": "盈彩月夜", "num": 2},
+                {"name": "塞尼特", "num": 2},
+                {"name": "异解△", "num": 2},
+                {"name": "光与暗的仪式", "num": 1},
+                {"name": "闪刀姬", "num": 1},
+                {"name": "杀手旋律", "num": 2},
+                {"name": "耀圣", "num": 4},
+                {"name": "青眼", "num": 1},
+                {"name": "码丽丝", "num": 1},
+                {"name": "卡通", "num": 2},
+                {"name": "拉比丽斯", "num": 1},
+                {"name": "同步士", "num": 1},
+                {"name": "纠罪巧", "num": 1},
+                {"name": "烙印", "num": 2}
+            ]
         }
     ]
 }
