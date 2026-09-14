@@ -90,7 +90,47 @@ interface State {
 const app = document.getElementById("app")!;
 let currentState: State | null = null;
 
-async function loadSite(site: Site): Promise<void> {
+/** 将日期 yyyy/mm/dd 转为 URL 参数形式 yyyymmdd */
+function dateToParam(date: string): string {
+  return date.replace(/\//g, "");
+}
+
+/** 根据日期参数在比赛列表中查找索引，找不到则返回最近一场 */
+function matchIndexByDateParam(matches: Match[], param: string | null): number {
+  if (param) {
+    const idx = matches.findIndex((m) => dateToParam(m.date) === param);
+    if (idx >= 0) return idx;
+  }
+  return matches.length - 1;
+}
+
+/** 根据当前状态构建 URL（比赛详情附带 ?date=，分站附带 ?env=） */
+function buildUrl(state: State): string {
+  const base =
+    state.config.site === "event" ? "/event" : state.config.site === "faq" ? "/faq" : "/";
+  const params = new URLSearchParams();
+  if (state.config.site === "event") {
+    params.set("env", state.eventEdition || "ocg");
+  }
+  // 仅在比赛详情（饼图）视图携带日期
+  const match = state.matches[state.selectedMatch];
+  if (state.config.site !== "faq" && state.view === "pie" && match) {
+    params.set("date", dateToParam(match.date));
+  }
+  const qs = params.toString();
+  return qs ? `${base}?${qs}` : base;
+}
+
+/** 将当前状态同步到浏览器地址栏 */
+function syncUrl(state: State): void {
+  history.pushState(null, "", buildUrl(state));
+}
+
+async function loadSite(
+  site: Site,
+  edition?: EventEdition,
+  dateParam?: string | null
+): Promise<void> {
   const config = SITE_CONFIGS[site];
   app.innerHTML = `<p class="empty-note">正在加载…</p>`;
 
@@ -113,6 +153,16 @@ async function loadSite(site: Site): Promise<void> {
     return;
   }
 
+  // 分站：根据板块应用对应数据路径
+  let eventEdition: EventEdition | undefined;
+  if (site === "event") {
+    eventEdition = edition || "ocg";
+    const editionConfig = EVENT_EDITION_CONFIGS[eventEdition];
+    config.dataPath = editionConfig.dataPath;
+    config.deckDir = editionConfig.deckDir;
+    config.editionToggleLabel = editionConfig.label;
+  }
+
   let matches: Match[];
   try {
     matches = await loadData(config.dataPath);
@@ -132,31 +182,53 @@ async function loadSite(site: Site): Promise<void> {
     trendDeckNames,
     colorMap: buildColorMap(names),
     view: "pie",
-    selectedMatch: matches.length - 1, // 默认最近一场
+    selectedMatch: matchIndexByDateParam(matches, dateParam ?? null), // 按日期参数定位，否则最近一场
     selectedDecks: [], // 趋势图默认空，由用户搜索添加
     selectedTypes: new Set(config.matchTypes), // 默认全部类型
     dateRange: null, // 默认不限制日期
-    eventEdition: site === "event" ? "ocg" : undefined, // 分站默认 OCG 板块
+    eventEdition, // 分站当前板块
   };
   currentState = state;
+  // 修正地址栏，使其反映实际定位到的比赛日期（不新增历史记录）
+  history.replaceState(null, "", buildUrl(state));
   renderShell(state);
 }
 
-async function main(): Promise<void> {
-  // 根据 URL 路径决定加载哪个站点
+/** 解析 URL，得到站点、板块与日期参数 */
+function parseRoute(): { site: Site; edition?: EventEdition; dateParam: string | null } {
   const path = window.location.pathname;
-  let initialSite: Site = "main";
-  if (path === "/event") initialSite = "event";
-  else if (path === "/faq") initialSite = "faq";
-  await loadSite(initialSite);
+  const params = new URLSearchParams(window.location.search);
+  const dateParam = params.get("date");
+  if (path === "/event") {
+    const env = params.get("env");
+    const edition: EventEdition = env === "sc" ? "sc" : "ocg";
+    return { site: "event", edition, dateParam };
+  }
+  if (path === "/faq") return { site: "faq", dateParam: null };
+  return { site: "main", dateParam };
+}
+
+async function main(): Promise<void> {
+  // 根据 URL 决定加载哪个站点、板块及定位到的比赛
+  const { site, edition, dateParam } = parseRoute();
+  await loadSite(site, edition, dateParam);
 
   // 浏览器前进/后退时响应路由变化
   window.addEventListener("popstate", () => {
-    const path = window.location.pathname;
-    let site: Site = "main";
-    if (path === "/event") site = "event";
-    else if (path === "/faq") site = "faq";
-    loadSite(site);
+    const { site, edition, dateParam } = parseRoute();
+    // 同站点、同板块下仅日期变化时，无需重新加载数据
+    if (
+      currentState &&
+      currentState.config.site === site &&
+      currentState.eventEdition === edition &&
+      site !== "faq"
+    ) {
+      currentState.selectedMatch = matchIndexByDateParam(currentState.matches, dateParam);
+      currentState.view = "pie";
+      renderBody(currentState);
+      return;
+    }
+    loadSite(site, edition, dateParam);
   });
 
   // 主题切换后重绘（颜色跟随主题）
@@ -244,6 +316,7 @@ function renderShell(state: State): void {
           state.trendDeckNames = trendDeckNames;
           state.colorMap = buildColorMap(names);
           state.selectedMatch = matches.length - 1;
+          syncUrl(state);
           renderShell(state);
         } catch (err) {
           app.innerHTML = `<div class="error">加载数据失败：${
@@ -266,6 +339,7 @@ function renderShell(state: State): void {
       btn.className = "tab" + (state.view === v ? " active" : "");
       btn.addEventListener("click", () => {
         state.view = v;
+        syncUrl(state);
         renderShell(state);
       });
       tabs.appendChild(btn);
@@ -343,6 +417,7 @@ function buildPieView(state: State): HTMLElement {
     li.appendChild(typeBadge);
     li.addEventListener("click", () => {
       state.selectedMatch = i;
+      syncUrl(state);
       renderBody(state);
     });
     list.appendChild(li);
