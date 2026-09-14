@@ -517,6 +517,7 @@ function matchTypeColor(type: MatchType): string {
     特殊规则赛: "brown",
     // 分站（国内赛事数据站）
     城市巡回赛: "blue",
+    YCS: "purple",
     特别大会: "green",
     "WCQ 预选赛": "orange",
     WCQ: "red",

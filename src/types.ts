@@ -22,6 +22,7 @@ export type MatchType =
   | "特殊规则赛"
   // 国内赛事数据站（分站）类型
   | "城市巡回赛"
+  | "YCS"
   | "特别大会"
   | "WCQ 预选赛"
   | "WCQ";
@@ -33,7 +34,7 @@ export type EventEdition = "ocg" | "sc";
 export const MATCH_TYPES: MatchType[] = ["娱乐赛", "积分赛", "王中王邀请赛"];
 
 /** 分站（国内赛事数据站）全部比赛类型 */
-export const EVENT_MATCH_TYPES: MatchType[] = ["城市巡回赛", "特别大会", "WCQ 预选赛", "WCQ"];
+export const EVENT_MATCH_TYPES: MatchType[] = ["城市巡回赛", "YCS", "特别大会", "WCQ 预选赛", "WCQ"];
 
 /** 一场比赛的记录 */
 export interface Match {

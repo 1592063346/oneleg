@@ -49,7 +49,7 @@ npm run serve
 
 向 `data/event_data.json` 中添加新的比赛记录，格式整体上与上面一致，不过要注意：
 
-1. 比赛类型（`type`）：“城市巡回赛”、“特别大会”、“WCQ 预选赛”、“WCQ”。
+1. 比赛类型（`type`）：“城市巡回赛”、“YCS”、“特别大会”、“WCQ 预选赛”、“WCQ”。
 2. 选手构筑放置文件夹为 `data/event_deck/`。
 3. 新增字段 `elimination_decks`，表示淘汰赛卡组列表，格式与 `decks` 相同。
 4. 环境数据可能需要自己做一些处理……
