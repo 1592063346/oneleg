@@ -78,9 +78,17 @@ export async function loadDeckFile(
 
 /**
  * 获取卡片缩略图 URL
+ * env 为卡图环境："sc" 使用简中卡图，其余（默认 ocg）使用日文卡图
  */
-function getCardImageUrl(cardId: number): string {
-  return `https://cdn.233.momobako.com/ygoimg/jp/${cardId}.webp!half`;
+function getCardImageUrl(cardId: number, env: string = "ocg"): string {
+  const REGION_MAP: Record<string, string> = {
+    ocg: 'jp',
+    sc: 'sc',
+    tcg: 'en',
+  };
+
+  const region = REGION_MAP[env];
+  return `https://cdn.233.momobako.com/ygoimg/${region}/${cardId}.webp!half`;
 }
 
 /**
@@ -130,7 +138,7 @@ function downloadDeckFile(deck: DeckData): void {
 /**
  * 创建卡组展示弹窗
  */
-export function createDeckModal(deck: DeckData): HTMLElement {
+export function createDeckModal(deck: DeckData, env: string = "ocg"): HTMLElement {
   const modal = document.createElement('div');
   modal.className = 'deck-modal';
 
@@ -183,17 +191,17 @@ export function createDeckModal(deck: DeckData): HTMLElement {
 
   // 主卡组
   if (deck.main.length > 0) {
-    body.appendChild(createDeckSection('主卡组', deck.main));
+    body.appendChild(createDeckSection('主卡组', deck.main, env));
   }
 
   // 额外卡组
   if (deck.extra.length > 0) {
-    body.appendChild(createDeckSection('额外卡组', deck.extra));
+    body.appendChild(createDeckSection('额外卡组', deck.extra, env));
   }
 
   // 副卡组
   if (deck.side.length > 0) {
-    body.appendChild(createDeckSection('副卡组', deck.side));
+    body.appendChild(createDeckSection('副卡组', deck.side, env));
   }
 
   content.append(header, body);
@@ -205,7 +213,7 @@ export function createDeckModal(deck: DeckData): HTMLElement {
 /**
  * 创建卡组区域（主卡组/额外卡组/副卡组）
  */
-function createDeckSection(title: string, cardIds: number[]): HTMLElement {
+function createDeckSection(title: string, cardIds: number[], env: string = "ocg"): HTMLElement {
   const section = document.createElement('div');
   section.className = 'deck-section';
 
@@ -224,7 +232,7 @@ function createDeckSection(title: string, cardIds: number[]): HTMLElement {
     link.className = 'deck-card-link';
 
     const img = document.createElement('img');
-    img.src = getCardImageUrl(cardId);
+    img.src = getCardImageUrl(cardId, env);
     img.alt = `Card ${cardId}`;
     img.className = 'deck-card-image';
     img.loading = 'lazy';

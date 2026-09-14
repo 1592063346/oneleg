@@ -546,7 +546,7 @@ function buildPlayerItem(player: Player, match: Match, state: State): HTMLElemen
       previewLink.textContent = "加载中...";
       const deck = await loadDeckFile(match.date, player.id, state.config.deckDir);
       if (deck) {
-        const modal = createDeckModal(deck);
+        const modal = createDeckModal(deck, match.env ?? "ocg");
         document.body.appendChild(modal);
       } else {
         alert("无法加载卡组文件");

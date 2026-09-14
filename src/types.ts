@@ -55,6 +55,8 @@ export interface Match {
   elimination_decks?: DeckCount[];
   /** 该场比赛卡组总数（参赛人数，该数据一般为 decks 未统计时的备用数据） */
   deck_num?: number;
+  /** 卡图环境（影响卡图 CDN 路径），可选，默认 "ocg" */
+  env?: string;
 }
 
 /** data.json 的顶层结构 */
