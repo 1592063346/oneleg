@@ -9,7 +9,7 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true,
-    "sourceMap": true,
+    "sourceMap": false,
     "lib": ["ES2020", "DOM"]
   },
   "include": ["src/**/*.ts"]

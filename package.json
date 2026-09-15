@@ -4,15 +4,14 @@
   "description": "卡组比赛数据可视化网站",
   "type": "module",
   "scripts": {
-    "build": "tsc",
-    "watch": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "bundle": "esbuild src/app.ts --bundle --minify --format=esm --target=es2020 --legal-comments=none --outfile=dist/app.js",
+    "build": "npm run typecheck && npm run bundle",
+    "watch": "esbuild src/app.ts --bundle --format=esm --target=es2020 --sourcemap=inline --outfile=dist/app.js --watch",
     "serve": "npx --yes http-server -p 8080 -c-1 --proxy http://localhost:8080? ."
   },
   "devDependencies": {
     "esbuild": "^0.28.2",
     "typescript": "^7.0.2"
-  },
-  "dependencies": {
-    "html2canvas": "^1.4.1"
   }
 }
