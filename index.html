@@ -122,6 +122,21 @@
     }
     .match-dropdown-list li:hover { background: var(--page); }
     .match-dropdown-list li.active { background: var(--page); font-weight: 600; }
+    /* 站点切换下拉：省略号按钮，悬停展开 */
+    .site-dropdown { position: relative; }
+    .site-dropdown-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      font: inherit; font-size: 20px; line-height: 1;
+      width: 36px; height: 36px; padding: 0;
+      border: 0; background: transparent;
+      color: var(--text-secondary); cursor: pointer;
+      transition: color .15s;
+    }
+    .site-dropdown-btn:hover { color: #2a78d6; }
+    .site-dropdown-list { display: none; min-width: 160px; }
+    /* 悬停按钮或菜单时展开；菜单与按钮相接，留出容错间隙避免闪烁 */
+    .site-dropdown:hover .site-dropdown-list { display: block; }
+    .site-dropdown-list { margin-top: 0; padding-top: 4px; }
 
     /* 类型标签（按钮和列表中的小徽章） */
     .type-tag {
