@@ -499,7 +499,7 @@ select {
 }
 .builder-head-img { flex: none; width: 60px; }
 .builder-head-info { flex: 1; min-width: 0; }
-.builder-head-col { flex: none; width: 104px; text-align: center; }
+.builder-head-col { flex: none; width: 60px; text-align: center; }
 .builder-result { display: flex; align-items: center; gap: 12px;
   padding: 8px; border-radius: 8px; }
 .builder-result:hover { background: var(--page); }
@@ -516,14 +516,15 @@ select {
   font-variant-numeric: tabular-nums; }
 /* “主卡组 / 副卡组”两列，宽度与表头的 .builder-head-col 一致 */
 .builder-cols { flex: none; display: flex; gap: 6px; }
-/* 单个步进器 = 32 + 40 + 32，改宽度时记得同步 .builder-head-col */
+/* 单个步进器 = 22 + 16 + 22，改宽度时记得同步 .builder-head-col */
 .builder-stepper {
-  flex: none; width: 104px; display: flex; align-items: center;
+  flex: none; width: 60px; display: flex; align-items: center;
   border: 1px solid var(--border); border-radius: 7px; overflow: hidden;
 }
-/* 点击区域放大到 32px × 38px，字也随之放大，免得难以命中 */
+/* 点击区域 22px × 38px：数字最多一位数，中格留 16px 够用；
+   高度与字号一律不动，免得 +/- 缩到看不清 */
 .builder-step-btn {
-  flex: none; width: 32px; padding: 10px 0; border: 0;
+  flex: none; width: 22px; padding: 10px 0; border: 0;
   background: var(--surface-1); color: var(--text-primary);
   font: inherit; font-size: 18px; line-height: 1; cursor: pointer;
   transition: background 0.15s;
