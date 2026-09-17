@@ -61,19 +61,6 @@
     }
     .brand { font-size: 18px; font-weight: 700; }
     .brand-wrap { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-    .site-toggle {
-      font: inherit; font-size: 13px; padding: 6px 14px; border-radius: 999px;
-      border: 1px solid var(--border); background: var(--surface-1);
-      color: var(--text-secondary); cursor: pointer; white-space: nowrap;
-      transition: background .15s, color .15s, border-color .15s;
-    }
-    .site-toggle:hover { background: #2a78d6; color: #fff; border-color: #2a78d6; }
-    /* FAQ 链接（蓝色文本链接，无下划线） */
-    .faq-link {
-      font-size: 13px; color: #2a78d6; text-decoration: underline;
-      cursor: pointer; white-space: nowrap;
-    }
-    .faq-link:hover { color: #1e5fa8; }
     .tabs { display: flex; gap: 4px; background: var(--surface-1);
       border: 1px solid var(--border); border-radius: 10px; padding: 4px; }
     .tab {
@@ -147,7 +134,24 @@
     .match-dropdown-name { color: var(--text-primary);
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .match-dropdown-list li .match-dropdown-name { min-width: 0; }
-    .deck-picker { gap: 8px; }
+    /* 卡组搜索框 + 自绘补全下拉 */
+    .deck-picker { position: relative; }
+    .deck-suggest-list {
+      position: absolute; top: 100%; left: 0; margin-top: 4px; z-index: 10;
+      min-width: 100%; max-height: 260px; overflow-y: auto;
+      background: var(--surface-1); border: 1px solid var(--border);
+      border-radius: 8px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    }
+    .deck-suggest-list ul { list-style: none; margin: 0; padding: 4px; }
+    .deck-suggest-list li {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 10px; border-radius: 6px; cursor: pointer; white-space: nowrap;
+    }
+    .deck-suggest-list li:hover, .deck-suggest-list li.active { background: var(--page); }
+    .deck-suggest-list li.active { font-weight: 600; }
+    .deck-suggest-list li.deck-suggest-empty {
+      color: var(--muted); cursor: default; font-weight: 400;
+    }
     .chip {
       display: inline-flex; align-items: center; gap: 7px;
       padding: 6px 12px; border: 1px solid var(--border); border-radius: 999px;
@@ -209,6 +213,19 @@
     .deck-input { font: inherit; padding: 8px 12px; min-width: 240px;
       border-radius: 8px; border: 1px solid var(--border);
       background: var(--surface-1); color: var(--text-primary); }
+    /* 搜索框的原生清除按钮（WebKit）：换成自绘的叉，颜色随主题走。
+       SVG 只作 alpha 遮罩，颜色由 background-color 决定。 */
+    .deck-input::-webkit-search-cancel-button {
+      -webkit-appearance: none; appearance: none;
+      width: 14px; height: 14px; margin-left: 8px; cursor: pointer;
+      background-color: var(--muted);
+      -webkit-mask: center / contain no-repeat
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M2 2l10 10M12 2L2 12' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+      mask: center / contain no-repeat
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M2 2l10 10M12 2L2 12' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+      transition: background-color .15s;
+    }
+    .deck-input::-webkit-search-cancel-button:hover { background-color: #2a78d6; }
     .deck-action-btn { font: inherit; padding: 7px 14px;
       border-radius: 8px; border: 1px solid #34d399;
       background: #34d399; color: white;
@@ -258,10 +275,10 @@
     /* 导出按钮 */
     .export-btn-wrap { position: absolute; top: 8px; right: 8px; z-index: 1; }
     .export-btn { padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border);
-      background: var(--surface-2); color: var(--text-primary); font: inherit;
+      background: var(--surface-1); color: var(--text-primary); font: inherit;
       cursor: pointer; font-size: 14px; font-weight: 500;
       transition: background 0.15s; }
-    .export-btn:hover { background: var(--surface-1); }
+    .export-btn:hover { background: var(--page); }
     .export-btn:active { background: var(--border); }
     /* 饼图左上角标注（与右上角导出按钮同一行，不加粗） */
     .pie-caption {

@@ -9,6 +9,19 @@ import { loadDeckFile, createDeckModal } from "../deck.js";
 import { syncUrl } from "../router.js";
 import { matchTypeColor } from "./shared.js";
 
+/**
+ * 当前展开的比赛下拉列表（同一时刻至多一个）。
+ * 点击页面其他位置时关闭，监听器只在模块加载时注册一次，
+ * 避免每次重绘都往 document 上挂一个永不移除的监听。
+ */
+let openMatchList: HTMLElement | null = null;
+
+document.addEventListener("click", () => {
+  if (!openMatchList) return;
+  openMatchList.style.display = "none";
+  openMatchList = null;
+});
+
 export function buildPieView(state: State, actions: AppActions): HTMLElement {
   const wrap = document.createElement("div");
   wrap.className = "pie-view";
@@ -61,12 +74,11 @@ export function buildPieView(state: State, actions: AppActions): HTMLElement {
   listWrap.appendChild(list);
 
   btn.addEventListener("click", (ev) => {
-    ev.stopPropagation();
+    ev.stopPropagation(); // 阻止冒泡到 document，否则会被"点击其他位置"的监听立即关闭
     const isOpen = listWrap.style.display === "block";
+    if (openMatchList && openMatchList !== listWrap) openMatchList.style.display = "none";
     listWrap.style.display = isOpen ? "none" : "block";
-  });
-  document.addEventListener("click", () => {
-    listWrap.style.display = "none";
+    openMatchList = isOpen ? null : listWrap;
   });
 
   dropdown.append(btn, listWrap);

@@ -82,52 +82,144 @@ export function buildTrendView(state: State): HTMLElement {
   });
   wrap.appendChild(typeRow);
 
-  // 卡组搜索添加
+  // 卡组搜索添加（自绘补全下拉）。
+  // 不用原生 datalist 的原因：Chrome 里点击候选项只发 input 不发 change，
+  // 选中后要等输入框失焦才会生效；且它的下拉箭头占位无法用 display:none 收起。
   const searchRow = document.createElement("div");
   searchRow.className = "controls deck-search";
   const sLabel = document.createElement("span");
   sLabel.className = "controls-label";
   sLabel.textContent = "添加卡组：";
-  const input = document.createElement("input");
-  input.type = "search";
-  input.className = "deck-input";
-  input.placeholder = "搜索卡组名并回车添加…";
-  input.setAttribute("list", "deck-options");
-  const datalist = document.createElement("datalist");
-  datalist.id = "deck-options";
-  state.trendDeckNames.forEach((n) => {
-    const opt = document.createElement("option");
-    opt.value = n;
-    datalist.appendChild(opt);
-  });
 
-  const addDeck = (raw: string) => {
-    const name = raw.trim();
-    if (!name) return;
-    if (!state.trendDeckNames.includes(name)) return; // 只接受已存在的上位卡组
+  const picker = document.createElement("div");
+  picker.className = "deck-picker";
+
+  const input = document.createElement("input");
+  input.type = "search"; // 保留原生清除按钮（×）
+  input.className = "deck-input";
+  input.placeholder = "搜索卡组名并添加…";
+  input.autocomplete = "off";
+  input.spellcheck = false;
+
+  const suggestWrap = document.createElement("div");
+  suggestWrap.className = "deck-suggest-list";
+  suggestWrap.style.display = "none";
+  const suggestList = document.createElement("ul");
+  suggestWrap.appendChild(suggestList);
+
+  let options: string[] = []; // 当前候选：未添加的上位卡组，按输入过滤后
+  let activeIndex = -1; // 键盘高亮的候选下标
+  let itemEls: HTMLElement[] = []; // 与 options 一一对应的候选项元素
+
+  const closeSuggest = () => {
+    suggestWrap.style.display = "none";
+    activeIndex = -1;
+  };
+
+  /** 添加卡组、收起下拉，并主动把焦点交出去（不让输入框留在激活态） */
+  const commit = (name: string) => {
     if (!state.selectedDecks.includes(name)) {
       state.selectedDecks.push(name);
       renderChips(chipRow, state, chartHost);
       renderTrendChart(state, chartHost);
     }
     input.value = "";
+    closeSuggest();
+    input.blur();
   };
+
+  /** 高亮第 i 项，并把列表滚到该项可见（只滚列表自身，不牵动页面滚动） */
+  const setActive = (i: number) => {
+    activeIndex = i;
+    itemEls.forEach((el, k) => el.classList.toggle("active", k === i));
+    const el = itemEls[i];
+    if (!el) return;
+    const top = suggestWrap.scrollTop;
+    const bottom = top + suggestWrap.clientHeight;
+    if (el.offsetTop < top) {
+      suggestWrap.scrollTop = el.offsetTop;
+    } else if (el.offsetTop + el.offsetHeight > bottom) {
+      suggestWrap.scrollTop = el.offsetTop + el.offsetHeight - suggestWrap.clientHeight;
+    }
+  };
+
+  /** 只在候选变化时重建列表；仅切换高亮不走这里，以便保住滚动位置 */
+  const renderSuggest = () => {
+    suggestList.innerHTML = "";
+    itemEls = [];
+    if (options.length === 0) {
+      const empty = document.createElement("li");
+      empty.className = "deck-suggest-empty";
+      empty.textContent = input.value.trim() ? "无匹配的卡组名" : "已添加全部上位卡组";
+      suggestList.appendChild(empty);
+      return;
+    }
+    options.forEach((name) => {
+      const li = document.createElement("li");
+      const swatch = document.createElement("span");
+      swatch.className = "swatch";
+      swatch.style.background = seriesColor(state.colorMap.get(name) ?? 0);
+      const label = document.createElement("span");
+      label.textContent = name;
+      li.append(swatch, label);
+      li.addEventListener("click", () => commit(name));
+      itemEls.push(li);
+      suggestList.appendChild(li);
+    });
+  };
+
+  /** 重新计算候选并展开下拉；resetActive 为 true 时把高亮重置到第一项 */
+  const openSuggest = (resetActive: boolean) => {
+    const q = input.value.trim().toLowerCase();
+    options = state.trendDeckNames
+      .filter((n) => !state.selectedDecks.includes(n))
+      .filter((n) => !q || n.toLowerCase().includes(q));
+    const next = resetActive
+      ? options.length > 0
+        ? 0
+        : -1
+      : Math.min(activeIndex, options.length - 1);
+    renderSuggest();
+    suggestWrap.style.display = "block"; // 先展开：setActive 要读 clientHeight
+    setActive(next);
+  };
+
+  input.addEventListener("input", () => openSuggest(true));
+  input.addEventListener("focus", () => openSuggest(true));
+  input.addEventListener("blur", () => closeSuggest());
+  // 下拉被 Esc 收起、但输入框仍聚焦时，再点它不会触发 focus，这里补上
+  input.addEventListener("click", () => {
+    if (suggestWrap.style.display === "none") openSuggest(true);
+  });
+  // 拦下 mousedown，否则输入框会先失焦、候选项的 click 就落空了
+  suggestWrap.addEventListener("mousedown", (ev) => ev.preventDefault());
+
   input.addEventListener("keydown", (ev) => {
+    if (ev.key === "ArrowDown" || ev.key === "ArrowUp") {
+      if (options.length === 0 || suggestWrap.style.display === "none") return;
+      ev.preventDefault();
+      const delta = ev.key === "ArrowDown" ? 1 : -1;
+      setActive((activeIndex + delta + options.length) % options.length);
+      return;
+    }
     if (ev.key === "Enter") {
       ev.preventDefault();
-      addDeck(input.value);
+      if (suggestWrap.style.display === "none") openSuggest(true);
+      if (activeIndex >= 0 && options[activeIndex]) commit(options[activeIndex]);
+      return;
     }
+    if (ev.key === "Escape") closeSuggest();
   });
-  // 从 datalist 选中时（change）也直接添加
-  input.addEventListener("change", () => {
-    if (state.trendDeckNames.includes(input.value.trim())) addDeck(input.value);
-  });
+
+  picker.append(input, suggestWrap);
 
   // "查看全部上位卡组"按钮
   const showAllBtn = document.createElement("button");
   showAllBtn.className = "deck-action-btn";
   showAllBtn.textContent = "查看全部上位卡组";
   showAllBtn.addEventListener("click", () => {
+    closeSuggest();
+    input.value = "";
     // 清空当前已展示卡组
     state.selectedDecks = [];
 
@@ -159,12 +251,13 @@ export function buildTrendView(state: State): HTMLElement {
   clearDecksBtn.className = "deck-action-btn deck-action-clear";
   clearDecksBtn.textContent = "清空卡组";
   clearDecksBtn.addEventListener("click", () => {
+    closeSuggest();
     state.selectedDecks = [];
     renderChips(chipRow, state, chartHost);
     renderTrendChart(state, chartHost);
   });
 
-  searchRow.append(sLabel, input, datalist, showAllBtn, clearDecksBtn);
+  searchRow.append(sLabel, picker, showAllBtn, clearDecksBtn);
   wrap.appendChild(searchRow);
 
   const chartHost = document.createElement("div");

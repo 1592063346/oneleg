@@ -1,5 +1,6 @@
 import type { DeckCount, Match } from "./types.js";
 import { totalDecks } from "./data.js";
+import { escapeHtml } from "./html.js";
 import { seriesColor } from "./palette.js";
 import { arcPath, arcRingPath, el, polarToCartesian, svgRoot } from "./svg.js";
 import { hideTooltip, showTooltip } from "./tooltip.js";
@@ -833,10 +834,4 @@ function othersColor(): string {
 /** 卡组对应背景图路径（pic 文件夹，按名称查找） */
 function imageHref(name: string): string {
   return `./data/pic/${encodeURIComponent(name)}.webp`;
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!)
-  );
 }
