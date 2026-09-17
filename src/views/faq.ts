@@ -8,7 +8,7 @@ export function buildFaqView(): HTMLElement {
 
     <div class="faq-item">
       <p><strong>Q：这是什么网站？</strong></p>
-      <p>A：这是北京万籁阁（ONELEG）游戏王 OCG 比赛数据站，用于整理并展示所有由北京万籁阁举办的游戏王 OCG 比赛的结果与环境分布数据，并对上位结果进行统计。同时，网站有中国大陆游戏王赛事数据分站，用于收集、整理并展示 WCQ2026 后举办的所有国内大型赛事（包括 OCG 与简体中文环境）的结果与环境分布数据。数据均会实时更新。</p>
+      <p>A：这是北京万籁阁（ONELEG）游戏王 OCG 比赛数据站，用于整理并展示所有由北京万籁阁举办的游戏王 OCG 比赛的结果与环境分布数据，并对上位结果进行统计。同时，网站有中国大陆游戏王赛事数据分站，用于收集、整理并展示 WCQ2026 后举办的所有国内大型赛事（包括 OCG 与简体中文环境）的结果与环境分布数据。数据均会实时更新。此外，本网站也支持卡组构筑与比赛卡表导出。</p>
     </div>
 
     <div class="faq-item">
@@ -17,8 +17,13 @@ export function buildFaqView(): HTMLElement {
     </div>
 
     <div class="faq-item">
-      <p><strong>Q：为什么构筑预览的卡图有时会无法加载？</strong></p>
-      <p>A：构筑预览部分的卡图 CDN 由 <a href="https://cdn.233.momobako.com" target="_blank" rel="noopener noreferrer">cdn.233.momobako.com</a> 提供，卡片详情由百鸽（<a href="https://ygocdb.com" target="_blank" rel="noopener noreferrer">ygocdb.com</a>）提供，在此一并感谢。如果出现构筑预览无法正常加载，一般情况下非本网站问题。</p>
+      <p><strong>Q：为什么构筑预览与构筑导出的卡图有时会无法加载？</strong></p>
+      <p>A：构筑预览与构筑导出部分的卡图 CDN 由 <a href="https://cdn.233.momobako.com" target="_blank" rel="noopener noreferrer">cdn.233.momobako.com</a> 提供，卡片详情由<a href="https://ygocdb.com" target="_blank" rel="noopener noreferrer">百鸽</a>提供，在此一并感谢。如果出现卡图无法正常加载，一般情况下非本网站问题。</p>
+    </div>
+
+    <div class="faq-item">
+      <p><strong>Q：为什么构筑导出功能无法导入或搜索到部分卡片？</strong></p>
+      <p>A：对于未发售先行卡，<a href="https://ygocdb.com" target="_blank" rel="noopener noreferrer">百鸽</a>尚不支持检索；通过 YDK 导入的卡片也均需借助百鸽数据库查询基础信息。因此，本网站功能尚不支持该类卡片。</p>
     </div>
 
     <div class="faq-item">

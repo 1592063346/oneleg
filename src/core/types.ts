@@ -64,3 +64,11 @@ export interface Match {
 export interface DataFile {
   decks: Match[];
 }
+
+/** 一个卡组的三部分卡片 ID 列表 */
+export interface DeckData {
+  main: number[];
+  extra: number[];
+  side: number[];
+  fileName?: string; // 用于下载时的文件名
+}

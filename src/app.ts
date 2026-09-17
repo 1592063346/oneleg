@@ -1,14 +1,22 @@
 // 应用入口：加载站点数据、组装操作回调、编排导航与视图渲染
 
-import type { Match, EventEdition } from "./types.js";
-import type { Site, State, AppActions } from "./config.js";
-import { SITE_CONFIGS, EVENT_EDITION_CONFIGS } from "./config.js";
-import { allDeckNames, loadData, top4DeckNames } from "./data.js";
-import { buildColorMap } from "./palette.js";
-import { buildUrl, matchIndexByDateParam, parseRoute } from "./router.js";
-import { renderShell } from "./nav.js";
+import type { Match, EventEdition } from "./core/types.js";
+import type { Site, State, AppActions } from "./core/config.js";
+import { SITE_CONFIGS, EVENT_EDITION_CONFIGS } from "./core/config.js";
+import { allDeckNames, loadData, top4DeckNames } from "./core/data.js";
+import { buildColorMap } from "./core/palette.js";
+import {
+  buildUrl,
+  confirmLeaveDeck,
+  matchIndexByDateParam,
+  parseRoute,
+  watchUnload,
+} from "./core/router.js";
+import { renderShell } from "./core/nav.js";
+import { createEmptyDeck } from "./domain/deck.js";
 import { buildPieView } from "./views/pie.js";
 import { buildTrendView } from "./views/trend.js";
+import { buildBuilderView } from "./views/builder.js";
 import { buildFaqView } from "./views/faq.js";
 
 const app = document.getElementById("app")!;
@@ -29,8 +37,8 @@ async function loadSite(
   const config = SITE_CONFIGS[site];
   app.innerHTML = `<p class="empty-note">正在加载…</p>`;
 
-  // FAQ 页面不需要加载数据
-  if (site === "faq") {
+  // 关于网站与构筑导出站不需要加载数据
+  if (!config.hasData) {
     const state: State = {
       config,
       matches: [],
@@ -43,6 +51,7 @@ async function loadSite(
       selectedTypes: new Set(),
       dateRange: null,
     };
+    if (site === "builder") state.builderDeck = createEmptyDeck();
     currentState = state;
     renderShell(state, actions);
     return;
@@ -95,7 +104,9 @@ function renderBody(state: State): void {
   if (!body) return;
   body.innerHTML = "";
 
-  if (state.config.site === "faq") {
+  if (state.config.site === "builder") {
+    body.appendChild(buildBuilderView(state));
+  } else if (state.config.site === "faq") {
     body.appendChild(buildFaqView());
   } else if (state.view === "pie") {
     body.appendChild(buildPieView(state, actions));
@@ -112,12 +123,22 @@ async function main(): Promise<void> {
   // 浏览器前进/后退时响应路由变化
   window.addEventListener("popstate", () => {
     const { site, edition, dateParam } = parseRoute();
+    // 后退离开构筑导出站同样会丢构筑。取消时把地址推回原处，不重新加载，
+    // 这样已经在内存里的构筑原样保留（此时浏览器已经跳走，必须补一次 pushState）
+    if (
+      currentState &&
+      site !== currentState.config.site &&
+      !confirmLeaveDeck(currentState.builderDeck)
+    ) {
+      history.pushState(null, "", buildUrl(currentState));
+      return;
+    }
     // 同站点、同板块下仅日期变化时，无需重新加载数据
     if (
       currentState &&
       currentState.config.site === site &&
       currentState.eventEdition === edition &&
-      site !== "faq"
+      currentState.config.hasData
     ) {
       currentState.selectedMatch = matchIndexByDateParam(currentState.matches, dateParam);
       currentState.view = "pie";
@@ -126,6 +147,9 @@ async function main(): Promise<void> {
     }
     loadSite(site, edition, dateParam);
   });
+
+  // 关闭标签页/刷新/地址栏跳走时提醒（弹窗文案由浏览器决定）
+  watchUnload(() => currentState?.builderDeck);
 
   // 主题切换后重绘（颜色跟随主题）
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {

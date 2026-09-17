@@ -1,12 +1,12 @@
 // 比赛详情视图（比赛下拉选择 + 排名 + 环境饼图）
 
-import type { Match, Player } from "../types.js";
-import type { State, AppActions } from "../config.js";
-import { totalDecks } from "../data.js";
-import { renderPie } from "../pie.js";
-import { createExportButton } from "../export.js";
-import { loadDeckFile, createDeckModal } from "../deck.js";
-import { syncUrl } from "../router.js";
+import type { Match, Player } from "../core/types.js";
+import type { State, AppActions } from "../core/config.js";
+import { totalDecks } from "../core/data.js";
+import { renderPie } from "../chart/pie/index.js";
+import { createExportButton } from "../chart/exportImage.js";
+import { loadDeckFile, createDeckModal } from "../domain/deck.js";
+import { syncUrl } from "../core/router.js";
 import { matchTypeColor } from "./shared.js";
 
 /**

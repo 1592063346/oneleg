@@ -1,10 +1,10 @@
 // 站点类型、配置与共享状态定义
 
-import type { Match, MatchType, EventEdition } from "./types.js";
+import type { DeckData, Match, MatchType, EventEdition } from "./types.js";
 import { MATCH_TYPES, EVENT_MATCH_TYPES } from "./types.js";
 
 export type View = "pie" | "trend";
-export type Site = "main" | "event" | "faq";
+export type Site = "main" | "event" | "builder" | "faq";
 
 /** 站点配置：主站与国内赛事数据站（分站）的差异集中在此 */
 export interface SiteConfig {
@@ -16,6 +16,7 @@ export interface SiteConfig {
   matchTypes: MatchType[];
   hasTrend: boolean; // 是否有“上位卡组统计”模式
   showNameInDropdown: boolean; // 比赛下拉是否显示名称
+  hasData: boolean; // 是否需要加载比赛数据（关于网站、构筑导出站不需要）
   hasEditionToggle?: boolean; // 是否有板块切换（分站专用）
   editionToggleLabel?: string; // 板块切换按钮文案
 }
@@ -47,6 +48,7 @@ export const SITE_CONFIGS: Record<Site, SiteConfig> = {
     matchTypes: MATCH_TYPES,
     hasTrend: true,
     showNameInDropdown: false,
+    hasData: true,
   },
   event: {
     site: "event",
@@ -57,8 +59,20 @@ export const SITE_CONFIGS: Record<Site, SiteConfig> = {
     matchTypes: EVENT_MATCH_TYPES,
     hasTrend: false,
     showNameInDropdown: true,
+    hasData: true,
     hasEditionToggle: true,
     editionToggleLabel: "OCG",
+  },
+  builder: {
+    site: "builder",
+    title: "万籁阁游戏王 OCG 比赛数据站",
+    toggleLabel: "构筑导出",
+    dataPath: "",
+    deckDir: "",
+    matchTypes: [],
+    hasTrend: false,
+    showNameInDropdown: false,
+    hasData: false,
   },
   faq: {
     site: "faq",
@@ -69,15 +83,22 @@ export const SITE_CONFIGS: Record<Site, SiteConfig> = {
     matchTypes: [],
     hasTrend: false,
     showNameInDropdown: false,
+    hasData: false,
   },
 };
 
-/** 站点切换下拉的选项顺序与文案 */
+/** 站点切换下拉的选项顺序与文案，路径同时用作各站点的 URL 前缀 */
 export const SITE_MENU: { site: Site; label: string; path: string }[] = [
   { site: "main", label: "主站", path: "/" },
   { site: "event", label: "国内赛事数据站", path: "/event" },
+  { site: "builder", label: "构筑导出", path: "/builder" },
   { site: "faq", label: "关于网站", path: "/faq" },
 ];
+
+/** 站点对应的 URL 基础路径 */
+export function sitePath(site: Site): string {
+  return SITE_MENU.find((m) => m.site === site)?.path ?? "/";
+}
 
 export interface State {
   config: SiteConfig;
@@ -91,6 +112,9 @@ export interface State {
   selectedTypes: Set<MatchType>; // 趋势图选中的比赛类型
   dateRange: { start: string; end: string } | null; // 趋势图日期区间筛选
   eventEdition?: EventEdition; // 分站当前板块（仅分站使用）
+  // 构筑导出站正在编辑的卡组。放在 State 而非视图闭包里：
+  // 主题切换时 app.ts 会重绘视图，放闭包里会把用户编辑到一半的构筑丢掉。
+  builderDeck?: DeckData;
 }
 
 /**

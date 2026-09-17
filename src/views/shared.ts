@@ -1,6 +1,6 @@
 // 视图间共享的小工具
 
-import type { MatchType } from "../types.js";
+import type { MatchType } from "../core/types.js";
 
 /** 比赛类型对应的颜色标识（用于徽章、标签、类型筛选） */
 export function matchTypeColor(type: MatchType): string {

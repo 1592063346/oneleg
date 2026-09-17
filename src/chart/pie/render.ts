@@ -1,10 +1,12 @@
-import type { DeckCount, Match } from "./types.js";
-import { totalDecks } from "./data.js";
-import { escapeHtml } from "./html.js";
-import { seriesColor } from "./palette.js";
-import { arcPath, arcRingPath, el, polarToCartesian, svgRoot } from "./svg.js";
-import { hideTooltip, showTooltip } from "./tooltip.js";
-import { createExportButton } from "./export.js";
+import type { DeckCount, Match } from "../../core/types.js";
+import { totalDecks } from "../../core/data.js";
+import { escapeHtml } from "../../core/html.js";
+import { seriesColor } from "../../core/palette.js";
+import { arcPath, arcRingPath, el, polarToCartesian, svgRoot } from "../svg.js";
+import { hideTooltip, showTooltip } from "../tooltip.js";
+import { createExportButton } from "../exportImage.js";
+import { partitionDecks, type Slice } from "./partition.js";
+import { buildOthersDetail } from "./others.js";
 
 // 画布留出两侧空间给引导标签；饼图在画布中水平居中
 const W = 760;
@@ -13,8 +15,6 @@ const CX = W / 2;
 const CY = H / 2;
 const R = 175;
 const OTHERS_LABEL = "others";
-// 占比低于该值的卡组也归入 others（饼块太小无法展示卡图）
-const MIN_SLICE_PCT = 0.025;
 
 // 图片中心配置
 interface ImageCenterConfig {
@@ -39,63 +39,6 @@ async function loadImageCenters(): Promise<void> {
 // 初始化时加载
 loadImageCenters();
 
-interface Slice {
-  name: string;
-  num: number;
-  pct: number;
-  start: number;
-  end: number;
-  color: string;
-  isOthers: boolean;
-  subdecks?: Array<{ deck: string; num: number }>;
-}
-
-interface Partition {
-  /** 单独展示的卡组 */
-  shown: DeckCount[];
-  /** 归入 others 的卡组 */
-  others: DeckCount[];
-}
-
-/**
- * 按数量从多到少分层统计：逐个"数量档位"尝试加入，
- * 若加入某档位后累计已 > 总数的 75%，则该档位及之后全部归入 others。
- * 若这样会导致无法展示任何具体卡组，则不做 others 划分（全部展示）。
- */
-export function partitionDecks(decks: DeckCount[]): Partition {
-  const total = decks.reduce((s, d) => s + d.num, 0);
-  const sorted = [...decks].sort((a, b) => b.num - a.num);
-  const threshold = (.75) * total;
-
-  // 按数量分组为档位（数量降序）
-  const tiers: DeckCount[][] = [];
-  for (const d of sorted) {
-    const last = tiers[tiers.length - 1];
-    if (last && last[0].num === d.num) last.push(d);
-    else tiers.push([d]);
-  }
-
-  const shown: DeckCount[] = [];
-  let acc = 0;
-  let cutAt = tiers.length; // 从该档位起归入 others
-  for (let t = 0; t < tiers.length; t++) {
-    const tierSum = tiers[t].reduce((s, d) => s + d.num, 0);
-    if (tierSum / total < MIN_SLICE_PCT || acc + tierSum > threshold) {
-      cutAt = t;
-      break;
-    }
-    shown.push(...tiers[t]);
-    acc += tierSum;
-  }
-
-  const others = tiers.slice(cutAt).flat();
-
-  // 无法展示任何具体卡组时，不做 others 划分
-  if (shown.length === 0) {
-    return { shown: sorted, others: [] };
-  }
-  return { shown, others };
-}
 
 /**
  * 渲染某场比赛的卡组饼图分布。
@@ -805,24 +748,6 @@ function drawLeaderLabels(svg: SVGSVGElement, slices: Slice[]): void {
       svg.appendChild(subdeckLine);
     }
   }
-}
-
-function buildOthersDetail(others: DeckCount[], othersSum: number): HTMLElement {
-  const box = document.createElement("div");
-  box.className = "others-detail";
-  const h = document.createElement("h3");
-  h.textContent = `others 详情（共 ${others.length} 种 / ${othersSum} 个卡组）`;
-  box.appendChild(h);
-
-  const list = document.createElement("ul");
-  list.className = "others-list";
-  for (const d of [...others].sort((a, b) => b.num - a.num || a.name.localeCompare(b.name))) {
-    const li = document.createElement("li");
-    li.innerHTML = `<span>${escapeHtml(d.name)}</span><span class="others-num">${d.num}</span>`;
-    list.appendChild(li);
-  }
-  box.appendChild(list);
-  return box;
 }
 
 function othersColor(): string {

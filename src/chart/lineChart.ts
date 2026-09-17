@@ -1,7 +1,7 @@
-import type { Match } from "./types.js";
-import { deckCountIn } from "./data.js";
-import { escapeHtml } from "./html.js";
-import { seriesColor } from "./palette.js";
+import type { Match } from "../core/types.js";
+import { deckCountIn } from "../core/data.js";
+import { escapeHtml } from "../core/html.js";
+import { seriesColor } from "../core/palette.js";
 import { el, svgRoot } from "./svg.js";
 import { hideTooltip, showTooltip } from "./tooltip.js";
 

@@ -1,8 +1,8 @@
 // 上位卡组统计视图（趋势折线图 + 日期/类型筛选 + 卡组搜索）
 
-import type { State } from "../config.js";
-import { seriesColor } from "../palette.js";
-import { renderLine } from "../line.js";
+import type { State } from "../core/config.js";
+import { seriesColor } from "../core/palette.js";
+import { renderLine } from "../chart/lineChart.js";
 import { matchTypeColor } from "./shared.js";
 
 export function buildTrendView(state: State): HTMLElement {

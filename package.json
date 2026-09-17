@@ -5,13 +5,16 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "bundle": "esbuild src/app.ts --bundle --minify --format=esm --target=es2020 --legal-comments=none --outfile=dist/app.js",
+    "bundle": "esbuild src/app.ts --bundle --minify --format=esm --target=es2020 --legal-comments=none --splitting --outdir=dist",
     "build": "npm run typecheck && npm run bundle",
-    "watch": "esbuild src/app.ts --bundle --format=esm --target=es2020 --sourcemap=inline --outfile=dist/app.js --watch",
+    "watch": "esbuild src/app.ts --bundle --format=esm --target=es2020 --sourcemap=inline --splitting --outdir=dist --watch",
     "serve": "npx --yes http-server -p 8080 -c-1 --proxy http://localhost:8080? ."
   },
   "devDependencies": {
     "esbuild": "^0.28.2",
     "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "pdf-lib": "^1.17.1"
   }
 }

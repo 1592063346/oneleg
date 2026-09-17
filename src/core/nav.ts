@@ -5,7 +5,7 @@ import type { State, View, AppActions } from "./config.js";
 import { EVENT_EDITION_CONFIGS, SITE_MENU } from "./config.js";
 import { allDeckNames, loadData, top4DeckNames } from "./data.js";
 import { buildColorMap } from "./palette.js";
-import { syncUrl } from "./router.js";
+import { confirmLeaveDeck, syncUrl } from "./router.js";
 
 const app = document.getElementById("app")!;
 
@@ -68,6 +68,8 @@ function buildSiteDropdown(state: State, actions: AppActions): HTMLElement {
     li.textContent = item.label;
     li.addEventListener("click", () => {
       if (item.site === state.config.site) return;
+      // 离开构筑导出站会丢掉当前构筑，先问一句
+      if (!confirmLeaveDeck(state.builderDeck)) return;
       history.pushState(null, "", item.path);
       actions.loadSite(item.site);
     });
