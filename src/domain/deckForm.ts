@@ -1,7 +1,7 @@
 // 把当前构筑填进官方比赛卡表 PDF（data/deckform_blank.pdf）
 //
 // 这份表没有表单域（/AcroForm 是空的），所以不是“填字段”，而是在量好的坐标上盖字。
-// 表格是等距网格（行高 15pt），下面的坐标全部实测自空白表，换一张表就得重量一遍。
+// 表格是等距网格（行高 15pt），下面的坐标全部实测自空白表，更换表格后需重新测量。
 //
 // 中日文卡名没有现成字体可用：表内自带的 CJK 字体是 9KB / 16KB 的子集，只含表上那几个字。
 // 于是改为用 canvas 借系统字体把文字画成整页透明 PNG，再贴回 PDF，省掉往仓库塞字体文件。
@@ -125,7 +125,7 @@ function paint(ctx: CanvasRenderingContext2D, cell: Cell, text: string, font: st
   );
 }
 
-/** 填一栏：超出该栏行数的卡片直接丢弃（表上就这么多行） */
+/** 填一栏：超出该栏行数的卡片直接丢弃（表格行数固定） */
 function paintColumn(
   ctx: CanvasRenderingContext2D,
   col: Column,
@@ -237,4 +237,14 @@ export async function exportDeckForm(deck: DeckData, lang: DeckFormLang): Promis
   page.drawImage(image, { x: 0, y: 0, width: pageW, height: pageH });
 
   downloadPdf(await doc.save(), "deckform.pdf");
+}
+
+/**
+ * 原样下载一张空白比赛卡表，供线下手写。
+ * 不走 pdf-lib：文件本身就是最终形态，无需重新生成。
+ */
+export async function downloadBlankForm(): Promise<void> {
+  const res = await fetch(FORM_URL);
+  if (!res.ok) throw new Error(`读取空白卡表失败（HTTP ${res.status}）`);
+  downloadPdf(new Uint8Array(await res.arrayBuffer()), "deckform_blank.pdf");
 }

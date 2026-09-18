@@ -14,7 +14,7 @@ import {
   sortDeck,
 } from "../domain/deck.js";
 import { cacheCardInfos, isExtraDeckCard, searchCards, type CardInfo } from "../domain/cards.js";
-import { exportDeckForm, type DeckFormLang } from "../domain/deckForm.js";
+import { downloadBlankForm, exportDeckForm, type DeckFormLang } from "../domain/deckForm.js";
 
 /** 本站不区分卡图环境，统一使用日文卡图 */
 const ENV = "ocg";
@@ -225,12 +225,14 @@ function buildCardSearch(deck: DeckData, onChange: () => void): HTMLElement {
   clearBtn.className = "deck-action-btn deck-action-clear";
   clearBtn.textContent = "清空构筑";
   clearBtn.addEventListener("click", () => {
+    // 空构筑直接清；有卡时先确认，避免误点丢掉整份构筑
+    if (!isEmpty(deck) && !confirm("确认清空当前构筑？")) return;
     deck.main = [];
     deck.extra = [];
     deck.side = [];
     onChange();
-    // 浮层里的步进器数字是按清空前的数量算的，onChange 只重绘展示区，
-    // 索性把浮层收起来，下次搜索再重算
+    // 浮层里的步进器数字按清空前的数量算，而 onChange 只重绘展示区，
+    // 故收起浮层，下次搜索再重算
     panel.style.display = "none";
     if (openResults?.panel === panel) openResults = null;
   });
@@ -470,7 +472,7 @@ function buildExportRow(deck: DeckData): HTMLElement {
 
   const ydkBtn = document.createElement("button");
   ydkBtn.type = "button";
-  ydkBtn.className = "builder-plain-btn"; // 白色，与“导入文本”“搜索”一致
+  ydkBtn.className = "builder-plain-btn";
   ydkBtn.textContent = "导出为 YDK 文件";
   ydkBtn.addEventListener("click", () => {
     if (isEmpty(deck)) {
@@ -480,7 +482,20 @@ function buildExportRow(deck: DeckData): HTMLElement {
     downloadDeckFile(deck);
   });
 
-  row.append(label, buildLangDropdown(), pdfBtn, ydkBtn, note);
+  // 空卡表与构筑内容无关，不随 isEmpty 禁用
+  const blankLink = document.createElement("button");
+  blankLink.type = "button";
+  blankLink.className = "builder-blank-link";
+  blankLink.textContent = "下载空卡表";
+  blankLink.addEventListener("click", async () => {
+    try {
+      await downloadBlankForm();
+    } catch (err) {
+      alert(`下载空白卡表失败：${errText(err)}`);
+    }
+  });
+
+  row.append(label, buildLangDropdown(), pdfBtn, ydkBtn, note, blankLink);
   return row;
 }
 

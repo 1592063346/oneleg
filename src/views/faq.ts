@@ -23,7 +23,7 @@ export function buildFaqView(): HTMLElement {
 
     <div class="faq-item">
       <p><strong>Q：为什么构筑导出功能无法导入或搜索到部分卡片？</strong></p>
-      <p>A：对于未发售先行卡，<a href="https://ygocdb.com" target="_blank" rel="noopener noreferrer">百鸽</a>尚不支持检索；通过 YDK 导入的卡片也均需借助百鸽数据库查询基础信息。因此，本网站功能尚不支持该类卡片。</p>
+      <p>A：对于未发售先行卡，<a href="https://ygocdb.com" target="_blank" rel="noopener noreferrer">百鸽</a>尚不支持检索；通过 YDK 导入的卡片也均需借助<a href="https://ygocdb.com" target="_blank" rel="noopener noreferrer">百鸽</a>数据库查询基础信息。因此，本网站功能尚不支持该类卡片。</p>
     </div>
 
     <div class="faq-item">

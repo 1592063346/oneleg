@@ -490,7 +490,7 @@ select {
 .builder-results-note { margin: 0; padding: 14px 16px;
   color: var(--muted); font-size: 14px; }
 /* 表头：左右内边距与下方列表项对齐（面板 6px + 行 8px = 14px），
-   滚动时钉在顶部，列名与下方的步进器一一对齐 */
+   滚动时固定在顶部，列名与下方的步进器一一对齐 */
 .builder-results-head {
   position: sticky; top: 0; z-index: 1; display: flex; align-items: center;
   gap: 12px; padding: 10px 14px 6px;
@@ -516,13 +516,13 @@ select {
   font-variant-numeric: tabular-nums; }
 /* “主卡组 / 副卡组”两列，宽度与表头的 .builder-head-col 一致 */
 .builder-cols { flex: none; display: flex; gap: 6px; }
-/* 单个步进器 = 22 + 16 + 22，改宽度时记得同步 .builder-head-col */
+/* 单个步进器 = 22 + 16 + 22；改动宽度需同步 .builder-head-col */
 .builder-stepper {
   flex: none; width: 60px; display: flex; align-items: center;
   border: 1px solid var(--border); border-radius: 7px; overflow: hidden;
 }
 /* 点击区域 22px × 38px：数字最多一位数，中格留 16px 够用；
-   高度与字号一律不动，免得 +/- 缩到看不清 */
+   高度与字号保持不变，以免 +/- 缩到难以点击 */
 .builder-step-btn {
   flex: none; width: 22px; padding: 10px 0; border: 0;
   background: var(--surface-1); color: var(--text-primary);
@@ -544,12 +544,22 @@ select {
   background: var(--surface-1); border: 1px solid var(--border);
   border-radius: 14px;
 }
-/* 展示区里的卡片改为“点击移除”，抹掉按钮的默认外观 */
+/* 展示区里的卡片改为“点击移除”，去掉按钮的默认外观 */
 button.deck-card-link {
   border: 0; padding: 0; background: none; cursor: pointer;
   font: inherit; color: inherit;
 }
 .builder-deck-note { margin: 0; }
+
+/* “下载空卡表”：无底色无边框，按链接呈现。配色取自 FAQ 页与检索结果的卡名链接 */
+.builder-blank-link {
+  font: inherit; padding: 0; border: 0; background: none;
+  margin-left: auto; /* 顶到导出行最右端 */
+  color: #2a78d6; cursor: pointer;
+  text-decoration: underline; text-underline-offset: 2px;
+  transition: color 0.15s;
+}
+.builder-blank-link:hover { color: #1e5fa8; }
 
 @media (max-width: 768px) {
   .builder-deck { padding: 16px 18px; }

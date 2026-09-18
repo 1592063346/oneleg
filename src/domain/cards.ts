@@ -169,7 +169,7 @@ export async function searchCards(query: string): Promise<CardInfo[]> {
       type: h.data?.type ?? 0,
       level: h.data?.level ?? 0,
     };
-    cache.set(info.id, info); // 顺手入缓存，排序时即可命中
+    cache.set(info.id, info); // 一并写入缓存，排序时即可命中
     absent.delete(info.id);
     return info;
   });

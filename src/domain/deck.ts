@@ -83,7 +83,7 @@ function compareCards(a: number, b: number): number {
   if (ka.group !== kb.group) return ka.group - kb.group;
   if (ka.kind !== kb.kind) return ka.kind - kb.kind;
   // 星级/阶级由高到低。连接怪兽的 level 即连接标记数（接口对两者用同一字段），
-  // 所以连接怪之间也就自动按标记数从大到小排了。
+  // 因此连接怪之间也按标记数从大到小排列。
   if (ka.level !== kb.level) return kb.level - ka.level;
   return ka.id - kb.id; // 同级同类按 id 升序
 }
