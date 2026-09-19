@@ -6,6 +6,7 @@ import { EVENT_EDITION_CONFIGS, SITE_MENU } from "./config.js";
 import { allDeckNames, loadData, top4DeckNames } from "./data.js";
 import { buildColorMap } from "./palette.js";
 import { confirmLeaveDeck, syncUrl } from "./router.js";
+import { buildFooter } from "./footer.js";
 
 const app = document.getElementById("app")!;
 
@@ -44,6 +45,8 @@ export function renderShell(state: State, actions: AppActions): void {
   body.id = "view-body";
   body.className = "view-body";
   app.appendChild(body);
+
+  app.appendChild(buildFooter());
 
   actions.renderBody(state);
 }

@@ -596,3 +596,35 @@ button.deck-card-link {
   content: "•"; position: absolute; left: 0;
   color: var(--text-secondary);
 }
+
+/* 页脚：与上方内容以横线分隔，左右两栏之间以竖线分隔。
+   两栏各按内容宽度紧贴排布、整组水平居中，使内容尽量靠近中线而非分贴两侧 */
+.site-footer {
+  margin-top: 32px; padding-top: 16px;
+  border-top: 1px solid var(--border);
+  display: flex; justify-content: center; gap: 24px;
+  font-size: 13px; color: var(--text-secondary);
+}
+.footer-line { margin: 0 0 6px; }
+.footer-line:last-child { margin-bottom: 0; }
+.footer-right {
+  border-left: 1px solid var(--border); padding-left: 24px;
+}
+.site-footer a { color: #2a78d6; text-decoration: none; }
+.site-footer a:hover { color: #1e5fa8; }
+.footer-line strong { font-weight: 600; color: var(--text-primary); }
+/* 分隔点：3px 的圆点，靠 background 画出，故与字号无关 */
+.footer-dot {
+  display: inline-block; width: 3px; height: 3px; border-radius: 50%;
+  background: currentColor; opacity: 0.55;
+  margin: 0 8px; vertical-align: middle;
+}
+
+@media (max-width: 500px) {
+  /* 窄屏改为上下两栏，竖线随之改为横线；两栏拉满宽度，文字各自居左 */
+  .site-footer { flex-direction: column; gap: 14px; }
+  .footer-right {
+    border-left: 0; padding-left: 0;
+    border-top: 1px solid var(--border); padding-top: 14px;
+  }
+}
