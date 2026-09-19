@@ -25,7 +25,41 @@ async function fetchLastCommit(): Promise<string | null> {
   }
 }
 
-/** 结果缓存：外壳每次重建都会重新调 buildFooter，同一个会话内不必重复请求 */
+/**
+ * 本地缓存：GitHub API 请求限流为每 IP 每小时 60 次，而每次刷新都是一次请求。
+ * 存留一小时结果，刷新只读缓存不再请求；使得限流期间也仍有值可显示。
+ */
+const CACHE_KEY = "oneleg:lastCommit";
+const CACHE_TTL_MS = 60 * 60 * 1000;
+
+function readCache(): string | null {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const saved = JSON.parse(raw) as { date?: string; at?: number };
+    if (typeof saved.date !== "string" || typeof saved.at !== "number") return null;
+    return Date.now() - saved.at > CACHE_TTL_MS ? null : saved.date;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(date: string): void {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ date, at: Date.now() }));
+  } catch {
+  }
+}
+
+async function lastCommitDate(): Promise<string | null> {
+  const cached = readCache();
+  if (cached) return cached + " (缓存)";
+  const date = await fetchLastCommit();
+  if (date) writeCache(date);
+  return date;
+}
+
+/** 进程内缓存：外壳每次重建都会重新调 buildFooter，同一个页面会话里不必重复请求 */
 let lastCommit: Promise<string | null> | null = null;
 
 export function buildFooter(): HTMLElement {
@@ -43,7 +77,7 @@ export function buildFooter(): HTMLElement {
     </div>
   `;
 
-  lastCommit ??= fetchLastCommit();
+  lastCommit ??= lastCommitDate();
   const updated = footer.querySelector<HTMLElement>(".footer-updated");
   void lastCommit.then((date) => {
     if (!updated) return;
