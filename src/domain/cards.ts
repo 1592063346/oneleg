@@ -88,6 +88,17 @@ const BATCH_SIZE = 100;
  */
 const absent = new Set<number>();
 
+/**
+ * 异画 id -> 原画 id。同一张卡的不同插画在接口里各有各的 id，
+ * 但都指向同一个原画 id，构筑中一律只保留原画 id。
+ */
+const aliases = new Map<number, number>();
+
+/** 把异画 id 换回原画 id；无对应关系（含尚未查询过）时原样返回 */
+export function originalCardId(id: number): number {
+  return aliases.get(id) ?? id;
+}
+
 /** 联网补齐缓存中缺失的卡片信息，返回新取到的张数 */
 export async function cacheCardInfos(ids: number[]): Promise<number> {
   const wanted = [...new Set(ids)].filter((id) => !cache.has(id) && !absent.has(id));
@@ -99,9 +110,10 @@ export async function cacheCardInfos(ids: number[]): Promise<number> {
     if (!found) return added; // 这一批没成功，剩下的留到下次变动再补
 
     const got = new Set<number>();
-    for (const info of found) {
+    for (const [requested, info] of found) {
       cache.set(info.id, info);
-      got.add(info.id);
+      if (info.id !== requested) aliases.set(requested, info.id);
+      got.add(requested);
       added++;
     }
     for (const id of batch) {
@@ -111,8 +123,13 @@ export async function cacheCardInfos(ids: number[]): Promise<number> {
   return added;
 }
 
-/** 一次取回一批卡片；请求失败时返回 null（与“这一批都查不到”区分开） */
-async function fetchCards(ids: number[]): Promise<CardInfo[] | null> {
+/**
+ * 一次取回一批卡片，返回“请求的 id -> 卡片信息”。
+ * 接口以请求的 id 作键，而异画的请求 id 与其返回的 id 并不相同，
+ * 故不能拿返回的 id 当键，否则对应关系就丢了。
+ * 请求失败时返回 null（与“这一批都查不到”区分开）。
+ */
+async function fetchCards(ids: number[]): Promise<Map<number, CardInfo> | null> {
   try {
     const res = await fetch(`${API}cardset`, {
       method: "POST",
@@ -121,9 +138,13 @@ async function fetchCards(ids: number[]): Promise<CardInfo[] | null> {
     });
     if (!res.ok) return null;
     const data = (await res.json()) as Record<string, RawCard>;
-    return Object.values(data)
-      .filter((raw) => typeof raw.id === "number")
-      .map((raw) => toCardInfo(raw));
+    const found = new Map<number, CardInfo>();
+    for (const [key, raw] of Object.entries(data)) {
+      const requested = Number(key);
+      if (!Number.isFinite(requested) || typeof raw.id !== "number") continue;
+      found.set(requested, toCardInfo(raw));
+    }
+    return found;
   } catch {
     return null;
   }

@@ -10,6 +10,7 @@ import {
   downloadDeckFile,
   getCardDetailUrl,
   getCardImageUrl,
+  normalizeDeckIds,
   parseYdk,
   sortDeck,
 } from "../domain/deck.js";
@@ -71,11 +72,12 @@ export function buildBuilderView(state: State): HTMLElement {
   /**
    * 卡组每次变动后调用，返回的 Promise 在展示区重绘完毕后 resolve。
    * ydk 导入的只有数字 ID，排序所需的类型与星级得靠联网补，
-   * 所以先补齐、再排序、最后重绘：预览直接落到排好的结果上，不会先乱后序地跳一下。
-   * 检索来的卡片在搜索时就已入缓存，这条路径不会发请求。
+   * 所以先补齐、再把异画 id 换回原画 id、最后排序重绘：预览直接落到排好的结果上，
+   * 不会先乱后序地跳一下。检索来的卡片在搜索时就已入缓存，这条路径不会发请求。
    */
   const sync = async (): Promise<void> => {
     await cacheCardInfos([...deck.main, ...deck.extra, ...deck.side]);
+    normalizeDeckIds(deck);
     sortDeck(deck);
     refresh();
   };
@@ -158,6 +160,7 @@ function buildFileImport(deck: DeckData, onChange: () => Promise<void>): HTMLEle
 /** 2. 粘贴 ydk 文本，覆盖当前构筑 */
 function buildTextImport(deck: DeckData, onChange: () => Promise<void>): HTMLElement {
   const row = controlRow("导入 YDK 文本：");
+  row.classList.add("builder-text-import");
 
   const textarea = document.createElement("textarea");
   textarea.className = "ydk-text-input";
@@ -341,27 +344,34 @@ function buildResultItem(hit: CardInfo, deck: DeckData, onChange: () => void): H
   const toExtra = isExtraDeckCard(hit);
   const primary = toExtra ? deck.extra : deck.main;
   const primaryLimit = toExtra ? DECK_LIMITS.extra : DECK_LIMITS.main;
+  const primaryLabel = toExtra ? "额外卡组" : "主卡组";
 
   const cols = document.createElement("div");
   cols.className = "builder-cols";
   cols.append(
-    buildStepper(primary, hit.id, primaryLimit, onChange),
-    buildStepper(deck.side, hit.id, DECK_LIMITS.side, onChange)
+    buildStepper(primary, hit.id, primaryLimit, primaryLabel, onChange),
+    buildStepper(deck.side, hit.id, DECK_LIMITS.side, "副卡组", onChange)
   );
 
   li.append(img, meta, cols);
   return li;
 }
 
+/** 某张卡在所属区域中的数量 */
+function countOf(section: number[], id: number): number {
+  return section.filter((cardId) => cardId === id).length;
+}
+
 /**
  * “+ 1 −”步进器：中间数字即该卡在所属区域中的数量，不可手动编辑。
- * 单卡上限 MAX_COPIES、下限 0，且整个区域不得超过 limit 张，到边界时按钮置灰。
+ * 只有单卡上限 MAX_COPIES 与下限 0 会让按钮置灰；区域上限 limit 在按下时才判。
  * onChange 只重绘构筑展示区，不会重绘本浮层，所以按钮状态就地更新。
  */
 function buildStepper(
   section: number[],
   id: number,
   limit: number,
+  label: string,
   onChange: () => void
 ): HTMLElement {
   const box = document.createElement("div");
@@ -381,10 +391,10 @@ function buildStepper(
   plus.textContent = "+";
 
   const update = (): void => {
-    const count = section.filter((cardId) => cardId === id).length;
+    const count = countOf(section, id);
     num.textContent = String(count);
     minus.disabled = count === 0;
-    plus.disabled = count >= MAX_COPIES || section.length >= limit;
+    plus.disabled = count >= MAX_COPIES;
   };
 
   minus.addEventListener("click", () => {
@@ -396,8 +406,13 @@ function buildStepper(
   });
 
   plus.addEventListener("click", () => {
-    if (section.length >= limit) return; // 区域已满
-    if (section.filter((cardId) => cardId === id).length >= MAX_COPIES) return;
+    if (countOf(section, id) >= MAX_COPIES) return;
+    // 区域已满时不置灰：移除本区其他卡即可加入，置灰会让人以为这张卡加不进去。
+    // 是否加得进只在按下时才能判定，故就地提示
+    if (section.length >= limit) {
+      alert(`${label}已达 ${limit} 张上限，请先移除卡片再进行添加。`);
+      return;
+    }
     section.push(id);
     onChange();
     update();

@@ -2,7 +2,7 @@
 // 单张卡片展示大小为 60px*88px，index.html 里的 .deck-card-image 有相同配置
 
 import type { DeckData } from "../core/types.js";
-import { TYPE, cachedCardInfo, type CardInfo } from "./cards.js";
+import { TYPE, cachedCardInfo, originalCardId, type CardInfo } from "./cards.js";
 
 /** 各区域的卡片数量上限 */
 export const DECK_LIMITS = { main: 60, extra: 15, side: 15 } as const;
@@ -68,6 +68,17 @@ interface SortKey {
   kind: number;
   level: number; // 星级/阶级，降序
   id: number;
+}
+
+/**
+ * 把构筑中的异画 id 换回原画 id（原地修改）。
+ * ydk 里记的可能是异画 id，而卡片信息、排序、卡表导出都只认原画 id。
+ * 依赖卡片信息缓存，须先 await cacheCardInfos。
+ */
+export function normalizeDeckIds(deck: DeckData): void {
+  for (const section of [deck.main, deck.extra, deck.side]) {
+    for (let i = 0; i < section.length; i++) section[i] = originalCardId(section[i]);
+  }
 }
 
 /** 主卡组、额外卡组、副卡组分别排序 */
