@@ -4,11 +4,12 @@
   "description": "卡组比赛数据可视化网站",
   "type": "module",
   "scripts": {
+    "stamp": "node scripts/stamp.mjs",
     "typecheck": "tsc --noEmit",
     "bundle": "esbuild src/app.ts --bundle --minify --format=esm --target=es2020 --legal-comments=none --splitting --outdir=dist",
-    "build": "npm run typecheck && npm run bundle",
-    "watch": "esbuild src/app.ts --bundle --format=esm --target=es2020 --sourcemap=inline --splitting --outdir=dist --watch",
-    "serve": "npx --yes http-server -p 8080 -c-1 --proxy http://localhost:8080? ."
+    "build": "npm run stamp && npm run typecheck && npm run bundle",
+    "watch": "npm run stamp && esbuild src/app.ts --bundle --format=esm --target=es2020 --sourcemap=inline --splitting --outdir=dist --watch",
+    "serve": "npx --yes http-server -p 8080 -c-1 -d false --proxy http://localhost:8080? ."
   },
   "devDependencies": {
     "esbuild": "^0.28.2",

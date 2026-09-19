@@ -1,6 +1,7 @@
 node_modules/
 pic_others/
 dist/
+src/core/buildInfo.ts
 
 tools/
 release/
