@@ -603,9 +603,9 @@ button.deck-card-link {
   margin-top: 32px; padding-top: 16px;
   border-top: 1px solid var(--border);
   display: flex; justify-content: center; gap: 24px;
-  font-size: 13px; color: var(--text-secondary);
+  font-size: 13px; line-height: 1.4; color: var(--text-secondary);
 }
-.footer-line { margin: 0 0 6px; }
+.footer-line { margin: 0 0 4px; }
 .footer-line:last-child { margin-bottom: 0; }
 .footer-right {
   border-left: 1px solid var(--border); padding-left: 24px;
