@@ -26,9 +26,8 @@ const MAIN_TOP = 161;
 const EXTRA_TOP = 503;
 /** 卡名格左侧留白 */
 const NAME_PAD = 3;
-/** 默认字号，写不下时再往下缩 */
+/** 全表统一的字号。写不下时只压窄字面，字号不变，故同一行内的字高始终一致 */
 const FONT_SIZE = 9;
-const MIN_FONT_SIZE = 6;
 
 /** 一个格子的位置（top 为距页顶的距离，与实测值同一坐标系） */
 interface Cell {
@@ -95,34 +94,26 @@ function groupById(ids: number[]): Array<{ id: number; count: number }> {
   return rows;
 }
 
-/** 往画布的一个格子里写一行字：写不下先缩字号，再截断加省略号 */
+/** 往画布的一个格子里写一行字：超出格宽时横向压窄字面，字高不变 */
 function paint(ctx: CanvasRenderingContext2D, cell: Cell, text: string, font: string): void {
   if (!text) return;
   const maxW = (cell.w - NAME_PAD * 2) * SCALE;
-  let size = FONT_SIZE;
-  ctx.font = `${size * SCALE}px ${font}`;
-  while (size > MIN_FONT_SIZE && ctx.measureText(text).width > maxW) {
-    size -= 0.5;
-    ctx.font = `${size * SCALE}px ${font}`;
-  }
-
-  let shown = text;
-  if (ctx.measureText(shown).width > maxW) {
-    while (shown.length > 1) {
-      shown = shown.slice(0, -1);
-      if (ctx.measureText(`${shown}…`).width <= maxW) break;
-    }
-    shown += "…";
-  }
+  ctx.font = `${FONT_SIZE * SCALE}px ${font}`;
+  const natural = ctx.measureText(text).width;
 
   ctx.textAlign = cell.align;
   ctx.textBaseline = "middle";
   ctx.fillStyle = "#000";
-  ctx.fillText(
-    shown,
+
+  ctx.save();
+  ctx.translate(
     (cell.align === "center" ? cell.x + cell.w / 2 : cell.x + NAME_PAD) * SCALE,
     (cell.top + cell.h / 2) * SCALE
   );
+  // 压缩围绕锚点进行，故居中格压缩后仍居中
+  if (natural > maxW) ctx.scale(maxW / natural, 1);
+  ctx.fillText(text, 0, 0);
+  ctx.restore();
 }
 
 /** 填一栏：超出该栏行数的卡片直接丢弃（表格行数固定） */
