@@ -161,10 +161,8 @@ select {
 
 /* 详情 */
 .detail-header h2 { font-size: 20px; margin: 0 0 10px; }
-.meta-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
-.badge { display: inline-flex; align-items: center; gap: 6px;
-  padding: 5px 12px; border-radius: 999px; background: var(--surface-1);
-  border: 1px solid var(--border); font-size: 13px; }
+.meta-row { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 14px; }
+.badge { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
 .badge-k { color: var(--muted); }
 .badge-v { color: var(--text-primary); font-weight: 600; }
 /* 比赛类型颜色 */
@@ -174,6 +172,10 @@ select {
 .badge-brown .badge-v { color: #92400e; }
 .badge-blue .badge-v { color: #3b82f6; }
 .badge-red .badge-v { color: #ef4444; }
+/* 比赛描述：位于信息行与饼图之间，内容可含 HTML */
+.match-desc { margin-bottom: 16px; font-size: 14px; color: var(--text-secondary); }
+.match-desc a { color: #2a78d6; text-decoration: none; }
+.match-desc a:hover { color: #1e5fa8; }
 
 /* 排名展示（已合并到饼图框内） */
 .rankings { margin-bottom: 16px; }
@@ -258,11 +260,8 @@ select {
   background: var(--surface-1); border: 1px solid var(--border);
   border-radius: 14px; padding: 20px;
 }
-/* 饼图 + others 明细合并为同一个框，中间用细分隔线隔开 */
-.pie-view-inner {
-  background: var(--surface-1); border: 1px solid var(--border);
-  border-radius: 14px; padding: 20px; position: relative;
-}
+/* 饼图与 others 明细共用一个容器，无外框，靠细分隔线区隔 */
+.pie-view-inner { padding: 20px; position: relative; }
 /* 饼图整体居中，标签直接标注在饼块旁 */
 .pie-title { text-align: center; margin: 4px 0 8px; font-size: 17px; font-weight: 700; }
 .pie-wrap { display: flex; justify-content: center; position: relative; }
@@ -277,10 +276,10 @@ select {
   transition: background 0.15s; }
 .export-btn:hover { background: var(--page); }
 .export-btn:active { background: var(--border); }
-/* 饼图左上角标注（与右上角导出按钮同一行，不加粗） */
+/* 饼图左上角标注（与右上角导出按钮同一行），格式同 .others-detail 的标题 */
 .pie-caption {
-  position: absolute; top: 8px; left: 12px; z-index: 1;
-  font-size: 14px; font-weight: normal; color: var(--text-primary);
+  position: absolute; top: 8px; left: 0px; z-index: 1;
+  font-size: 15px; font-weight: 700; color: var(--text-secondary);
   padding: 9px 0; line-height: 1;
 }
 .line-wrap svg { max-width: 100%; height: auto; }
@@ -316,7 +315,7 @@ select {
   .pie-view-inner { padding: 12px; }
   .detail-header h2 { font-size: 18px; }
   .meta-row { gap: 6px; }
-  .badge { font-size: 12px; padding: 4px 10px; }
+  .badge { font-size: 12px; }
   .rankings { padding: 10px 12px; }
   .rank-label { min-width: 60px; font-size: 14px; }
   .rank-item { font-size: 14px; }
@@ -544,7 +543,7 @@ select {
 /* 构筑展示区 */
 .builder-deck {
   padding: 20px 24px; margin-bottom: 14px;
-  background: var(--surface-1); border: 1px solid var(--border);
+  background: transparent; border: 1px solid var(--border);
   border-radius: 14px;
 }
 /* 展示区里的卡片改为“点击移除”，去掉按钮的默认外观 */

@@ -111,6 +111,14 @@ export function buildPieView(state: State, actions: AppActions): HTMLElement {
   header.appendChild(meta);
   wrap.appendChild(header);
 
+  // 比赛描述：置于信息行与饼图之间，内容按 HTML 解析
+  if (match.disc) {
+    const desc = document.createElement("div");
+    desc.className = "match-desc";
+    desc.innerHTML = match.disc;
+    wrap.appendChild(desc);
+  }
+
   // 排名展示：传递给 renderPie 以合并到同一框内
   const rankings = buildRankings(match, state);
   const pieContainer = renderPie(match, state.colorMap, rankings);

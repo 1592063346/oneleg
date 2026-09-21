@@ -58,6 +58,8 @@ export interface Match {
   deck_num?: number;
   /** 卡图环境（影响卡图 CDN 路径），可选，默认 "ocg" */
   env?: string;
+  /** 比赛描述，可含 HTML 标签，可选 */
+  disc?: string;
 }
 
 /** data.json 的顶层结构 */
