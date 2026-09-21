@@ -79,6 +79,13 @@ export function buildPieView(state: State, actions: AppActions): HTMLElement {
     if (openMatchList && openMatchList !== listWrap) openMatchList.style.display = "none";
     listWrap.style.display = isOpen ? "none" : "block";
     openMatchList = isOpen ? null : listWrap;
+    // 展开后把当前选中项滚到中间。隐藏时量不到尺寸，故须放在设置 display 之后
+    if (!isOpen) {
+      const active = list.querySelector<HTMLElement>("li.active");
+      if (active) {
+        listWrap.scrollTop = active.offsetTop - (listWrap.clientHeight - active.offsetHeight) / 2;
+      }
+    }
   });
 
   dropdown.append(btn, listWrap);

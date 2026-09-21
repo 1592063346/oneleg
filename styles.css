@@ -8,7 +8,8 @@
   --grid: #e1e0d9;
   --baseline: #c3c2b7;
   --border: rgba(11, 11, 11, 0.10);
-  --hover-bg: rgba(42, 120, 214, 0.10);
+  --hover-bg: rgba(11, 11, 11, 0.08);
+  --active-bg: rgba(11, 11, 11, 0.16);
 }
 @media (prefers-color-scheme: dark) {
   :root:where(:not([data-theme="light"])).viz-root {
@@ -21,7 +22,8 @@
     --grid: #2c2c2a;
     --baseline: #383835;
     --border: rgba(255, 255, 255, 0.10);
-    --hover-bg: rgba(42, 120, 214, 0.24);
+    --hover-bg: rgba(255, 255, 255, 0.12);
+    --active-bg: rgba(255, 255, 255, 0.22);
   }
 }
 :root[data-theme="dark"].viz-root {
@@ -34,7 +36,8 @@
   --grid: #2c2c2a;
   --baseline: #383835;
   --border: rgba(255, 255, 255, 0.10);
-  --hover-bg: rgba(42, 120, 214, 0.24);
+  --hover-bg: rgba(255, 255, 255, 0.12);
+  --active-bg: rgba(255, 255, 255, 0.22);
 }
 
 * { box-sizing: border-box; }
@@ -97,7 +100,7 @@ select {
   padding: 8px 10px; border-radius: 6px; cursor: pointer;
 }
 .match-dropdown-list li:hover { background: var(--hover-bg); }
-.match-dropdown-list li.active { background: var(--hover-bg); font-weight: 600; }
+.match-dropdown-list li.active { background: var(--active-bg); font-weight: 600; }
 /* 站点切换下拉：省略号按钮，悬停展开 */
 .site-dropdown { position: relative; }
 .site-dropdown-btn {
@@ -144,8 +147,8 @@ select {
   display: flex; align-items: center; gap: 8px;
   padding: 7px 10px; border-radius: 6px; cursor: pointer; white-space: nowrap;
 }
-.deck-suggest-list li:hover, .deck-suggest-list li.active { background: var(--hover-bg); }
-.deck-suggest-list li.active { font-weight: 600; }
+.deck-suggest-list li:hover { background: var(--hover-bg); }
+.deck-suggest-list li.active { background: var(--active-bg); font-weight: 600; }
 .deck-suggest-list li.deck-suggest-empty {
   color: var(--muted); cursor: default; font-weight: 400;
 }
