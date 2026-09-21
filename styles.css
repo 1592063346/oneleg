@@ -8,6 +8,7 @@
   --grid: #e1e0d9;
   --baseline: #c3c2b7;
   --border: rgba(11, 11, 11, 0.10);
+  --hover-bg: rgba(42, 120, 214, 0.10);
 }
 @media (prefers-color-scheme: dark) {
   :root:where(:not([data-theme="light"])).viz-root {
@@ -20,6 +21,7 @@
     --grid: #2c2c2a;
     --baseline: #383835;
     --border: rgba(255, 255, 255, 0.10);
+    --hover-bg: rgba(42, 120, 214, 0.24);
   }
 }
 :root[data-theme="dark"].viz-root {
@@ -32,6 +34,7 @@
   --grid: #2c2c2a;
   --baseline: #383835;
   --border: rgba(255, 255, 255, 0.10);
+  --hover-bg: rgba(42, 120, 214, 0.24);
 }
 
 * { box-sizing: border-box; }
@@ -93,8 +96,8 @@ select {
   display: flex; align-items: center; gap: 10px;
   padding: 8px 10px; border-radius: 6px; cursor: pointer;
 }
-.match-dropdown-list li:hover { background: var(--page); }
-.match-dropdown-list li.active { background: var(--page); font-weight: 600; }
+.match-dropdown-list li:hover { background: var(--hover-bg); }
+.match-dropdown-list li.active { background: var(--hover-bg); font-weight: 600; }
 /* 站点切换下拉：省略号按钮，悬停展开 */
 .site-dropdown { position: relative; }
 .site-dropdown-btn {
@@ -107,7 +110,8 @@ select {
   user-select: none;
 }
 .site-dropdown-btn:hover { color: #2a78d6; }
-.site-dropdown-list { display: none; min-width: 160px; }
+/* z-index 高过正文里的下拉（.match-dropdown-list 为 10），使站点菜单压在它们之上 */
+.site-dropdown-list { display: none; min-width: 160px; z-index: 20; }
 /* 悬停按钮或菜单时展开；菜单与按钮相接，留出容错间隙避免闪烁 */
 .site-dropdown:hover .site-dropdown-list { display: block; }
 .site-dropdown-list { margin-top: 0; padding-top: 4px; }
@@ -140,17 +144,19 @@ select {
   display: flex; align-items: center; gap: 8px;
   padding: 7px 10px; border-radius: 6px; cursor: pointer; white-space: nowrap;
 }
-.deck-suggest-list li:hover, .deck-suggest-list li.active { background: var(--page); }
+.deck-suggest-list li:hover, .deck-suggest-list li.active { background: var(--hover-bg); }
 .deck-suggest-list li.active { font-weight: 600; }
 .deck-suggest-list li.deck-suggest-empty {
   color: var(--muted); cursor: default; font-weight: 400;
 }
+/* 类型筛选标签：无外框，只留勾选框与文字。padding 只作点击区，不画出来 */
 .chip {
-  display: inline-flex; align-items: center; gap: 7px;
-  padding: 6px 12px; border: 1px solid var(--border); border-radius: 999px;
-  background: var(--surface-1); cursor: pointer; user-select: none;
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 6px 0; cursor: pointer; user-select: none;
 }
 .chip input { accent-color: #2a78d6; margin: 0; }
+/* 类型筛选标签之间留宽些；只改横向，换行时的纵向间距仍用 .controls 的 */
+.type-filter { column-gap: 16px; }
 /* 趋势模式类型筛选：彩色 + 加粗 */
 .chip-type-purple > span { color: #8b5cf6; font-weight: 700; }
 .chip-type-green > span { color: #10b981; font-weight: 700; }
