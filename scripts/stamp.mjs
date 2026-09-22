@@ -14,8 +14,6 @@ const date = new Date(Date.now() + CN_OFFSET_MS).toISOString().slice(0, 10).repl
 
 const source = [
   "// 由 scripts/stamp.mjs 生成，请勿手动修改",
-  "",
-  "/** 站点构建日期，形如 2026/09/20 */",
   `export const LAST_UPDATED = ${JSON.stringify(date)};`,
   "",
 ].join("\n");

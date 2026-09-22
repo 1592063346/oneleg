@@ -88,6 +88,11 @@ export function sortDeck(deck: DeckData): void {
   }
 }
 
+/** 按构筑展示的排序规则排序一组卡片 id，返回新数组 */
+export function sortCardIds(ids: number[]): number[] {
+  return [...ids].sort(compareCards);
+}
+
 function compareCards(a: number, b: number): number {
   const ka = sortKeyOf(a, cachedCardInfo(a));
   const kb = sortKeyOf(b, cachedCardInfo(b));
@@ -256,6 +261,36 @@ export function downloadDeckFile(deck: DeckData): void {
  * 创建卡组展示弹窗
  */
 export function createDeckModal(deck: DeckData, env: string = "ocg"): HTMLElement {
+  const downloadBtn = document.createElement('button');
+  downloadBtn.className = 'deck-download-btn';
+  downloadBtn.textContent = '下载构筑 YDK 文件';
+  downloadBtn.addEventListener('click', () => {
+    downloadDeckFile(deck);
+  });
+
+  return createCardModal(
+    '构筑预览',
+    [
+      ['主卡组', deck.main],
+      ['额外卡组', deck.extra],
+      ['副卡组', deck.side],
+    ],
+    env,
+    downloadBtn
+  );
+}
+
+/**
+ * 通用卡片展示弹窗（构筑预览、禁限卡表查看共用）
+ * sections 为 [区域名, 卡片 id 列表]，列表为空的区域不显示；
+ * extraHeader 为标题栏里追加的按钮，可省略。
+ */
+export function createCardModal(
+  title: string,
+  sections: Array<[string, number[]]>,
+  env: string = "ocg",
+  extraHeader?: HTMLElement
+): HTMLElement {
   const modal = document.createElement('div');
   modal.className = 'deck-modal';
 
@@ -273,7 +308,7 @@ export function createDeckModal(deck: DeckData, env: string = "ocg"): HTMLElemen
   content.className = 'deck-modal-content';
 
   // 确定弹窗宽度，每张卡 60px
-  const maxCards = Math.max(deck.main.length, deck.extra.length, deck.side.length);
+  const maxCards = Math.max(0, ...sections.map(([, ids]) => ids.length));
   const cardsPerRow = Math.max(8, Math.min(maxCards, 10));
   const contentWidth = cardsPerRow * 60 + 68;
   content.style.width = `${contentWidth}px`;
@@ -282,15 +317,8 @@ export function createDeckModal(deck: DeckData, env: string = "ocg"): HTMLElemen
   // 标题栏
   const header = document.createElement('div');
   header.className = 'deck-modal-header';
-  const title = document.createElement('h3');
-  title.textContent = '构筑预览';
-
-  const downloadBtn = document.createElement('button');
-  downloadBtn.className = 'deck-download-btn';
-  downloadBtn.textContent = '下载构筑 YDK 文件';
-  downloadBtn.addEventListener('click', () => {
-    downloadDeckFile(deck);
-  });
+  const heading = document.createElement('h3');
+  heading.textContent = title;
 
   const closeBtn = document.createElement('button');
   closeBtn.className = 'deck-modal-close';
@@ -299,24 +327,12 @@ export function createDeckModal(deck: DeckData, env: string = "ocg"): HTMLElemen
     document.body.style.overflow = '';
     modal.remove();
   });
-  header.append(title, downloadBtn, closeBtn);
+  header.append(heading, ...(extraHeader ? [extraHeader] : []), closeBtn);
 
   const body = document.createElement('div');
   body.className = 'deck-modal-body';
-
-  // 主卡组
-  if (deck.main.length > 0) {
-    body.appendChild(createDeckSection('主卡组', deck.main, env));
-  }
-
-  // 额外卡组
-  if (deck.extra.length > 0) {
-    body.appendChild(createDeckSection('额外卡组', deck.extra, env));
-  }
-
-  // 副卡组
-  if (deck.side.length > 0) {
-    body.appendChild(createDeckSection('副卡组', deck.side, env));
+  for (const [name, ids] of sections) {
+    if (ids.length > 0) body.appendChild(createDeckSection(name, ids, env));
   }
 
   content.append(header, body);
@@ -329,12 +345,14 @@ export function createDeckModal(deck: DeckData, env: string = "ocg"): HTMLElemen
  * 创建卡组区域（主卡组/额外卡组/副卡组）
  * 传入 onCardClick 时，每张卡改为可点击的按钮（点击回调收到该卡在本区域中的下标）；
  * 否则为跳转卡片详情页的链接。
+ * limits 为当前适用的禁限卡表（卡片 id -> 允许投入张数），传入后卡图右上角带禁限角标。
  */
 export function createDeckSection(
   title: string,
   cardIds: number[],
   env: string = "ocg",
-  onCardClick?: (index: number) => void
+  onCardClick?: (index: number) => void,
+  limits?: Record<string, number> | null
 ): HTMLElement {
   const section = document.createElement('div');
   section.className = 'deck-section';
@@ -352,7 +370,7 @@ export function createDeckSection(
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'deck-card-link deck-card-remove';
-      btn.title = '点击移除一张';
+      btn.title = '点击移除';
       btn.addEventListener('click', () => onCardClick(index));
       card = btn;
     } else {
@@ -371,9 +389,23 @@ export function createDeckSection(
     img.loading = 'lazy';
 
     card.appendChild(img);
+
+    const rank = limits?.[String(cardId)];
+    if (rank !== undefined) card.appendChild(buildLimitBadge(rank));
+
     grid.appendChild(card);
   });
 
   section.append(header, grid);
   return section;
+}
+
+/** 卡图右上角的禁限标记：0 禁止（斜杠）/ 1 限制 / 2 准限制 */
+function buildLimitBadge(rank: number): HTMLElement {
+  const kind = rank === 0 ? 'forbidden' : rank === 1 ? 'limited' : 'semi';
+  const badge = document.createElement('span');
+  badge.className = `deck-limit deck-limit-${kind}`;
+  badge.textContent = rank === 0 ? '' : String(rank);
+  badge.title = rank === 0 ? '禁止卡' : rank === 1 ? '限制卡' : '准限制卡';
+  return badge;
 }

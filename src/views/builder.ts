@@ -1,9 +1,10 @@
 // 构筑导出视图：ydk 导入 + 卡名检索 + 构筑展示（点击移除）+ ydk 导出
 
 import type { State } from "../core/config.js";
-import type { DeckData } from "../core/types.js";
+import type { DeckData, LimitTable } from "../core/types.js";
 import {
   DECK_LIMITS,
+  createCardModal,
   createDeckSection,
   createEmptyDeck,
   deckLimitError,
@@ -12,9 +13,11 @@ import {
   getCardImageUrl,
   normalizeDeckIds,
   parseYdk,
+  sortCardIds,
   sortDeck,
 } from "../domain/deck.js";
 import { cacheCardInfos, isExtraDeckCard, searchCards, type CardInfo } from "../domain/cards.js";
+import { allowedCopies, loadLimitTables, loadedLimitTables } from "../domain/limits.js";
 import { downloadBlankForm, exportDeckForm, type DeckFormLang } from "../domain/deckForm.js";
 
 /** 本站不区分卡图环境，统一使用日文卡图 */
@@ -26,6 +29,9 @@ const MAX_COPIES = 3;
 /** 导出语言，默认日文。放模块级，主题切换重绘视图时不会丢 */
 let exportLang: DeckFormLang = "jp";
 
+/** 当前适用的禁限卡表；null 表示“无”。同样放模块级以免重绘时丢 */
+let activeLimit: LimitTable | null = null;
+
 const LANG_LABELS: Record<DeckFormLang, string> = { jp: "日文", sc: "简体中文" };
 const LANGS: DeckFormLang[] = ["jp", "sc"];
 
@@ -36,8 +42,8 @@ const LANGS: DeckFormLang[] = ["jp", "sc"];
  */
 let openResults: { row: HTMLElement; panel: HTMLElement } | null = null;
 
-/** 当前展开的导出语言下拉（同样至多一个） */
-let openLangList: HTMLElement | null = null;
+/** 当前展开的下拉（导出语言、禁限卡表共用，同样至多一个） */
+let openDropdownList: HTMLElement | null = null;
 
 document.addEventListener("click", (ev) => {
   // 点在搜索行内（含浮层里的按钮）一律不收起，方便连续添加多张卡
@@ -45,9 +51,9 @@ document.addEventListener("click", (ev) => {
     openResults.panel.style.display = "none";
     openResults = null;
   }
-  if (openLangList) {
-    openLangList.style.display = "none";
-    openLangList = null;
+  if (openDropdownList) {
+    openDropdownList.style.display = "none";
+    openDropdownList = null;
   }
 });
 
@@ -86,6 +92,7 @@ export function buildBuilderView(state: State): HTMLElement {
     buildFileImport(deck, sync),
     buildTextImport(deck, sync),
     buildCardSearch(deck, sync),
+    buildLimitRow(refresh),
     deckHost,
     buildExportRow(deck)
   );
@@ -349,8 +356,8 @@ function buildResultItem(hit: CardInfo, deck: DeckData, onChange: () => void): H
   const cols = document.createElement("div");
   cols.className = "builder-cols";
   cols.append(
-    buildStepper(primary, hit.id, primaryLimit, primaryLabel, onChange),
-    buildStepper(deck.side, hit.id, DECK_LIMITS.side, "副卡组", onChange)
+    buildStepper(deck, primary, hit.id, primaryLimit, primaryLabel, onChange),
+    buildStepper(deck, deck.side, hit.id, DECK_LIMITS.side, "副卡组", onChange)
   );
 
   li.append(img, meta, cols);
@@ -362,12 +369,18 @@ function countOf(section: number[], id: number): number {
   return section.filter((cardId) => cardId === id).length;
 }
 
+/** 某张卡在整副卡组（主 + 额外 + 副）中的数量 */
+function deckCount(deck: DeckData, id: number): number {
+  return countOf(deck.main, id) + countOf(deck.extra, id) + countOf(deck.side, id);
+}
+
 /**
  * “+ 1 −”步进器：中间数字即该卡在所属区域中的数量，不可手动编辑。
- * 只有单卡上限 MAX_COPIES 与下限 0 会让按钮置灰；区域上限 limit 在按下时才判。
+ * 只有单卡上限 MAX_COPIES 与下限 0 会让按钮置灰；区域上限 limit 与禁限卡表在按下时才判。
  * onChange 只重绘构筑展示区，不会重绘本浮层，所以按钮状态就地更新。
  */
 function buildStepper(
+  deck: DeckData,
   section: number[],
   id: number,
   limit: number,
@@ -407,6 +420,12 @@ function buildStepper(
 
   plus.addEventListener("click", () => {
     if (countOf(section, id) >= MAX_COPIES) return;
+    // 禁限卡表按整副卡组计张数，故主卡组与副卡组的步进器都要算上对方
+    const cap = allowedCopies(activeLimit, id);
+    if (cap !== undefined && deckCount(deck, id) >= cap) {
+      alert("数量超过当前适用禁限卡表要求。");
+      return;
+    }
     // 区域已满时不置灰：移除本区其他卡即可加入，置灰会让人以为这张卡加不进去。
     // 是否加得进只在按下时才能判定，故就地提示
     if (section.length >= limit) {
@@ -423,24 +442,128 @@ function buildStepper(
   return box;
 }
 
-/** 4. 构筑展示：三个区域，点击单卡移除一张 */
+/**
+ * 4. 适用禁卡表：选“无”则不校验，选具体表则限制单卡投入张数并标注卡图上的禁限角标。
+ * 表是异步读的，未到位时先只列出“无”，读完后就地替换。
+ */
+function buildLimitRow(onChange: () => void): HTMLElement {
+  const row = controlRow("适用禁卡表：");
+
+  const host = document.createElement("span");
+  const note = document.createElement("span");
+  note.className = "builder-note";
+  row.append(host, note);
+
+  const render = (list: LimitTable[]): void => {
+    const options = [
+      { value: null as string | null, label: "无（默认）" },
+      ...list.map((table) => ({ value: table.name as string | null, label: table.name })),
+    ];
+    host.replaceChildren(
+      buildDropdown(
+        options,
+        activeLimit?.name ?? null,
+        (name) => {
+          activeLimit = list.find((table) => table.name === name) ?? null;
+          onChange(); // 换表后重绘构筑展示，刷新每张卡的禁限角标
+        },
+        (item) => {
+          const table = list.find((each) => each.name === item.value);
+          return table ? buildViewLink(table) : null; // “无”没有可看的名单
+        }
+      )
+    );
+  };
+
+  const loaded = loadedLimitTables();
+  if (loaded) {
+    render(loaded);
+  } else {
+    render([]);
+    loadLimitTables().then(render, () => {
+      note.textContent = "禁卡表加载失败，将不做张数校验。";
+    });
+  }
+  return row;
+}
+
+/** 卡表名称后的“查看”：点开该表的禁止/限制/准限制卡名单 */
+function buildViewLink(table: LimitTable): HTMLElement {
+  const link = document.createElement("span");
+  link.className = "deck-preview-link";
+  link.textContent = "查看";
+  link.addEventListener("click", async (ev) => {
+    ev.stopPropagation(); // 只查看，不选中该表
+    link.textContent = "加载中...";
+    await openLimitTable(table);
+    link.textContent = "查看";
+  });
+  return link;
+}
+
+/**
+ * 弹窗展示一张卡表的三类名单。
+ * 排序规则与构筑展示相同，故先补齐全表的卡片信息（联网，按 100 张一批）。
+ */
+async function openLimitTable(table: LimitTable): Promise<void> {
+  await cacheCardInfos(Object.keys(table.all).map(Number));
+  const byRank = (rank: number): number[] =>
+    sortCardIds(
+      Object.keys(table.all)
+        .filter((id) => table.all[id] === rank)
+        .map(Number)
+    );
+
+  document.body.appendChild(
+    createCardModal(
+      table.name,
+      [
+        ["禁止卡", byRank(0)],
+        ["限制卡", byRank(1)],
+        ["准限制卡", byRank(2)],
+      ],
+      ENV
+    )
+  );
+}
+
+/** 5. 构筑展示：三个区域，点击单卡移除一张 */
 function buildDeckSections(deck: DeckData, onChange: () => void): HTMLElement {
   const box = document.createElement("div");
+  const limits = activeLimit?.all ?? null;
 
   // 三个区域恒常显示（含数量 0），让用户始终看得到构筑的构成
   box.append(
-    createDeckSection("主卡组", deck.main, ENV, (i) => {
-      deck.main.splice(i, 1);
-      onChange();
-    }),
-    createDeckSection("额外卡组", deck.extra, ENV, (i) => {
-      deck.extra.splice(i, 1);
-      onChange();
-    }),
-    createDeckSection("副卡组", deck.side, ENV, (i) => {
-      deck.side.splice(i, 1);
-      onChange();
-    })
+    createDeckSection(
+      "主卡组",
+      deck.main,
+      ENV,
+      (i) => {
+        deck.main.splice(i, 1);
+        onChange();
+      },
+      limits
+    ),
+    createDeckSection(
+      "额外卡组",
+      deck.extra,
+      ENV,
+      (i) => {
+        deck.extra.splice(i, 1);
+        onChange();
+      },
+      limits
+    ),
+    createDeckSection(
+      "副卡组",
+      deck.side,
+      ENV,
+      (i) => {
+        deck.side.splice(i, 1);
+        onChange();
+      },
+      limits
+    )
   );
 
   const note = document.createElement("p");
@@ -451,7 +574,7 @@ function buildDeckSections(deck: DeckData, onChange: () => void): HTMLElement {
   return box;
 }
 
-/** 5. 导出：PDF 比赛卡表 + YDK 文件 */
+/** 6. 导出：PDF 比赛卡表 + YDK 文件 */
 function buildExportRow(deck: DeckData): HTMLElement {
   const row = document.createElement("div");
   row.className = "controls builder-export";
@@ -518,8 +641,28 @@ function isEmpty(deck: DeckData): boolean {
   return deck.main.length + deck.extra.length + deck.side.length === 0;
 }
 
-/** 导出语言下拉，结构沿用主站的“选择比赛” */
+/** 导出语言下拉 */
 function buildLangDropdown(): HTMLElement {
+  return buildDropdown(
+    LANGS.map((lang) => ({ value: lang, label: LANG_LABELS[lang] })),
+    exportLang,
+    (lang) => {
+      exportLang = lang;
+    }
+  );
+}
+
+/**
+ * 通用下拉，结构沿用主站的“选择比赛”。
+ * items 为候选（值 + 显示文字），onPick 在选中后回调。
+ * renderExtra 返回的节点追加在名称之后（如禁卡表的“查看”），可省略。
+ */
+function buildDropdown<T>(
+  items: Array<{ value: T; label: string }>,
+  current: T,
+  onPick: (value: T) => void,
+  renderExtra?: (item: { value: T; label: string }) => Node | null
+): HTMLElement {
   const dropdown = document.createElement("div");
   dropdown.className = "match-dropdown";
 
@@ -527,9 +670,10 @@ function buildLangDropdown(): HTMLElement {
   btn.className = "match-dropdown-btn";
   btn.type = "button";
 
+  let selected = current;
   const setLabel = (): void => {
     const text = document.createElement("span");
-    text.textContent = LANG_LABELS[exportLang];
+    text.textContent = items.find((item) => item.value === selected)?.label ?? "";
     const arrow = document.createElement("span");
     arrow.className = "dropdown-arrow";
     arrow.textContent = "▼";
@@ -541,16 +685,23 @@ function buildLangDropdown(): HTMLElement {
   listWrap.className = "match-dropdown-list";
   listWrap.style.display = "none";
   const list = document.createElement("ul");
-  LANGS.forEach((lang) => {
+  items.forEach((item) => {
     const li = document.createElement("li");
-    if (lang === exportLang) li.classList.add("active");
-    li.textContent = LANG_LABELS[lang];
+    if (item.value === selected) li.classList.add("active");
+    const name = document.createElement("span");
+    name.textContent = item.label;
+    li.appendChild(name);
+    const extra = renderExtra?.(item);
+    if (extra) li.appendChild(extra);
     li.addEventListener("click", () => {
-      exportLang = lang;
+      selected = item.value;
+      onPick(item.value);
       setLabel();
-      LANGS.forEach((each, i) => list.children[i].classList.toggle("active", each === lang));
+      items.forEach((each, i) =>
+        list.children[i].classList.toggle("active", each.value === selected)
+      );
       listWrap.style.display = "none";
-      openLangList = null;
+      openDropdownList = null;
     });
     list.appendChild(li);
   });
@@ -559,9 +710,9 @@ function buildLangDropdown(): HTMLElement {
   btn.addEventListener("click", (ev) => {
     ev.stopPropagation(); // 阻止冒泡到 document，否则会被“点击其他位置”的监听立即关闭
     const isOpen = listWrap.style.display === "block";
-    if (openLangList && openLangList !== listWrap) openLangList.style.display = "none";
+    if (openDropdownList && openDropdownList !== listWrap) openDropdownList.style.display = "none";
     listWrap.style.display = isOpen ? "none" : "block";
-    openLangList = isOpen ? null : listWrap;
+    openDropdownList = isOpen ? null : listWrap;
   });
 
   dropdown.append(btn, listWrap);

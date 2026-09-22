@@ -62,6 +62,17 @@ export interface Match {
   disc?: string;
 }
 
+/** 一份禁限卡表（data/limits/ 下的单个文件） */
+export interface LimitTable {
+  /** 表名，如 "2026 年 7 月表（OCG）" */
+  name: string;
+  /**
+   * 全部禁限制卡：卡片 id -> 允许投入张数。
+   * 0 禁止 / 1 限制 / 2 准限制，禁止卡、限制卡、准限制卡的名单由它反推。
+   */
+  all: Record<string, number>;
+}
+
 /** data.json 的顶层结构 */
 export interface DataFile {
   decks: Match[];
