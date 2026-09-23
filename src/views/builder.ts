@@ -18,6 +18,7 @@ import {
 } from "../domain/deck.js";
 import { cacheCardInfos, isExtraDeckCard, searchCards, type CardInfo } from "../domain/cards.js";
 import { allowedCopies, loadLimitTables, loadedLimitTables } from "../domain/limits.js";
+import { buildUrl, replaceUrl } from "../core/router.js";
 import { downloadBlankForm, exportDeckForm, type DeckFormLang } from "../domain/deckForm.js";
 
 /** 本站不区分卡图环境，统一使用日文卡图 */
@@ -29,8 +30,18 @@ const MAX_COPIES = 3;
 /** 导出语言，默认日文。放模块级，主题切换重绘视图时不会丢 */
 let exportLang: DeckFormLang = "jp";
 
-/** 当前适用的禁限卡表；null 表示“无”。同样放模块级以免重绘时丢 */
+/**
+ * 当前适用的禁限卡表；null 表示“无”。
+ * 与 state.builderLimitTag 是同一件事的两种形态，由 resolveLimit 派生，
+ * 放模块级是为了让各层渲染函数不必层层透传（重绘时同样不会丢）。
+ */
 let activeLimit: LimitTable | null = null;
+
+/** 按 tag 在已加载的表里找当前适用的表；未选或表还没读到则为 null */
+function resolveLimit(tag: string | null | undefined): LimitTable | null {
+  if (!tag) return null;
+  return loadedLimitTables()?.find((table) => table.tag === tag) ?? null;
+}
 
 const LANG_LABELS: Record<DeckFormLang, string> = { jp: "日文", sc: "简体中文" };
 const LANGS: DeckFormLang[] = ["jp", "sc"];
@@ -62,6 +73,7 @@ export function buildBuilderView(state: State): HTMLElement {
   // 后续一律原地修改这个对象（而非整体替换），
   // 使各处闭包持有的引用始终指向当前卡组
   const deck = state.builderDeck;
+  activeLimit = resolveLimit(state.builderLimitTag);
 
   const wrap = document.createElement("div");
   wrap.className = "builder-view";
@@ -73,6 +85,7 @@ export function buildBuilderView(state: State): HTMLElement {
   const refresh = (): void => {
     deckHost.innerHTML = "";
     deckHost.appendChild(buildDeckSections(deck, sync));
+    replaceUrl(state); // 编辑结果实时反映到地址栏（替换而非新增历史记录）
   };
 
   /**
@@ -92,9 +105,9 @@ export function buildBuilderView(state: State): HTMLElement {
     buildFileImport(deck, sync),
     buildTextImport(deck, sync),
     buildCardSearch(deck, sync),
-    buildLimitRow(refresh),
+    buildLimitRow(state, refresh),
     deckHost,
-    buildExportRow(deck)
+    buildExportRow(state, deck)
   );
   void sync();
 
@@ -114,7 +127,7 @@ function controlRow(labelText: string): HTMLElement {
 
 /**
  * 导入失败：一律用浏览器弹窗提醒。
- * 同时清掉按钮旁的提示文字——那里可能还留着上一次导入成功的记录，容易被误读。
+ * 同时清掉按钮旁的提示文字，免得“导入中…”留在那里被误读成还在处理。
  */
 function reportImportFailure(note: HTMLElement, message: string): void {
   note.textContent = "";
@@ -131,7 +144,7 @@ function buildFileImport(deck: DeckData, onChange: () => Promise<void>): HTMLEle
   fileInput.className = "ydk-file-input";
 
   // 原生 file 输入自带“未选择任何文件”文案，没有选择器能把它单独去掉，
-  // 所以把 input 藏进 label、由 label 充当按钮，文件名交给右侧提示文字承担
+  // 所以把 input 透明地铺在 label 上、由 label 充当按钮
   const fileLabel = document.createElement("label");
   fileLabel.className = "builder-plain-btn ydk-file-label";
   fileLabel.textContent = "选择文件";
@@ -151,8 +164,8 @@ function buildFileImport(deck: DeckData, onChange: () => Promise<void>): HTMLEle
         reportImportFailure(note, `导入失败：${over}`);
       } else {
         overwriteDeck(deck, next);
-        await onChange(); // 等卡片信息补齐、构筑预览重绘完再报“已导入”
-        note.textContent = `已导入 ${file.name}`;
+        await onChange(); // 卡片信息补齐、构筑预览重绘完毕后清掉“导入中…”
+        note.textContent = "";
       }
     } catch (err) {
       reportImportFailure(note, `读取失败：${errText(err)}`);
@@ -202,7 +215,7 @@ function buildTextImport(deck: DeckData, onChange: () => Promise<void>): HTMLEle
     overwriteDeck(deck, next);
     note.textContent = "导入中…";
     await onChange();
-    note.textContent = `已导入 ${total} 张卡`;
+    note.textContent = "";
   });
 
   row.append(textarea, btn, note);
@@ -446,8 +459,8 @@ function buildStepper(
  * 4. 适用禁卡表：选“无”则不校验，选具体表则限制单卡投入张数并标注卡图上的禁限角标。
  * 表是异步读的，未到位时先只列出“无”，读完后就地替换。
  */
-function buildLimitRow(onChange: () => void): HTMLElement {
-  const row = controlRow("适用禁卡表：");
+function buildLimitRow(state: State, onChange: () => void): HTMLElement {
+  const row = controlRow("适用禁限卡表：");
 
   const host = document.createElement("span");
   const note = document.createElement("span");
@@ -455,20 +468,23 @@ function buildLimitRow(onChange: () => void): HTMLElement {
   row.append(host, note);
 
   const render = (list: LimitTable[]): void => {
+    activeLimit = resolveLimit(state.builderLimitTag); // 表刚到位的这一轮也要认清选中项
+    // 候选取 tag：表名可能重复，tag 唯一，且它才是路由参数里的那个值
     const options = [
       { value: null as string | null, label: "无（默认）" },
-      ...list.map((table) => ({ value: table.name as string | null, label: table.name })),
+      ...list.map((table) => ({ value: table.tag as string | null, label: table.name })),
     ];
     host.replaceChildren(
       buildDropdown(
         options,
-        activeLimit?.name ?? null,
-        (name) => {
-          activeLimit = list.find((table) => table.name === name) ?? null;
-          onChange(); // 换表后重绘构筑展示，刷新每张卡的禁限角标
+        state.builderLimitTag ?? null,
+        (tag) => {
+          state.builderLimitTag = tag;
+          activeLimit = list.find((table) => table.tag === tag) ?? null;
+          onChange(); // 换表后重绘构筑展示，刷新每张卡的禁限角标并更新地址栏
         },
         (item) => {
-          const table = list.find((each) => each.name === item.value);
+          const table = list.find((each) => each.tag === item.value);
           return table ? buildViewLink(table) : null; // “无”没有可看的名单
         }
       )
@@ -480,9 +496,15 @@ function buildLimitRow(onChange: () => void): HTMLElement {
     render(loaded);
   } else {
     render([]);
-    loadLimitTables().then(render, () => {
-      note.textContent = "禁卡表加载失败，将不做张数校验。";
-    });
+    loadLimitTables().then(
+      (list) => {
+        render(list);
+        onChange(); // 表读到了才能解出 URL 里指定的那张，补一次重绘
+      },
+      () => {
+        note.textContent = "禁卡表加载失败，将不做张数校验。";
+      }
+    );
   }
   return row;
 }
@@ -574,17 +596,14 @@ function buildDeckSections(deck: DeckData, onChange: () => void): HTMLElement {
   return box;
 }
 
-/** 6. 导出：PDF 比赛卡表 + YDK 文件 */
-function buildExportRow(deck: DeckData): HTMLElement {
+/** 6. 导出：PDF 比赛卡表 + YDK 文件 + 分享链接 */
+function buildExportRow(state: State, deck: DeckData): HTMLElement {
   const row = document.createElement("div");
   row.className = "controls builder-export";
 
   const label = document.createElement("span");
   label.className = "controls-label";
   label.textContent = "请选择导出语言：";
-
-  const note = document.createElement("span");
-  note.className = "builder-note";
 
   const pdfBtn = document.createElement("button");
   pdfBtn.type = "button";
@@ -596,13 +615,9 @@ function buildExportRow(deck: DeckData): HTMLElement {
       return;
     }
     pdfBtn.disabled = true;
-    // note.textContent = "生成中…";
-    note.textContent = "";
     try {
       await exportDeckForm(deck, exportLang);
-      note.textContent = "";
     } catch (err) {
-      note.textContent = "";
       alert(`生成比赛卡表失败：${errText(err)}`);
     }
     pdfBtn.disabled = false;
@@ -633,7 +648,22 @@ function buildExportRow(deck: DeckData): HTMLElement {
     }
   });
 
-  row.append(label, buildLangDropdown(), pdfBtn, ydkBtn, note, blankLink);
+  // 分享链接即当前地址：构筑与适用卡表都已写进 deck / limits 参数
+  const shareLink = document.createElement("button");
+  shareLink.type = "button";
+  shareLink.className = "builder-plain-btn";
+  shareLink.textContent = "复制分享链接";
+  shareLink.addEventListener("click", async () => {
+    const url = new URL(buildUrl(state), window.location.origin).href;
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      // 非安全上下文里没有剪贴板接口，退回到手动复制
+      prompt("请手动复制分享链接：", url);
+    }
+  });
+
+  row.append(label, buildLangDropdown(), pdfBtn, shareLink, ydkBtn, blankLink);
   return row;
 }
 

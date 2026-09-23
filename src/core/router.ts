@@ -3,6 +3,7 @@
 import type { Match, EventEdition, DeckData } from "./types.js";
 import type { Site, State } from "./config.js";
 import { sitePath } from "./config.js";
+import { encodeDeck } from "../domain/deckCode.js";
 
 /** 将日期 yyyy/mm/dd 转为 URL 参数形式 yyyymmdd */
 export function dateToParam(date: string): string {
@@ -18,12 +19,19 @@ export function matchIndexByDateParam(matches: Match[], param: string | null): n
   return matches.length - 1;
 }
 
-/** 根据当前状态构建 URL（比赛详情附带 ?date=，分站附带 ?env=） */
+/** 根据当前状态构建 URL（比赛详情附带 ?date=，分站附带 ?env=，构筑导出站附带 ?deck=/?limits=） */
 export function buildUrl(state: State): string {
   const base = sitePath(state.config.site);
   const params = new URLSearchParams();
   if (state.config.site === "event") {
     params.set("env", state.eventEdition || "ocg");
+  }
+  // 构筑导出站：构筑非空才带 deck，未选卡表则不带 limits
+  if (state.config.site === "builder") {
+    if (state.builderDeck && cardCount(state.builderDeck) > 0) {
+      params.set("deck", encodeDeck(state.builderDeck));
+    }
+    if (state.builderLimitTag) params.set("limits", state.builderLimitTag);
   }
   // 仅在比赛详情（饼图）视图携带日期
   const match = state.matches[state.selectedMatch];
@@ -39,19 +47,42 @@ export function syncUrl(state: State): void {
   history.pushState(null, "", buildUrl(state));
 }
 
-/** 解析当前 URL，得到站点、板块与日期参数 */
-export function parseRoute(): { site: Site; edition?: EventEdition; dateParam: string | null } {
+/**
+ * 将当前状态同步到地址栏，替换当前历史记录。
+ * 构筑导出站编辑过程中会频繁调用，用 pushState 会让后退键逐步回退每一次编辑。
+ */
+export function replaceUrl(state: State): void {
+  history.replaceState(null, "", buildUrl(state));
+}
+
+/** 解析当前 URL，得到站点、板块与各查询参数（deck/limits 仅构筑导出站使用） */
+export function parseRoute(): {
+  site: Site;
+  edition?: EventEdition;
+  dateParam: string | null;
+  deckParam: string | null;
+  limitsParam: string | null;
+} {
   const path = window.location.pathname;
   const params = new URLSearchParams(window.location.search);
   const dateParam = params.get("date");
   if (path === "/event") {
     const env = params.get("env");
     const edition: EventEdition = env === "sc" ? "sc" : "ocg";
-    return { site: "event", edition, dateParam };
+    return { site: "event", edition, dateParam, deckParam: null, limitsParam: null };
   }
-  if (path === "/builder") return { site: "builder", dateParam: null };
-  if (path === "/faq") return { site: "faq", dateParam: null };
-  return { site: "main", dateParam };
+  if (path === "/builder") {
+    return {
+      site: "builder",
+      dateParam: null,
+      deckParam: params.get("deck"),
+      limitsParam: params.get("limits"),
+    };
+  }
+  if (path === "/faq") {
+    return { site: "faq", dateParam: null, deckParam: null, limitsParam: null };
+  }
+  return { site: "main", dateParam, deckParam: null, limitsParam: null };
 }
 
 // ---- 构筑未清空时的离开提醒 ----

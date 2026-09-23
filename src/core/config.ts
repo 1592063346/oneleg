@@ -115,6 +115,8 @@ export interface State {
   // 构筑导出站正在编辑的卡组。放在 State 而非视图闭包里：
   // 主题切换时 app.ts 会重绘视图，放闭包里会把用户编辑到一半的构筑丢掉。
   builderDeck?: DeckData;
+  // 构筑导出站当前适用的禁限卡表（存 tag 而非表本身，路由靠它拼参数）
+  builderLimitTag?: string | null;
 }
 
 /**

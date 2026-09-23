@@ -45,6 +45,11 @@ async function fetchJson<T>(url: string): Promise<T> {
   return (await res.json()) as T;
 }
 
+/** 是否存在该 tag 的表。表还没读到（或读取失败）时一律为否 */
+export function hasLimitTag(tag: string): boolean {
+  return tables?.some((table) => table.tag === tag) ?? false;
+}
+
 /** 该卡在表中的允许投入张数；未选表或表内未收录则返回 undefined */
 export function allowedCopies(table: LimitTable | null, id: number): number | undefined {
   if (!table) return undefined;

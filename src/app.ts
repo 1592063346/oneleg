@@ -14,6 +14,8 @@ import {
 } from "./core/router.js";
 import { renderShell } from "./core/nav.js";
 import { createEmptyDeck } from "./domain/deck.js";
+import { decodeDeck } from "./domain/deckCode.js";
+import { hasLimitTag, loadLimitTables } from "./domain/limits.js";
 import { buildPieView } from "./views/pie.js";
 import { buildTrendView } from "./views/trend.js";
 import { buildBuilderView } from "./views/builder.js";
@@ -32,7 +34,9 @@ const actions: AppActions = {
 async function loadSite(
   site: Site,
   edition?: EventEdition,
-  dateParam?: string | null
+  dateParam?: string | null,
+  deckParam?: string | null,
+  limitsParam?: string | null
 ): Promise<void> {
   const config = SITE_CONFIGS[site];
   app.innerHTML = `<p class="empty-note">正在加载…</p>`;
@@ -51,8 +55,18 @@ async function loadSite(
       selectedTypes: new Set(),
       dateRange: null,
     };
-    if (site === "builder") state.builderDeck = createEmptyDeck();
+    if (site === "builder") {
+      // 卡表先读进来，带 limits 的链接首屏就能定下选中项，非法 tag 也能当场判掉
+      await loadLimitTables().catch(() => null);
+      const deck = deckParam ? decodeDeck(deckParam) : null;
+      state.builderDeck = deck ?? createEmptyDeck();
+      // 弹窗阻挡在本行，用户确认后才继续渲染，呈现的顺序正好是提示在前、空构筑在后
+      if (deckParam && !deck) alert("链接构筑无法解析，默认加载空构筑。");
+      state.builderLimitTag = limitsParam && hasLimitTag(limitsParam) ? limitsParam : null;
+    }
     currentState = state;
+    // 归一化地址栏：丢掉解不开的 deck 与不存在的 limits
+    history.replaceState(null, "", buildUrl(state));
     renderShell(state, actions);
     return;
   }
@@ -117,12 +131,12 @@ function renderBody(state: State): void {
 
 async function main(): Promise<void> {
   // 根据 URL 决定加载哪个站点、板块及定位到的比赛
-  const { site, edition, dateParam } = parseRoute();
-  await loadSite(site, edition, dateParam);
+  const { site, edition, dateParam, deckParam, limitsParam } = parseRoute();
+  await loadSite(site, edition, dateParam, deckParam, limitsParam);
 
   // 浏览器前进/后退时响应路由变化
   window.addEventListener("popstate", () => {
-    const { site, edition, dateParam } = parseRoute();
+    const { site, edition, dateParam, deckParam, limitsParam } = parseRoute();
     // 后退离开构筑导出站同样会丢构筑。取消时把地址推回原处，不重新加载，
     // 这样已经在内存里的构筑原样保留（此时浏览器已经跳走，必须补一次 pushState）
     if (
@@ -145,7 +159,7 @@ async function main(): Promise<void> {
       renderBody(currentState);
       return;
     }
-    loadSite(site, edition, dateParam);
+    loadSite(site, edition, dateParam, deckParam, limitsParam);
   });
 
   // 关闭标签页/刷新/地址栏跳走时提醒（弹窗文案由浏览器决定）

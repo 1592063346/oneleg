@@ -275,7 +275,7 @@ select {
   border-radius: 14px; padding: 20px;
 }
 /* 饼图与 others 明细共用一个容器，无外框，靠细分隔线区隔 */
-.pie-view-inner { padding: 20px; position: relative; }
+.pie-view-inner { padding: 20px 0px; position: relative; }
 /* 饼图整体居中，标签直接标注在饼块旁 */
 .pie-title { text-align: center; margin: 4px 0 8px; font-size: 17px; font-weight: 700; }
 .pie-wrap { display: flex; justify-content: center; position: relative; }
@@ -456,9 +456,9 @@ select {
 
 /* 卡图右上角的禁限标记。压住卡图并略微出界，底色保证红圈里的数字看得清 */
 .deck-limit {
-  position: absolute; top: -4px; right: -4px; z-index: 1;
+  position: absolute; top: 0px; left: 0px; z-index: 1;
   display: flex; align-items: center; justify-content: center;
-  width: 18px; height: 18px;
+  width: 17px; height: 17px;
   border: 2px solid #fc0000; border-radius: 50%;
   background: rgba(255, 255, 255, 0.9);
   color: #fc0000; font-size: 12px; font-weight: 1000; line-height: 2;

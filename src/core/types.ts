@@ -66,6 +66,8 @@ export interface Match {
 export interface LimitTable {
   /** 表名，如 "2026 年 7 月表（OCG）" */
   name: string;
+  /** 英文唯一标识，如 "202607_ocg"。路由参数用它，不用表名 */
+  tag: string;
   /**
    * 全部禁限制卡：卡片 id -> 允许投入张数。
    * 0 禁止 / 1 限制 / 2 准限制，禁止卡、限制卡、准限制卡的名单由它反推。
