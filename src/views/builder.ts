@@ -1,4 +1,6 @@
-// 构筑导出视图：ydk 导入 + 卡名检索 + 构筑展示（点击移除）+ ydk 导出
+// 构筑相关视图：
+// - 构筑导出（/builder）：ydk 导入 + 卡名检索 + 构筑展示（点击移除）+ 导出
+// - 构筑展示（/deck-display）：只读，只有构筑展示（点击开详情页）与导出
 
 import type { State } from "../core/config.js";
 import type { DeckData, LimitTable } from "../core/types.js";
@@ -18,7 +20,7 @@ import {
 } from "../domain/deck.js";
 import { cacheCardInfos, isExtraDeckCard, searchCards, type CardInfo } from "../domain/cards.js";
 import { allowedCopies, loadLimitTables, loadedLimitTables } from "../domain/limits.js";
-import { buildUrl, replaceUrl } from "../core/router.js";
+import { buildDeckUrl, replaceUrl } from "../core/router.js";
 import { downloadBlankForm, exportDeckForm, type DeckFormLang } from "../domain/deckForm.js";
 
 /** 本站不区分卡图环境，统一使用日文卡图 */
@@ -84,7 +86,7 @@ export function buildBuilderView(state: State): HTMLElement {
   /** 只重绘构筑展示区，不打断搜索框内容与已展开的结果浮层 */
   const refresh = (): void => {
     deckHost.innerHTML = "";
-    deckHost.appendChild(buildDeckSections(deck, sync));
+    deckHost.appendChild(buildDeckSections(deck, sync, "点击卡片可将其从构筑中移除。"));
     replaceUrl(state); // 编辑结果实时反映到地址栏（替换而非新增历史记录）
   };
 
@@ -107,9 +109,43 @@ export function buildBuilderView(state: State): HTMLElement {
     buildCardSearch(deck, sync),
     buildLimitRow(state, refresh),
     deckHost,
-    buildExportRow(state, deck)
+    buildExportRow(deck, "share", () => state.builderLimitTag)
   );
   void sync();
+
+  return wrap;
+}
+
+/**
+ * 构筑展示视图（只读，路由 /deck-display）：
+ * 与构筑导出视图同构，但没有导入 YDK、卡片搜索两行，适用禁限卡表只呈现不可选，
+ * 点击卡片改为在新标签页打开卡片详情页，底部的分享按钮改为进入编辑页。
+ */
+export function buildDeckDisplayView(state: State): HTMLElement {
+  const deck = state.displayDeck ?? createEmptyDeck();
+  state.displayDeck = deck;
+  const limit = resolveLimit(state.displayLimitTag);
+  activeLimit = limit;
+
+  const wrap = document.createElement("div");
+  wrap.className = "builder-view";
+
+  const deckHost = document.createElement("div");
+  deckHost.className = "builder-deck";
+
+  wrap.append(
+    buildLimitInfoRow(limit),
+    deckHost,
+    buildExportRow(deck, "edit", () => state.displayLimitTag)
+  );
+
+  // 与编辑器同样的三步：ydk 里只有 id，排不了序，得先补齐卡片信息，
+  // 再把异画 id 换回原画 id、按类型与星级排序，最后才渲染，卡序才与构筑导出页一致
+  void cacheCardInfos([...deck.main, ...deck.extra, ...deck.side]).then(() => {
+    normalizeDeckIds(deck);
+    sortDeck(deck);
+    deckHost.replaceChildren(buildDeckSections(deck, undefined, "点击卡片以查看卡片详情。"));
+  });
 
   return wrap;
 }
@@ -549,10 +585,44 @@ async function openLimitTable(table: LimitTable): Promise<void> {
   );
 }
 
-/** 5. 构筑展示：三个区域，点击单卡移除一张 */
-function buildDeckSections(deck: DeckData, onChange: () => void): HTMLElement {
+/**
+ * 只读的一行适用禁限卡表：表名，非“无”时附查看名单的链接。
+ * 编辑页那行是可选的，这里只呈现本次展示所用的表。
+ */
+function buildLimitInfoRow(table: LimitTable | null): HTMLElement {
+  const row = controlRow("适用禁限卡表：");
+
+  const name = document.createElement("span");
+  name.textContent = table?.name ?? "无（默认）";
+
+  row.appendChild(name);
+  if (table) row.appendChild(buildViewLink(table));
+  return row;
+}
+
+/**
+ * 5. 构筑展示：三个区域 + 第一行提示。
+ * 传 onChange 时点击单卡移除一张；省略则为只读展示，点击单卡在新标签页打开卡片详情页。
+ */
+function buildDeckSections(
+  deck: DeckData,
+  onChange: (() => void) | undefined,
+  noteText: string
+): HTMLElement {
   const box = document.createElement("div");
   const limits = activeLimit?.all ?? null;
+
+  const note = document.createElement("p");
+  note.className = "builder-note builder-deck-note";
+  note.textContent = noteText;
+  box.appendChild(note);
+
+  const removeCard =
+    (section: number[]) =>
+    (index: number): void => {
+      section.splice(index, 1);
+      onChange?.();
+    };
 
   // 三个区域恒常显示（含数量 0），让用户始终看得到构筑的构成
   box.append(
@@ -560,44 +630,39 @@ function buildDeckSections(deck: DeckData, onChange: () => void): HTMLElement {
       "主卡组",
       deck.main,
       ENV,
-      (i) => {
-        deck.main.splice(i, 1);
-        onChange();
-      },
+      onChange ? removeCard(deck.main) : undefined,
       limits
     ),
     createDeckSection(
       "额外卡组",
       deck.extra,
       ENV,
-      (i) => {
-        deck.extra.splice(i, 1);
-        onChange();
-      },
+      onChange ? removeCard(deck.extra) : undefined,
       limits
     ),
     createDeckSection(
       "副卡组",
       deck.side,
       ENV,
-      (i) => {
-        deck.side.splice(i, 1);
-        onChange();
-      },
+      onChange ? removeCard(deck.side) : undefined,
       limits
     )
   );
 
-  const note = document.createElement("p");
-  note.className = "builder-note builder-deck-note";
-  note.textContent = "点击卡片可将其从构筑中移除。";
-  box.appendChild(note);
-
   return box;
 }
 
-/** 6. 导出：PDF 比赛卡表 + YDK 文件 + 分享链接 */
-function buildExportRow(state: State, deck: DeckData): HTMLElement {
+/**
+ * 6. 导出：PDF 比赛卡表 + YDK 文件 + 构筑链接。
+ * mode 为 share 时是构筑导出页的“复制分享链接”（产出只读展示页的地址），
+ * 为 edit 时是构筑展示页的“编辑卡组”（进入构筑导出页）。
+ * getLimitTag 到点击时才取值：导出行只构建一次，而适用卡表随时会变。
+ */
+function buildExportRow(
+  deck: DeckData,
+  mode: "share" | "edit",
+  getLimitTag: () => string | null | undefined
+): HTMLElement {
   const row = document.createElement("div");
   row.className = "controls builder-export";
 
@@ -648,13 +713,21 @@ function buildExportRow(state: State, deck: DeckData): HTMLElement {
     }
   });
 
-  // 分享链接即当前地址：构筑与适用卡表都已写进 deck / limits 参数
-  const shareLink = document.createElement("button");
-  shareLink.type = "button";
-  shareLink.className = "builder-plain-btn";
-  shareLink.textContent = "复制分享链接";
-  shareLink.addEventListener("click", async () => {
-    const url = new URL(buildUrl(state), window.location.origin).href;
+  /**
+   * 构筑链接：编辑页复制的是只读展示页的地址，展示页则是回到编辑页。
+   * 地址在点击时才拼：导出行只构建一次，构筑改动只重绘展示区，提前算会拿到旧构筑与旧卡表。
+   */
+  const linkBtn = document.createElement("button");
+  linkBtn.type = "button";
+  linkBtn.className = "builder-plain-btn";
+  linkBtn.textContent = mode === "share" ? "复制分享链接" : "编辑卡组";
+  linkBtn.addEventListener("click", async () => {
+    const href = buildDeckUrl(mode === "share" ? "deck-display" : "builder", deck, getLimitTag());
+    if (mode === "edit") {
+      window.location.assign(href);
+      return;
+    }
+    const url = new URL(href, window.location.origin).href;
     try {
       await navigator.clipboard.writeText(url);
     } catch {
@@ -663,7 +736,7 @@ function buildExportRow(state: State, deck: DeckData): HTMLElement {
     }
   });
 
-  row.append(label, buildLangDropdown(), pdfBtn, shareLink, ydkBtn, blankLink);
+  row.append(label, buildLangDropdown(), pdfBtn, ydkBtn, linkBtn, blankLink);
   return row;
 }
 

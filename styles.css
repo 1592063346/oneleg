@@ -369,6 +369,9 @@ select {
 .deck-preview-link:hover {
   color: #3a7cbd;
 }
+/* 构筑展示页“适用禁限卡表”行里的“查看”：与下拉列表里的字号一致。
+   不能写进上面的基类：主站排名行里的“查看构筑”也用这个类，字号随上下文 */
+.builder-view .deck-preview-link { font-size: 13px; }
 
 /* 卡组弹窗 */
 .deck-modal {
@@ -582,7 +585,8 @@ button.deck-card-link {
   border: 0; padding: 0; background: none; cursor: pointer;
   font: inherit; color: inherit;
 }
-.builder-deck-note { margin: 0; }
+/* 提示行在构筑预览的第一行，与下方第一个区域拉开距离 */
+.builder-deck-note { margin: 0 0 14px; }
 
 /* “下载空卡表”：无底色无边框，按链接呈现。配色取自 FAQ 页与检索结果的卡名链接 */
 .builder-blank-link {

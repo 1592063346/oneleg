@@ -19,19 +19,35 @@ export function matchIndexByDateParam(matches: Match[], param: string | null): n
   return matches.length - 1;
 }
 
-/** 根据当前状态构建 URL（比赛详情附带 ?date=，分站附带 ?env=，构筑导出站附带 ?deck=/?limits=） */
+/**
+ * 构筑链接：site 取 builder（可编辑）或 deck-display（只读展示）。
+ * 构筑非空才带 deck（空构筑不必写进地址），未选卡表则不带 limits。
+ * 构筑导出页的“复制分享链接”与展示页的“编辑卡组”都靠它拼地址。
+ */
+export function buildDeckUrl(
+  site: Site,
+  deck: DeckData | undefined,
+  limitTag: string | null | undefined
+): string {
+  const params = new URLSearchParams();
+  if (deck && cardCount(deck) > 0) params.set("deck", encodeDeck(deck));
+  if (limitTag) params.set("limits", limitTag);
+  const qs = params.toString();
+  return qs ? `${sitePath(site)}?${qs}` : sitePath(site);
+}
+
+/** 根据当前状态构建 URL（比赛详情附带 ?date=，分站附带 ?env=，构筑两站附带 ?deck=/?limits=） */
 export function buildUrl(state: State): string {
   const base = sitePath(state.config.site);
+  if (state.config.site === "builder") {
+    return buildDeckUrl("builder", state.builderDeck, state.builderLimitTag);
+  }
+  if (state.config.site === "deck-display") {
+    return buildDeckUrl("deck-display", state.displayDeck, state.displayLimitTag);
+  }
   const params = new URLSearchParams();
   if (state.config.site === "event") {
     params.set("env", state.eventEdition || "ocg");
-  }
-  // 构筑导出站：构筑非空才带 deck，未选卡表则不带 limits
-  if (state.config.site === "builder") {
-    if (state.builderDeck && cardCount(state.builderDeck) > 0) {
-      params.set("deck", encodeDeck(state.builderDeck));
-    }
-    if (state.builderLimitTag) params.set("limits", state.builderLimitTag);
   }
   // 仅在比赛详情（饼图）视图携带日期
   const match = state.matches[state.selectedMatch];
@@ -55,7 +71,7 @@ export function replaceUrl(state: State): void {
   history.replaceState(null, "", buildUrl(state));
 }
 
-/** 解析当前 URL，得到站点、板块与各查询参数（deck/limits 仅构筑导出站使用） */
+/** 解析当前 URL，得到站点、板块与各查询参数（deck/limits 仅构筑导出站与构筑展示站使用） */
 export function parseRoute(): {
   site: Site;
   edition?: EventEdition;
@@ -71,9 +87,9 @@ export function parseRoute(): {
     const edition: EventEdition = env === "sc" ? "sc" : "ocg";
     return { site: "event", edition, dateParam, deckParam: null, limitsParam: null };
   }
-  if (path === "/builder") {
+  if (path === "/builder" || path === "/deck-display") {
     return {
-      site: "builder",
+      site: path === "/builder" ? "builder" : "deck-display",
       dateParam: null,
       deckParam: params.get("deck"),
       limitsParam: params.get("limits"),

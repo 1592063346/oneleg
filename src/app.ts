@@ -18,7 +18,7 @@ import { decodeDeck } from "./domain/deckCode.js";
 import { hasLimitTag, loadLimitTables } from "./domain/limits.js";
 import { buildPieView } from "./views/pie.js";
 import { buildTrendView } from "./views/trend.js";
-import { buildBuilderView } from "./views/builder.js";
+import { buildBuilderView, buildDeckDisplayView } from "./views/builder.js";
 import { buildFaqView } from "./views/faq.js";
 
 const app = document.getElementById("app")!;
@@ -55,14 +55,21 @@ async function loadSite(
       selectedTypes: new Set(),
       dateRange: null,
     };
-    if (site === "builder") {
+    // 构筑两站（可编辑的构筑导出、只读的构筑展示）共用同一套 deck / limits 解析
+    if (site === "builder" || site === "deck-display") {
       // 卡表先读进来，带 limits 的链接首屏就能定下选中项，非法 tag 也能当场判掉
       await loadLimitTables().catch(() => null);
       const deck = deckParam ? decodeDeck(deckParam) : null;
-      state.builderDeck = deck ?? createEmptyDeck();
       // 弹窗阻挡在本行，用户确认后才继续渲染，呈现的顺序正好是提示在前、空构筑在后
       if (deckParam && !deck) alert("链接构筑无法解析，默认加载空构筑。");
-      state.builderLimitTag = limitsParam && hasLimitTag(limitsParam) ? limitsParam : null;
+      const limitTag = limitsParam && hasLimitTag(limitsParam) ? limitsParam : null;
+      if (site === "builder") {
+        state.builderDeck = deck ?? createEmptyDeck();
+        state.builderLimitTag = limitTag;
+      } else {
+        state.displayDeck = deck ?? createEmptyDeck();
+        state.displayLimitTag = limitTag;
+      }
     }
     currentState = state;
     // 归一化地址栏：丢掉解不开的 deck 与不存在的 limits
@@ -120,6 +127,8 @@ function renderBody(state: State): void {
 
   if (state.config.site === "builder") {
     body.appendChild(buildBuilderView(state));
+  } else if (state.config.site === "deck-display") {
+    body.appendChild(buildDeckDisplayView(state));
   } else if (state.config.site === "faq") {
     body.appendChild(buildFaqView());
   } else if (state.view === "pie") {
