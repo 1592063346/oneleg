@@ -1,13 +1,13 @@
 // 构筑 ⇄ URL 参数的编解码：把主/额外/副三个区的卡片 id 压成一个 URL 安全字符串
 
 import type { DeckData } from "../core/types.js";
-import { DECK_LIMITS } from "./deck.js";
+import { DECK_LIMITS, PRE_RELEASE_ID_MAX } from "./deck.js";
 
 /** 编码格式版本，写在首字节，便于日后换格式时区分 */
 const VERSION = 1;
-/** 卡号范围，与 parseYdk 一致 */
+/** 卡号范围，与 parseYdk 一致（含先行卡的临时编号） */
 const MIN_ID = 1;
-const MAX_ID = 99999999;
+const MAX_ID = PRE_RELEASE_ID_MAX;
 
 /**
  * 构筑 -> 字符串。

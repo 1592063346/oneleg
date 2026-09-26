@@ -1,4 +1,4 @@
-// 把当前构筑填进官方比赛卡表 PDF（data/deckform_blank.pdf）
+// 把当前构筑填进官方比赛卡表 PDF（sources/deckform_blank.pdf）
 //
 // 这份表没有表单域（/AcroForm 是空的），所以不是“填字段”，而是在量好的坐标上盖字。
 // 表格是等距网格（行高 15pt），下面的坐标全部实测自空白表，更换表格后需重新测量。
@@ -13,7 +13,7 @@ import { TYPE, cacheCardInfos, cachedCardInfo } from "./cards.js";
 export type DeckFormLang = "jp" | "sc";
 
 /** 空白比赛卡表的位置 */
-const FORM_URL = "./data/deckform_blank.pdf";
+const FORM_URL = "./sources/deckform_blank.pdf";
 
 /** 画布相对 PDF 的放大倍数：3 倍约合 216dpi，打印够用，再大只是徒增体积 */
 const SCALE = 3;
@@ -48,7 +48,7 @@ interface Column {
   rows: number;
 }
 
-// 以下坐标均实测自 data/deckform_blank.pdf，单位 pt
+// 以下坐标均实测自 sources/deckform_blank.pdf，单位 pt
 const MONSTERS: Column = { countX: 20, countW: 22, nameX: 43, nameW: 162.09, firstTop: MAIN_TOP, rows: 20 };
 const SPELLS: Column = { countX: 205.09, countW: 22, nameX: 228.09, nameW: 162.09, firstTop: MAIN_TOP, rows: 20 };
 const TRAPS: Column = { countX: 390.18, countW: 22, nameX: 413.18, nameW: 162.1, firstTop: MAIN_TOP, rows: 20 };

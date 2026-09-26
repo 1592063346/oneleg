@@ -2,10 +2,20 @@
 // 单张卡片展示大小为 60px*88px，index.html 里的 .deck-card-image 有相同配置
 
 import type { DeckData } from "../core/types.js";
-import { TYPE, cachedCardInfo, originalCardId, type CardInfo } from "./cards.js";
+import { TYPE, absentCard, cachedCardInfo, originalCardId, type CardInfo } from "./cards.js";
 
 /** 各区域的卡片数量上限 */
 export const DECK_LIMITS = { main: 60, extra: 15, side: 15 } as const;
+
+/** 官方卡片密码的上限 */
+export const OFFICIAL_ID_MAX = 99999999;
+
+/**
+ * 先行卡临时编号的上限，有效区间为 OFFICIAL_ID_MAX + 1 ~ 本值。
+ * 先行卡指已公布信息但尚未发售的卡，数据库先给它一个该区间内的临时编号，
+ * 发售后再换成官方密码（见 cards.ts 的 aliases 与 normalizeDeckIds）。
+ */
+export const PRE_RELEASE_ID_MAX = 199999999;
 
 /**
  * 校验各区域数量是否超限（导入的 ydk 不受本页输入约束，故单独检查）。
@@ -78,6 +88,20 @@ interface SortKey {
 export function normalizeDeckIds(deck: DeckData): void {
   for (const section of [deck.main, deck.extra, deck.side]) {
     for (let i = 0; i < section.length; i++) section[i] = originalCardId(section[i]);
+  }
+}
+
+/**
+ * 剔除数据库里查不到的卡（原地修改）：卡号范围合法并不代表这张卡存在，
+ * 构筑里出现的非法卡号一律当作没导入过。
+ * 依赖卡片信息缓存，须先 await cacheCardInfos：只有查过的卡号才谈得上查不到，
+ * 尚未查询与请求失败的不会进 absent，也就不会被误剔。
+ */
+export function dropAbsentCards(deck: DeckData): void {
+  for (const section of [deck.main, deck.extra, deck.side]) {
+    for (let i = section.length - 1; i >= 0; i--) {
+      if (absentCard(section[i])) section.splice(i, 1);
+    }
   }
 }
 
@@ -161,7 +185,7 @@ export function parseYdk(content: string): DeckData {
 
     // 解析卡片 ID
     const cardId = parseInt(line, 10);
-    if (!isNaN(cardId) && cardId >= 1 && cardId <= 99999999) {
+    if (!isNaN(cardId) && cardId >= 1 && cardId <= PRE_RELEASE_ID_MAX) {
       if (currentSection) {
         deck[currentSection].push(cardId);
       }
@@ -203,6 +227,13 @@ export async function loadDeckFile(
  * env 为卡图环境："sc" 使用简中卡图，其余（默认 ocg）使用日文卡图
  */
 export function getCardImageUrl(cardId: number, env: string = "ocg"): string {
+  // 先行卡的临时编号：若它已有官方密码（查询过卡片信息才会知道），说明该卡已发售，
+  // 卡图随之并入常规图库，按官方密码取即可；否则只有以临时编号命名的图
+  const id = cardId > OFFICIAL_ID_MAX ? originalCardId(cardId) : cardId;
+  if (id > OFFICIAL_ID_MAX) {
+    return `https://cdntx.moecube.com/ygopro-super-pre/data/pics/${id}.jpg`;
+  }
+
   const REGION_MAP: Record<string, string> = {
     ocg: 'jp',
     sc: 'sc',
@@ -210,7 +241,19 @@ export function getCardImageUrl(cardId: number, env: string = "ocg"): string {
   };
 
   const region = REGION_MAP[env];
-  return `https://cdn.233.momobako.com/ygoimg/${region}/${cardId}.webp!half`;
+  return `https://cdn.233.momobako.com/ygoimg/${region}/${id}.webp!half`;
+}
+
+/** 卡图取不到时的占位图 */
+const UNKNOWN_IMAGE = './sources/unknown.jpg';
+
+/**
+ * 设置卡图，并挂上加载失败的兜底。
+ * 先行卡与个别图库缺失的卡都会取不到图，此时退回占位图。
+ */
+export function setCardImage(img: HTMLImageElement, cardId: number, env: string = "ocg"): void {
+  img.addEventListener('error', () => { img.src = UNKNOWN_IMAGE; }, { once: true });
+  img.src = getCardImageUrl(cardId, env);
 }
 
 /**
@@ -383,7 +426,7 @@ export function createDeckSection(
     }
 
     const img = document.createElement('img');
-    img.src = getCardImageUrl(cardId, env);
+    setCardImage(img, cardId, env);
     img.alt = `Card ${cardId}`;
     img.className = 'deck-card-image';
     img.loading = 'lazy';

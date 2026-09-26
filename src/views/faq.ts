@@ -17,13 +17,8 @@ export function buildFaqView(): HTMLElement {
     </div>
 
     <div class="faq-item">
-      <p><strong>Q：为什么构筑预览与构筑导出的卡图有时会无法加载？</strong></p>
-      <p>A：构筑预览与构筑导出部分的卡图 CDN 由 <a href="https://cdn.233.momobako.com" target="_blank" rel="noopener noreferrer">cdn.233.momobako.com</a> 提供，卡片详情由<a href="https://ygocdb.com" target="_blank" rel="noopener noreferrer">百鸽</a>提供，在此一并感谢。如果出现卡图无法正常加载，一般情况下非本网站问题。</p>
-    </div>
-
-    <div class="faq-item">
-      <p><strong>Q：为什么构筑导出功能无法导入或搜索到部分卡片？</strong></p>
-      <p>A：对于未发售先行卡，<a href="https://ygocdb.com" target="_blank" rel="noopener noreferrer">百鸽</a>尚不支持检索；通过 YDK 导入的卡片也均需借助<a href="https://ygocdb.com" target="_blank" rel="noopener noreferrer">百鸽</a>数据库查询基础信息。因此，本网站功能尚不支持该类卡片。</p>
+      <p><strong>Q：为什么构筑预览与构筑导出的卡图有时会无法加载，或者构筑导出功能无法导入或搜索到部分卡片？</strong></p>
+      <p>A：构筑预览与构筑导出部分的卡图 CDN 由 <a href="https://cdn.233.momobako.com" target="_blank" rel="noopener noreferrer">cdn.233.momobako.com</a> 提供（超先行卡卡图由 <a href="https://cdntx.moecube.com/" target="_blank" rel="noopener noreferrer">cdntx.moecube.com</a> 提供），卡片检索与详情由<a href="https://ygocdb.com" target="_blank" rel="noopener noreferrer">百鸽</a>提供，在此一并感谢。如果出现卡图无法正常加载，一般情况下非本网站问题。同时，对于仅公布信息但尚未正式发售的先行卡，<a href="https://ygocdb.com" target="_blank" rel="noopener noreferrer">百鸽</a>尚不支持检索；通过 YDK 导入的卡片也均需借助<a href="https://ygocdb.com" target="_blank" rel="noopener noreferrer">百鸽</a>数据库查询基础信息，故本网站功能尚不支持该类卡片。</p>
     </div>
 
     <div class="faq-item">

@@ -99,6 +99,11 @@ export function originalCardId(id: number): number {
   return aliases.get(id) ?? id;
 }
 
+/** 该卡号是否已确认查不到，即数据库里没有这张卡 */
+export function absentCard(id: number): boolean {
+  return absent.has(id);
+}
+
 /** 联网补齐缓存中缺失的卡片信息，返回新取到的张数 */
 export async function cacheCardInfos(ids: number[]): Promise<number> {
   const wanted = [...new Set(ids)].filter((id) => !cache.has(id) && !absent.has(id));

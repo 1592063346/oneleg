@@ -278,23 +278,24 @@ select {
 .pie-view-inner { padding: 20px 0px; position: relative; }
 /* 饼图整体居中，标签直接标注在饼块旁 */
 .pie-title { text-align: center; margin: 4px 0 8px; font-size: 17px; font-weight: 700; }
-.pie-wrap { display: flex; justify-content: center; position: relative; }
+.pie-wrap { display: flex; flex-direction: column; align-items: center; position: relative; }
+/* 标注与导出按钮单独成行，两端与本节内容对齐（不随饼图 760px 的宽度收窄） */
+.pie-head { display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; width: 100%; margin-bottom: 4px; }
 .pie-view-inner svg { height: auto; }
 .pie-wrap svg { width: 100%; max-width: 760px; height: auto; }
 
 /* 导出按钮 */
-.export-btn-wrap { position: absolute; top: 8px; right: 8px; z-index: 1; }
+.export-btn-wrap { flex: none; }
 .export-btn { padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border);
   background: var(--surface-1); color: var(--text-primary); font: inherit;
   cursor: pointer; font-size: 14px; font-weight: 500;
   transition: background 0.15s; }
 .export-btn:hover { background: var(--page); }
 .export-btn:active { background: var(--border); }
-/* 饼图左上角标注（与右上角导出按钮同一行），格式同 .others-detail 的标题 */
+/* 饼图左上角标注，格式同 .others-detail 的标题 */
 .pie-caption {
-  position: absolute; top: 8px; left: 0px; z-index: 1;
-  font-size: 15px; font-weight: 700; color: var(--text-secondary);
-  padding: 9px 0; line-height: 1;
+  font-size: 15px; font-weight: 700; color: var(--text-secondary); line-height: 1;
 }
 .line-wrap svg { max-width: 100%; height: auto; }
 
@@ -325,12 +326,12 @@ select {
 /* 移动端优化 */
 @media (max-width: 768px) {
   body { padding: 12px; }
-  .container { padding: 16px; }
-  .pie-view-inner { padding: 12px; }
+  /* 只调上下留白，左右沿用 #app 的页面留白，避免两处叠加 */
+  .pie-view-inner { padding: 12px 0; }
   .detail-header h2 { font-size: 18px; }
   .meta-row { gap: 6px; }
   .badge { font-size: 12px; }
-  .rankings { padding: 10px 12px; }
+  .export-btn { padding: 6px 10px; font-size: 13px; }
   .rank-label { min-width: 60px; font-size: 14px; }
   .rank-item { font-size: 14px; }
   .deck-badge { font-size: 12px; padding: 2px 8px; }
@@ -338,11 +339,9 @@ select {
 
 @media (max-width: 480px) {
   body { padding: 8px; }
-  .container { padding: 12px; }
   h1 { font-size: 20px; }
-  .pie-view-inner { padding: 10px; }
+  .pie-view-inner { padding: 10px 0; }
   .detail-header h2 { font-size: 16px; }
-  .rankings { padding: 8px 10px; }
   .ranking-line { flex-direction: column; gap: 4px; align-items: flex-start; }
   .rank-label { min-width: auto; }
 }

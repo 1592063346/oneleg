@@ -4,8 +4,8 @@ import type { Match, Player } from "../core/types.js";
 import type { State, AppActions } from "../core/config.js";
 import { totalDecks } from "../core/data.js";
 import { renderPie } from "../chart/pie/index.js";
-import { createExportButton } from "../chart/exportImage.js";
-import { loadDeckFile, createDeckModal } from "../domain/deck.js";
+import { loadDeckFile, createDeckModal, dropAbsentCards } from "../domain/deck.js";
+import { cacheCardInfos } from "../domain/cards.js";
 import { syncUrl } from "../core/router.js";
 import { matchTypeColor } from "./shared.js";
 
@@ -130,13 +130,6 @@ export function buildPieView(state: State, actions: AppActions): HTMLElement {
   const rankings = buildRankings(match, state);
   const pieContainer = renderPie(match, state.colorMap, rankings);
 
-  // 添加导出按钮到饼图部分（而非整个容器）
-  const chartWrap = pieContainer.querySelector("[data-export-target]");
-  if (chartWrap) {
-    const exportBtn = createExportButton(chartWrap as HTMLElement, match.title);
-    chartWrap.appendChild(exportBtn);
-  }
-
   wrap.appendChild(pieContainer);
   return wrap;
 }
@@ -204,6 +197,10 @@ function buildPlayerItem(player: Player, match: Match, state: State): HTMLElemen
       previewLink.textContent = "加载中...";
       const deck = await loadDeckFile(match.date, player.id, state.config.deckDir);
       if (deck) {
+        // 先补齐卡片信息：先行卡的临时编号借此换成官方密码，卡图才能落到常规图库；
+        // 顺带剔除数据库里查不到的卡号
+        await cacheCardInfos([...deck.main, ...deck.extra, ...deck.side]);
+        dropAbsentCards(deck);
         const modal = createDeckModal(deck, match.env ?? "ocg");
         document.body.appendChild(modal);
       } else {

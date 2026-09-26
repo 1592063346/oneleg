@@ -186,20 +186,17 @@ function buildPieSection(
     // 现在构建饼图（此时图片已在浏览器缓存中）
     const chartCol = document.createElement("div");
     chartCol.className = "pie-wrap";
-    chartCol.style.position = "relative";
     chartCol.setAttribute("data-export-target", "true");
-    chartCol.appendChild(buildSvg(match, slices, loadOthersImage));
 
-    // 左上角标注文字（与导出按钮同一行）
+    // 标注文字与导出按钮独占一行（与饼图同宽），窄屏下按钮便不会压住饼图
+    const head = document.createElement("div");
+    head.className = "pie-head";
     const cap = document.createElement("div");
     cap.className = "pie-caption";
     cap.textContent = caption;
-    chartCol.appendChild(cap);
+    head.append(cap, createExportButton(chartCol, exportTitle));
 
-    // 添加导出按钮
-    const exportBtn = createExportButton(chartCol, exportTitle);
-    chartCol.appendChild(exportBtn);
-
+    chartCol.append(head, buildSvg(match, slices, loadOthersImage));
     host.appendChild(chartCol);
 
     // others 明细

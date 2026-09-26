@@ -11,10 +11,11 @@ import {
   createEmptyDeck,
   deckLimitError,
   downloadDeckFile,
+  dropAbsentCards,
   getCardDetailUrl,
-  getCardImageUrl,
   normalizeDeckIds,
   parseYdk,
+  setCardImage,
   sortCardIds,
   sortDeck,
 } from "../domain/deck.js";
@@ -98,6 +99,7 @@ export function buildBuilderView(state: State): HTMLElement {
    */
   const sync = async (): Promise<void> => {
     await cacheCardInfos([...deck.main, ...deck.extra, ...deck.side]);
+    dropAbsentCards(deck);
     normalizeDeckIds(deck);
     sortDeck(deck);
     refresh();
@@ -139,9 +141,11 @@ export function buildDeckDisplayView(state: State): HTMLElement {
     buildExportRow(deck, "edit", () => state.displayLimitTag)
   );
 
-  // 与编辑器同样的三步：ydk 里只有 id，排不了序，得先补齐卡片信息，
-  // 再把异画 id 换回原画 id、按类型与星级排序，最后才渲染，卡序才与构筑导出页一致
+  // 与编辑器同样的流程：ydk 里只有 id，排不了序，得先补齐卡片信息，
+  // 再剔除查不到的卡、把异画 id 换回原画 id、按类型与星级排序，最后才渲染，
+  // 卡序与保留的卡片才与构筑导出页一致
   void cacheCardInfos([...deck.main, ...deck.extra, ...deck.side]).then(() => {
+    dropAbsentCards(deck);
     normalizeDeckIds(deck);
     sortDeck(deck);
     deckHost.replaceChildren(buildDeckSections(deck, undefined, "点击卡片以查看卡片详情。"));
@@ -376,7 +380,7 @@ function buildResultItem(hit: CardInfo, deck: DeckData, onChange: () => void): H
 
   const img = document.createElement("img");
   img.className = "deck-card-image"; // 卡图尺寸复用构筑预览的 60px*88px
-  img.src = getCardImageUrl(hit.id, ENV);
+  setCardImage(img, hit.id, ENV);
   img.alt = hit.cn_name || hit.jp_name || String(hit.id);
   img.loading = "lazy";
 
