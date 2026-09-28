@@ -209,7 +209,7 @@ select {
 .pie-divider { border: 0; border-top: 1px solid var(--border); margin: 16px 0; }
 
 /* others 明细：与饼图同框，靠顶部细分隔线区隔 */
-.others-detail { margin-top: 18px; padding-top: 18px;
+.others-detail { margin-top: 18px; padding-top: 12px;
   border-top: 1px solid var(--border); }
 .others-detail h3 { margin: 0 0 10px; font-size: 15px; color: var(--text-secondary); }
 .others-list { list-style: none; margin: 0; padding: 0;

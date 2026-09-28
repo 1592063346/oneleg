@@ -111,8 +111,8 @@ export function buildPieView(state: State, actions: AppActions): HTMLElement {
   const meta = document.createElement("div");
   meta.className = "meta-row";
   meta.append(
-    metaBadge("类型", match.type),
-    metaBadge("日期", match.date),
+    metaBadge("比赛类型", match.type),
+    metaBadge("比赛时间", match.date),
     metaBadge("参赛人数", `${totalDecks(match)} 人`)
   );
   header.appendChild(meta);
@@ -245,8 +245,8 @@ function updateDropdownBtn(btn: HTMLButtonElement, match: Match | undefined, sta
 function metaBadge(label: string, value: string): HTMLElement {
   const badge = document.createElement("span");
   badge.className = "badge";
-  // 如果是类型徽章，加上对应颜色类
-  if (label === "类型" && matchTypeColor(value as Match["type"])) {
+  // 如果是比赛类型徽章，加上对应颜色类
+  if (label === "比赛类型" && matchTypeColor(value as Match["type"])) {
     badge.classList.add(`badge-${matchTypeColor(value as Match["type"])}`);
   }
   badge.innerHTML = `<span class="badge-k">${label}</span><span class="badge-v"></span>`;

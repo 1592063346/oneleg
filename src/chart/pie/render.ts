@@ -4,7 +4,6 @@ import { escapeHtml } from "../../core/html.js";
 import { seriesColor } from "../../core/palette.js";
 import { arcPath, arcRingPath, el, polarToCartesian, svgRoot } from "../svg.js";
 import { hideTooltip, showTooltip } from "../tooltip.js";
-import { createExportButton } from "../exportImage.js";
 import { partitionDecks, type Slice } from "./partition.js";
 import { buildOthersDetail } from "./others.js";
 
@@ -109,8 +108,9 @@ export function renderPie(
 }
 
 /**
- * 构建单个饼图区块（饼图 SVG + 导出按钮 + others 明细），图片预加载完成后再渲染。
- * exportTitle 为导出图片的文件名基底；caption 为饼图左上角的标注文字。
+ * 构建单个饼图区块（饼图 SVG + others 明细），图片预加载完成后再渲染。
+ * caption 为饼图左上角的标注文字；exportTitle 为导出图片的文件名基底，
+ * 导出按钮下线期间用不上，接入时去掉下划线即可（其调用处见下方注释）。
  */
 function buildPieSection(
   match: Match,
@@ -119,7 +119,7 @@ function buildPieSection(
   total: number,
   colorMap: Map<string, number>,
   loadOthersImage: boolean,
-  exportTitle: string,
+  _exportTitle: string,
   caption: string
 ): HTMLElement {
   const host = document.createElement("div");
@@ -188,13 +188,15 @@ function buildPieSection(
     chartCol.className = "pie-wrap";
     chartCol.setAttribute("data-export-target", "true");
 
-    // 标注文字与导出按钮独占一行（与饼图同宽），窄屏下按钮便不会压住饼图
+    // 标注文字独占一行，位于饼图上方
     const head = document.createElement("div");
     head.className = "pie-head";
     const cap = document.createElement("div");
     cap.className = "pie-caption";
     cap.textContent = caption;
-    head.append(cap, createExportButton(chartCol, exportTitle));
+    // 右上角的“导出图片”按钮暂时下线：实现保留在 chart/exportImage.ts，
+    // 恢复时引入 createExportButton，再把它 append 回这一行即可
+    head.append(cap);
 
     chartCol.append(head, buildSvg(match, slices, loadOthersImage));
     host.appendChild(chartCol);
