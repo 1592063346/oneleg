@@ -332,6 +332,8 @@ select {
   .meta-row { gap: 6px; }
   .badge { font-size: 12px; }
   .export-btn { padding: 6px 10px; font-size: 13px; }
+  /* 文本框自带 300px 最小宽，窄屏下会撑破导入折叠框，允许它压缩 */
+  .ydk-text-input { min-width: 0; }
   .rank-label { min-width: 60px; font-size: 14px; }
   .rank-item { font-size: 14px; }
   .deck-badge { font-size: 12px; padding: 2px 8px; }
@@ -493,6 +495,41 @@ select {
   transition: background 0.15s;
 }
 .builder-plain-btn:hover { background: var(--page); }
+/* 导入 YDK 折叠区：按钮与展开的两行同在一个只有边框的框内 */
+.builder-ydk-import {
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 10px 14px; margin-bottom: 14px;
+}
+/* 行自身的下边距在框内清零，行间距由 .builder-ydk-inner 的 gap 给 */
+.builder-ydk-import .controls { margin-bottom: 0; }
+.builder-ydk-toggle { display: inline-flex; align-items: center; }
+/* 正负号只是状态标记，不允许选中复制 */
+.builder-toggle-arrow {
+  margin-right: 6px; font-size: 18px; line-height: 1;
+  user-select: none;
+}
+
+/*
+ * 展开与收起的过渡：外层用 0fr -> 1fr 的网格行做高度动画（高度随内容实测，
+ * 文本框被拖高也跟得上），内层 min-height: 0 + overflow: hidden 负责裁剪。
+ * 收起后 visibility 置为 hidden（延迟到动画结束），使里面的控件不再被 Tab 命中。
+ */
+.builder-ydk-body {
+  display: grid; grid-template-rows: 0fr; visibility: hidden;
+  transition: grid-template-rows 0.18s ease, visibility 0s linear 0.18s;
+}
+.builder-ydk-body.open {
+  grid-template-rows: 1fr; visibility: visible;
+  transition: grid-template-rows 0.18s ease, visibility 0s;
+}
+.builder-ydk-inner {
+  min-height: 0; overflow: hidden;
+  display: flex; flex-direction: column; gap: 12px;
+  opacity: 0; transition: opacity 0.18s ease;
+}
+/* 与上方按钮的间距给在内层内容上：内层自身的 padding 在收起时仍会占高 */
+.builder-ydk-inner > .controls:first-child { margin-top: 12px; }
+.builder-ydk-body.open .builder-ydk-inner { opacity: 1; }
 /* 原生 file 输入总带着“未选择任何文件”文案，故把它透明地铺在 label 上，
    由 label 充当按钮；键盘聚焦仍能命中 input，故补一条 focus-within 轮廓 */
 .ydk-file-label { position: relative; display: inline-block; }
@@ -573,7 +610,7 @@ select {
   font-variant-numeric: tabular-nums;
 }
 
-/* 构筑展示区 */
+/* 构筑展示区：本站主体，边框比其余容器粗一档 */
 .builder-deck {
   padding: 20px 24px; margin-bottom: 14px;
   background: transparent; border: 1px solid var(--border);

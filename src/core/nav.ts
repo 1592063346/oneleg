@@ -2,10 +2,10 @@
 
 import type { EventEdition } from "./types.js";
 import type { State, View, AppActions } from "./config.js";
-import { EVENT_EDITION_CONFIGS, SITE_MENU, sitePath } from "./config.js";
+import { EVENT_EDITION_CONFIGS, SITE_MENU } from "./config.js";
 import { allDeckNames, loadData, top4DeckNames } from "./data.js";
 import { buildColorMap } from "./palette.js";
-import { confirmLeaveDeck, syncUrl } from "./router.js";
+import { navigateToSite, syncUrl } from "./router.js";
 import { buildFooter } from "./footer.js";
 
 const app = document.getElementById("app")!;
@@ -46,7 +46,7 @@ export function renderShell(state: State, actions: AppActions): void {
   body.className = "view-body";
   app.appendChild(body);
 
-  app.appendChild(buildFooter());
+  app.appendChild(buildFooter(state, actions));
 
   actions.renderBody(state);
 }
@@ -69,13 +69,7 @@ function buildSiteDropdown(state: State, actions: AppActions): HTMLElement {
     const li = document.createElement("li");
     if (item.site === state.config.site) li.classList.add("active");
     li.textContent = item.label;
-    li.addEventListener("click", () => {
-      if (item.site === state.config.site) return;
-      // 离开构筑导出站会丢掉当前构筑，先问一句
-      if (!confirmLeaveDeck(state.builderDeck)) return;
-      history.pushState(null, "", sitePath(item.site));
-      actions.loadSite(item.site);
-    });
+    li.addEventListener("click", () => navigateToSite(item.site, state, actions));
     list.appendChild(li);
   });
   listWrap.appendChild(list);

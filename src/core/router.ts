@@ -1,9 +1,20 @@
 // URL 与应用状态之间的映射，以及离开页面时的构筑提醒
 
 import type { Match, EventEdition, DeckData } from "./types.js";
-import type { Site, State } from "./config.js";
+import type { Site, State, AppActions } from "./config.js";
 import { sitePath } from "./config.js";
 import { encodeDeck } from "../domain/deckCode.js";
+
+/**
+ * 站内切换站点：先过“构筑会丢失”的确认，再 pushState 并加载目标站点。
+ * 站点菜单与页脚的“关于网站”共用此路径，两处行为须一致。
+ */
+export function navigateToSite(site: Site, state: State, actions: AppActions): void {
+  if (site === state.config.site) return;
+  if (!confirmLeaveDeck(state.builderDeck)) return;
+  history.pushState(null, "", sitePath(site));
+  actions.loadSite(site);
+}
 
 /** 将日期 yyyy/mm/dd 转为 URL 参数形式 yyyymmdd */
 export function dateToParam(date: string): string {

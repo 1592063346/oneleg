@@ -33,6 +33,9 @@ const MAX_COPIES = 3;
 /** 导出语言，默认日文。放模块级，主题切换重绘视图时不会丢 */
 let exportLang: DeckFormLang = "jp";
 
+/** 导入 YDK 折叠区是否展开，同样放模块级以免重绘时被收起 */
+let ydkImportOpen = false;
+
 /**
  * 当前适用的禁限卡表；null 表示“无”。
  * 与 state.builderLimitTag 是同一件事的两种形态，由 resolveLimit 派生，
@@ -106,8 +109,7 @@ export function buildBuilderView(state: State): HTMLElement {
   };
 
   wrap.append(
-    buildFileImport(deck, sync),
-    buildTextImport(deck, sync),
+    buildYdkImport(deck, sync),
     buildCardSearch(deck, sync),
     buildLimitRow(state, refresh),
     deckHost,
@@ -172,6 +174,47 @@ function controlRow(labelText: string): HTMLElement {
 function reportImportFailure(note: HTMLElement, message: string): void {
   note.textContent = "";
   alert(message);
+}
+
+/**
+ * 1+2. 导入 YDK 的折叠区：文件与文本两种方式收在里面，默认收起。
+ * 本站的主要入口是卡片搜索，导入是次要功能，常驻两行喧宾夺主。
+ */
+function buildYdkImport(deck: DeckData, onChange: () => Promise<void>): HTMLElement {
+  const host = document.createElement("div");
+  host.className = "builder-ydk-import";
+
+  const row = document.createElement("div");
+  row.className = "controls";
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "builder-plain-btn builder-ydk-toggle";
+  const arrow = document.createElement("span");
+  arrow.className = "builder-toggle-arrow";
+  btn.append(arrow, "导入 YDK");
+
+  // 展开动画靠父层的高度过渡，故内层再包一层：外层量高度，内层裁掉溢出的内容
+  const body = document.createElement("div");
+  body.className = "builder-ydk-body";
+  const inner = document.createElement("div");
+  inner.className = "builder-ydk-inner";
+  inner.append(buildFileImport(deck, onChange), buildTextImport(deck, onChange));
+  body.appendChild(inner);
+
+  const apply = (open: boolean): void => {
+    arrow.textContent = open ? "−" : "+";
+    body.classList.toggle("open", open);
+    btn.setAttribute("aria-expanded", String(open));
+  };
+  apply(ydkImportOpen);
+  btn.addEventListener("click", () => {
+    ydkImportOpen = !ydkImportOpen;
+    apply(ydkImportOpen);
+  });
+
+  row.appendChild(btn);
+  host.append(row, body);
+  return host;
 }
 
 /** 1. 上传 .ydk 文件，覆盖当前构筑 */
