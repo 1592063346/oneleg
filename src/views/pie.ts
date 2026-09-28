@@ -112,7 +112,7 @@ export function buildPieView(state: State, actions: AppActions): HTMLElement {
   meta.className = "meta-row";
   meta.append(
     metaBadge("比赛类型", match.type),
-    metaBadge("比赛时间", match.date),
+    metaBadge("比赛日期", match.date),
     metaBadge("参赛人数", `${totalDecks(match)} 人`)
   );
   header.appendChild(meta);

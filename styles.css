@@ -283,7 +283,12 @@ select {
 .pie-head { display: flex; align-items: center; justify-content: space-between;
   gap: 12px; width: 100%; margin-bottom: 4px; }
 .pie-view-inner svg { height: auto; }
-.pie-wrap svg { width: 100%; max-width: 760px; height: auto; }
+/* 画布宽度上限由 JS 按标签实测给出，等于内容的自然宽度（见 chart/pie/render.ts 的 cropPies）。
+   页面变窄时照旧整块等比缩小，只是幅面比原先窄，同样的页面宽度下饼图缩得少一些 */
+.pie-wrap svg {
+  display: block; width: 100%;
+  margin: 0 auto; height: auto;
+}
 
 /* 导出按钮 */
 .export-btn-wrap { flex: none; }

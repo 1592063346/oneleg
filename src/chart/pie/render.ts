@@ -7,12 +7,19 @@ import { hideTooltip, showTooltip } from "../tooltip.js";
 import { partitionDecks, type Slice } from "./partition.js";
 import { buildOthersDetail } from "./others.js";
 
-// 画布留出两侧空间给引导标签；饼图在画布中水平居中
+// 引导线的几何，绘制与收边共用
+const LEADER_RADIAL = 22; // 自圆弧引出的径向段
+const LEADER_HORIZ = 26; // 水平段
+const LABEL_GAP = 6; // 末段到文字的水平间距
+const NAME_FONT = 14; // 名称行字号
+const CROP_PAD = 8; // 收边时内容外侧留的余量
+
+// 基准画布：绘制坐标由它推出，实际幅面在画完后按标签实测收边（见 cropPies）
 const W = 760;
 const H = 520;
+const R = 175;
 const CX = W / 2;
 const CY = H / 2;
-const R = 175;
 const OTHERS_LABEL = "others";
 
 // 图片中心配置
@@ -81,7 +88,8 @@ export function renderPie(
         colorMap,
         false,
         `${match.title}淘汰赛`,
-        "淘汰赛卡组分布"
+        "淘汰赛卡组分布",
+        container
       )
     );
 
@@ -101,7 +109,10 @@ export function renderPie(
   const total = totalDecks(match);
   const { shown, others } = partitionDecks(match.decks);
   container.appendChild(
-    buildPieSection(match, shown, others, total, colorMap, loadOthersImage, match.title, "总环境卡组分布")
+    buildPieSection(
+      match, shown, others, total, colorMap, loadOthersImage,
+      match.title, "总环境卡组分布", container
+    )
   );
 
   return container;
@@ -111,6 +122,7 @@ export function renderPie(
  * 构建单个饼图区块（饼图 SVG + others 明细），图片预加载完成后再渲染。
  * caption 为饼图左上角的标注文字；exportTitle 为导出图片的文件名基底，
  * 导出按钮下线期间用不上，接入时去掉下划线即可（其调用处见下方注释）。
+ * container 为同一场比赛饼图共同的父容器，画完就地对整组收边（见 cropPies）。
  */
 function buildPieSection(
   match: Match,
@@ -120,7 +132,8 @@ function buildPieSection(
   colorMap: Map<string, number>,
   loadOthersImage: boolean,
   _exportTitle: string,
-  caption: string
+  caption: string,
+  container: HTMLElement
 ): HTMLElement {
   const host = document.createElement("div");
   const othersSum = others.reduce((s, d) => s + d.num, 0);
@@ -200,6 +213,8 @@ function buildPieSection(
 
     chartCol.append(head, buildSvg(match, slices, loadOthersImage));
     host.appendChild(chartCol);
+    // 挂上 DOM 才量得到标签尺寸，故收边在此
+    cropPies(container);
 
     // others 明细
     if (others.length > 0) {
@@ -212,6 +227,8 @@ function buildPieSection(
 
 function buildSvg(match: Match, slices: Slice[], loadOthersImage: boolean): SVGSVGElement {
   const svg = svgRoot(W, H);
+  // 收边失败时的兜底：不放得比基准画布更宽
+  svg.style.maxWidth = `${W}px`;
   svg.setAttribute("aria-label", `${match.title} 卡组分布饼图`);
   const surface =
     getComputedStyle(document.documentElement).getPropertyValue("--surface-1").trim() ||
@@ -446,8 +463,11 @@ function buildSvg(match: Match, slices: Slice[], loadOthersImage: boolean): SVGS
   // 渲染子卡组（双层饼图）
   renderSubdecks(svg, slices, defs, uid, surface);
 
-  // 引导线标签：每块饼旁标注"名称 数量（占比）"
-  drawLeaderLabels(svg, slices);
+  // 引导线标签：每块饼旁标注"名称 数量（占比）"。
+  // 单独成组：收边只量这一组，不连带被裁剪的图片
+  const leaders = el("g", { class: "pie-leaders" });
+  drawLeaderLabels(leaders, slices);
+  svg.appendChild(leaders);
 
   return svg;
 }
@@ -671,19 +691,19 @@ const INK_SECONDARY = () =>
   getComputedStyle(document.documentElement).getPropertyValue("--text-secondary").trim() ||
   "#52514e";
 
-/** 在每个饼块外侧用引导线引出文字标签 */
-function drawLeaderLabels(svg: SVGSVGElement, slices: Slice[]): void {
+/** 在每个饼块外侧用引导线引出文字标签，全部挂在给定的分组里 */
+function drawLeaderLabels(group: SVGGElement, slices: Slice[]): void {
   const leader = INK_SECONDARY();
   for (const s of slices) {
     const mid = (s.start + s.end) / 2;
     const right = mid <= 180; // 右半区标签朝右，左半区朝左
     // 引导线：从饼块边缘 -> 拐点 -> 水平延伸
     const p0 = polarToCartesian(CX, CY, R, mid);
-    const p1 = polarToCartesian(CX, CY, R + 22, mid);
-    const p2x = right ? p1.x + 26 : p1.x - 26;
-    const textX = right ? p2x + 6 : p2x - 6;
+    const p1 = polarToCartesian(CX, CY, R + LEADER_RADIAL, mid);
+    const p2x = right ? p1.x + LEADER_HORIZ : p1.x - LEADER_HORIZ;
+    const textX = right ? p2x + LABEL_GAP : p2x - LABEL_GAP;
 
-    svg.appendChild(
+    group.appendChild(
       el("polyline", {
         points: `${p0.x.toFixed(1)},${p0.y.toFixed(1)} ${p1.x.toFixed(1)},${p1.y.toFixed(
           1
@@ -694,7 +714,7 @@ function drawLeaderLabels(svg: SVGSVGElement, slices: Slice[]): void {
         opacity: 0.6,
       })
     );
-    svg.appendChild(
+    group.appendChild(
       el("circle", { cx: p0.x, cy: p0.y, r: 2.5, fill: s.color })
     );
 
@@ -707,7 +727,7 @@ function drawLeaderLabels(svg: SVGSVGElement, slices: Slice[]): void {
         "text-anchor": right ? "start" : "end",
         "dominant-baseline": "central",
         fill: INK_PRIMARY(),
-        "font-size": 14,
+        "font-size": NAME_FONT,
         "font-weight": 600,
       },
       [s.name]
@@ -725,8 +745,8 @@ function drawLeaderLabels(svg: SVGSVGElement, slices: Slice[]): void {
       },
       [`${s.num}（${(s.pct * 100).toFixed(1)}%）`]
     );
-    svg.appendChild(nameText);
-    svg.appendChild(valText);
+    group.appendChild(nameText);
+    group.appendChild(valText);
 
     // 如果有子卡组，添加第三行
     if (s.subdecks && s.subdecks.length > 0) {
@@ -744,8 +764,38 @@ function drawLeaderLabels(svg: SVGSVGElement, slices: Slice[]): void {
         },
         [subdeckText]
       );
-      svg.appendChild(subdeckLine);
+      group.appendChild(subdeckLine);
     }
+  }
+}
+
+/**
+ * 按标签的实测范围给画布收边，裁掉多余的空白。
+ * 同一场比赛的几张饼图一起量、取最宽的一张，幅面与缩放才一致；须在挂上 DOM 之后调用。
+ */
+function cropPies(container: HTMLElement): void {
+  const items: Array<{ svg: SVGSVGElement; box: DOMRect }> = [];
+  for (const svg of Array.from(container.querySelectorAll<SVGSVGElement>(".pie-wrap svg"))) {
+    const labels = svg.querySelector<SVGGElement>(".pie-leaders");
+    const box = labels?.getBBox();
+    // 量不到时整组作罢，保留基准画布
+    if (!box || (box.width === 0 && box.height === 0)) return;
+    items.push({ svg, box });
+  }
+  if (items.length === 0) return;
+
+  // 两侧取对称值，饼圆才不偏离画布中心
+  let halfW = R;
+  for (const item of items) {
+    halfW = Math.max(halfW, CX - item.box.x, item.box.x + item.box.width - CX);
+  }
+  halfW += CROP_PAD;
+
+  for (const item of items) {
+    const halfH = Math.max(R, CY - item.box.y, item.box.y + item.box.height - CY) + CROP_PAD;
+    item.svg.setAttribute("viewBox", `${CX - halfW} ${CY - halfH} ${halfW * 2} ${halfH * 2}`);
+    // 上限＝自然尺寸；页面变窄时照旧整块等比缩小
+    item.svg.style.maxWidth = `${halfW * 2}px`;
   }
 }
 
