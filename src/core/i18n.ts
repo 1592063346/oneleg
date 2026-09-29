@@ -55,7 +55,7 @@ const MESSAGES = {
   "menu.builder": msg("构筑导出", "Deck Builder"),
   "menu.faq": msg("关于网站", "About"),
   "nav.siteMenu": msg("切换站点", "Switch site"),
-  "nav.view.pie": msg("比赛详情", "Tournament Details"),
+  "nav.view.pie": msg("比赛详情", "Tournaments"),
   "nav.view.trend": msg("上位卡组统计", "Top Cut Deck Stats"),
   "nav.lang.toEn": msg("切换到英文", "Switch to English"),
   "nav.lang.toZh": msg("切换到中文", "Switch to Chinese"),
