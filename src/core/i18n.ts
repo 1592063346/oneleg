@@ -95,7 +95,7 @@ const MESSAGES = {
   "deck.main": msg("主卡组", "Main Deck"),
   "deck.extra": msg("额外卡组", "Extra Deck"),
   "deck.side": msg("副卡组", "Side Deck"),
-  "deck.preview": msg("构筑预览", "Deck preview"),
+  "deck.preview": msg("构筑预览", "Deck Preview"),
   "deck.downloadYdk": msg("下载构筑 YDK 文件", "Download YDK"),
   "deck.removeHint": msg("点击移除", "Click to remove"),
   "deck.overLimit": msg("{title} {count} 张，超过 {limit} 张上限", "{title} has {count} cards, over the limit of {limit}"),
