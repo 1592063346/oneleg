@@ -56,7 +56,7 @@ const MESSAGES = {
   "menu.faq": msg("关于网站", "About"),
   "nav.siteMenu": msg("切换站点", "Switch site"),
   "nav.view.pie": msg("比赛详情", "Tournaments"),
-  "nav.view.trend": msg("上位卡组统计", "Top Cut Deck Stats"),
+  "nav.view.trend": msg("上位卡组统计", "Top Cut Stats"),
   "nav.lang.toEn": msg("切换到英文", "Switch to English"),
   "nav.lang.toZh": msg("切换到中文", "Switch to Chinese"),
 
@@ -105,10 +105,10 @@ const MESSAGES = {
   "trend.dateSeparator": msg(" 至 ", " to "),
   "trend.clear": msg("清除", "Clear"),
   "trend.type": msg("比赛类型：", "Type:"),
-  "trend.addDeck": msg("添加卡组：", "Add deck:"),
-  "trend.searchPlaceholder": msg("搜索卡组名并添加…", "Search deck names…"),
-  "trend.noMatchingDeck": msg("无匹配的卡组名", "No matching deck name"),
-  "trend.allDecksAdded": msg("已添加全部上位卡组", "All decks added"),
+  "trend.addDeck": msg("添加卡组：", "Add archetype:"),
+  "trend.searchPlaceholder": msg("搜索卡组名并添加…", "Search archetype names…"),
+  "trend.noMatchingDeck": msg("无匹配的卡组名", "No matching archetype name"),
+  "trend.allDecksAdded": msg("已添加全部上位卡组", "All archetypes added"),
   "trend.showAll": msg("查看全部上位卡组", "Show all"),
   "trend.clearDecks": msg("清空卡组", "Clear"),
 
@@ -127,7 +127,7 @@ const MESSAGES = {
   ),
   "builder.ydk.importFailed": msg("导入失败：{msg}", "Import failed: {msg}"),
   "builder.ydk.readFailed": msg("读取失败：{msg}", "Read failed: {msg}"),
-  "builder.search": msg("卡片搜索：", "Card search:"),
+  "builder.search": msg("卡片搜索：", "Search card:"),
   "builder.search.placeholder": msg("输入关键词后回车…", "Type a keyword and press Enter…"),
   "builder.search.submit": msg("搜索", "Search"),
   "builder.search.clearDeck": msg("清空构筑", "Clear deck"),
@@ -197,7 +197,7 @@ const MESSAGES = {
   // ---- 饼图 ----
   "pieChart.title": msg("比赛结果与环境分布", "Results and Meta Breakdown"),
   "pieChart.elimTitle": msg("{title}淘汰赛"),
-  "pieChart.elimCaption": msg("淘汰赛卡组分布", "Top cut deck breakdown"),
+  "pieChart.elimCaption": msg("淘汰赛卡组分布", "Top cut breakdown"),
   "pieChart.caption": msg("总环境卡组分布", "Overall meta breakdown"),
   "pieChart.empty": msg("本场比赛暂无环境卡组数据。", "No breakdown for this tournament."),
   "pieChart.loading": msg("饼图加载中……", "Loading chart…"),
@@ -206,13 +206,13 @@ const MESSAGES = {
   "pieChart.subdeckSeparator": msg("；", "; "),
   "others.title": msg(
     "others 详情（共 {count} 种 / {sum} 个卡组）",
-    "others details ({count} types / {sum} decks)"
+    "others details ({count} archetypes / {sum} decks)"
   ),
 
   // ---- 折线图 ----
   "line.empty": msg(
     "请选择至少一个卡组以查看上位数量统计",
-    "Select at least one deck to see top cut counts"
+    "Select at least one archetype to see top cut counts"
   ),
   "line.aria": msg("卡组数量趋势折线图", "Deck count trend line chart"),
 
