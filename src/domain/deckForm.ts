@@ -7,6 +7,7 @@
 // 于是改为用 canvas 借系统字体把文字画成整页透明 PNG，再贴回 PDF，省掉往仓库塞字体文件。
 
 import type { DeckData } from "../core/types.js";
+import { t } from "../core/i18n.js";
 import { TYPE, cacheCardInfos, cachedCardInfo } from "./cards.js";
 
 /** 导出语言 */
@@ -178,7 +179,7 @@ function toPngBytes(canvas: HTMLCanvasElement): Promise<Uint8Array> {
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => {
       if (!blob) {
-        reject(new Error("画布导出图片失败"));
+        reject(new Error(t("deckForm.pngFailed")));
         return;
       }
       blob.arrayBuffer().then((buf) => resolve(new Uint8Array(buf)), reject);
@@ -209,7 +210,7 @@ export async function exportDeckForm(deck: DeckData, lang: DeckFormLang): Promis
   const { PDFDocument } = await import("pdf-lib");
 
   const res = await fetch(FORM_URL);
-  if (!res.ok) throw new Error(`读取空白卡表失败（HTTP ${res.status}）`);
+  if (!res.ok) throw new Error(t("deckForm.readFailed", { status: res.status }));
   const doc = await PDFDocument.load(await res.arrayBuffer());
   const page = doc.getPages()[0];
   const pageW = page.getWidth();
@@ -219,7 +220,7 @@ export async function exportDeckForm(deck: DeckData, lang: DeckFormLang): Promis
   canvas.width = Math.round(pageW * SCALE);
   canvas.height = Math.round(pageH * SCALE);
   const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("浏览器未能创建画布");
+  if (!ctx) throw new Error(t("deckForm.noCanvas"));
 
   paintDeck(ctx, deck, lang);
 
@@ -236,6 +237,6 @@ export async function exportDeckForm(deck: DeckData, lang: DeckFormLang): Promis
  */
 export async function downloadBlankForm(): Promise<void> {
   const res = await fetch(FORM_URL);
-  if (!res.ok) throw new Error(`读取空白卡表失败（HTTP ${res.status}）`);
+  if (!res.ok) throw new Error(t("deckForm.readFailed", { status: res.status }));
   downloadPdf(new Uint8Array(await res.arrayBuffer()), "deckform_blank.pdf");
 }

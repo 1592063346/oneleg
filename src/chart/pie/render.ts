@@ -1,6 +1,7 @@
 import type { DeckCount, Match } from "../../core/types.js";
 import { totalDecks } from "../../core/data.js";
 import { escapeHtml } from "../../core/html.js";
+import { deckName, t } from "../../core/i18n.js";
 import { seriesColor } from "../../core/palette.js";
 import { arcPath, arcRingPath, el, polarToCartesian, svgRoot } from "../svg.js";
 import { hideTooltip, showTooltip } from "../tooltip.js";
@@ -22,6 +23,9 @@ const CX = W / 2;
 const CY = H / 2;
 const OTHERS_LABEL = "others";
 
+/** 饼图卡图与 center.json 所在目录 */
+const PIC_DIR = "./sources/pic/";
+
 // 图片中心配置
 interface ImageCenterConfig {
   center: [number, number];
@@ -32,7 +36,7 @@ let imageCenters: Record<string, ImageCenterConfig> = {};
 // 加载图片中心配置
 async function loadImageCenters(): Promise<void> {
   try {
-    const response = await fetch("./data/pic/center.json");
+    const response = await fetch(PIC_DIR + "center.json");
     if (response.ok) {
       const data = await response.json();
       imageCenters = data.centers || {};
@@ -63,7 +67,7 @@ export function renderPie(
 
   const chartTitle = document.createElement("h3");
   chartTitle.className = "pie-title";
-  chartTitle.textContent = "比赛结果与环境分布";
+  chartTitle.textContent = t("pieChart.title");
   container.appendChild(chartTitle);
 
   // 排名信息（若有）插入饼图前，用短横线分隔
@@ -87,8 +91,8 @@ export function renderPie(
         elimTotal,
         colorMap,
         false,
-        `${match.title}淘汰赛`,
-        "淘汰赛卡组分布",
+        t("pieChart.elimTitle", { title: match.title }),
+        t("pieChart.elimCaption"),
         container
       )
     );
@@ -101,7 +105,7 @@ export function renderPie(
   if (match.decks.length === 0) {
     const empty = document.createElement("p");
     empty.className = "empty-note";
-    empty.textContent = "本场比赛暂无环境卡组数据。";
+    empty.textContent = t("pieChart.empty");
     container.appendChild(empty);
     return container;
   }
@@ -111,7 +115,7 @@ export function renderPie(
   container.appendChild(
     buildPieSection(
       match, shown, others, total, colorMap, loadOthersImage,
-      match.title, "总环境卡组分布", container
+      match.title, t("pieChart.caption"), container
     )
   );
 
@@ -176,7 +180,7 @@ function buildPieSection(
   // 创建加载提示
   const loadingMsg = document.createElement("p");
   loadingMsg.className = "empty-note";
-  loadingMsg.textContent = "饼图加载中……";
+  loadingMsg.textContent = t("pieChart.loading");
   host.appendChild(loadingMsg);
 
   // 使用 HTML Image 对象预加载所有图片到浏览器缓存
@@ -229,7 +233,7 @@ function buildSvg(match: Match, slices: Slice[], loadOthersImage: boolean): SVGS
   const svg = svgRoot(W, H);
   // 收边失败时的兜底：不放得比基准画布更宽
   svg.style.maxWidth = `${W}px`;
-  svg.setAttribute("aria-label", `${match.title} 卡组分布饼图`);
+  svg.setAttribute("aria-label", t("pieChart.aria", { title: match.title }));
   const surface =
     getComputedStyle(document.documentElement).getPropertyValue("--surface-1").trim() ||
     "#fcfcfb";
@@ -254,10 +258,9 @@ function buildSvg(match: Match, slices: Slice[], loadOthersImage: boolean): SVGS
     path.style.transition = "opacity .12s ease";
 
     const move = (ev: MouseEvent) => {
+      const text = t("pieChart.tooltip", { num: s.num, pct: (s.pct * 100).toFixed(1) });
       showTooltip(
-        `<strong>${escapeHtml(s.name)}</strong><br>数量 ${s.num} · 占比 ${(s.pct * 100).toFixed(
-          1
-        )}%`,
+        `<strong>${escapeHtml(deckName(s.name))}</strong><br>${escapeHtml(text)}`,
         ev.clientX,
         ev.clientY
       );
@@ -730,7 +733,7 @@ function drawLeaderLabels(group: SVGGElement, slices: Slice[]): void {
         "font-size": NAME_FONT,
         "font-weight": 600,
       },
-      [s.name]
+      [deckName(s.name)]
     );
     // 数量与占比行
     const valText = el(
@@ -750,8 +753,10 @@ function drawLeaderLabels(group: SVGGElement, slices: Slice[]): void {
 
     // 如果有子卡组，添加第三行
     if (s.subdecks && s.subdecks.length > 0) {
-      const subdeckParts = s.subdecks.map(sd => `${sd.deck}${s.name} ${sd.num}`);
-      const subdeckText = `${subdeckParts.join('；')}`;
+      const subdeckParts = s.subdecks.map(
+        (sd) => `${deckName(sd.deck)}${deckName(s.name)} ${sd.num}`
+      );
+      const subdeckText = subdeckParts.join(t("pieChart.subdeckSeparator"));
       const subdeckLine = el(
         "text",
         {
@@ -805,7 +810,7 @@ function othersColor(): string {
   );
 }
 
-/** 卡组对应背景图路径（pic 文件夹，按名称查找） */
+/** 卡组对应背景图路径（PIC_DIR 下按卡组名查找） */
 function imageHref(name: string): string {
-  return `./data/pic/${encodeURIComponent(name)}.webp`;
+  return `${PIC_DIR}${encodeURIComponent(name)}.webp`;
 }

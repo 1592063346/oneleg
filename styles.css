@@ -118,6 +118,9 @@ select {
   user-select: none;
 }
 .site-dropdown-btn:hover { color: #2a78d6; }
+/* 语言切换：与站点菜单按钮同样式，图标为地球；负外边距用来抵消按钮的内边距，使两钮靠紧 */
+.lang-toggle { margin-left: -6px; }
+.lang-toggle svg { display: block; }
 /* z-index 高过正文里的下拉（.match-dropdown-list 为 10），使站点菜单压在它们之上 */
 .site-dropdown-list { display: none; min-width: 160px; z-index: 20; }
 /* 悬停按钮或菜单时展开；菜单与按钮相接，留出容错间隙避免闪烁 */
@@ -557,6 +560,8 @@ select {
 
 /* 检索结果浮层：绝对定位覆盖在构筑展示之上，内部滚动 */
 .builder-search { position: relative; }
+/* 本行只有这一个输入框，让它占满余下的宽度；趋势页的同名输入框不受影响 */
+.builder-search .deck-input { flex: 1; max-width: 300px }
 .builder-results {
   position: absolute; top: 100%; left: 0; right: 0; margin-top: 6px; z-index: 20;
   max-height: 420px; overflow-y: auto;

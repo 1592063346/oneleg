@@ -1,6 +1,7 @@
 import type { Match } from "../core/types.js";
 import { deckCountIn } from "../core/data.js";
 import { escapeHtml } from "../core/html.js";
+import { deckName, t } from "../core/i18n.js";
 import { seriesColor } from "../core/palette.js";
 import { el, svgRoot } from "./svg.js";
 import { hideTooltip, showTooltip } from "./tooltip.js";
@@ -38,7 +39,7 @@ export function renderLine(
   if (selected.length === 0) {
     const note = document.createElement("p");
     note.className = "empty-note";
-    note.textContent = "请选择至少一个卡组以查看上位数量统计";
+    note.textContent = t("line.empty");
     container.appendChild(note);
     return container;
   }
@@ -67,7 +68,7 @@ export function renderLine(
   }));
 
   const svg = svgRoot(W, H);
-  svg.setAttribute("aria-label", "卡组数量趋势折线图");
+  svg.setAttribute("aria-label", t("line.aria"));
 
   drawGridAndAxes(svg, matches, yMax, xAt, yAt);
   drawSeries(svg, series);
@@ -235,7 +236,7 @@ function attachHover(
       .map((s) => {
         const c = seriesColor(s.colorIndex);
         return `<div class="tt-row"><span class="tt-dot" style="background:${c}"></span>${escapeHtml(
-          s.name
+          deckName(s.name)
         )}<span class="tt-num">${s.points[i].value}</span></div>`;
       })
       .join("");
@@ -264,7 +265,7 @@ function buildLegend(series: Series[]): HTMLElement {
     swatch.style.background = seriesColor(s.colorIndex);
     const label = document.createElement("span");
     label.className = "legend-label";
-    label.textContent = s.name;
+    label.textContent = deckName(s.name);
     li.append(swatch, label);
     legend.appendChild(li);
   }

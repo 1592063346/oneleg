@@ -3,6 +3,7 @@
 import type { Match, Player } from "../core/types.js";
 import type { State, AppActions } from "../core/config.js";
 import { totalDecks } from "../core/data.js";
+import { deckName, matchTypeName, t } from "../core/i18n.js";
 import { renderPie } from "../chart/pie/index.js";
 import { loadDeckFile, createDeckModal, dropAbsentCards } from "../domain/deck.js";
 import { cacheCardInfos } from "../domain/cards.js";
@@ -30,7 +31,7 @@ export function buildPieView(state: State, actions: AppActions): HTMLElement {
   controls.className = "controls";
   const label = document.createElement("span");
   label.className = "controls-label";
-  label.textContent = "选择比赛：";
+  label.textContent = t("pie.selectMatch");
   controls.appendChild(label);
 
   // 自定义下拉：显示当前选中项 + 类型徽章
@@ -62,7 +63,7 @@ export function buildPieView(state: State, actions: AppActions): HTMLElement {
     }
     const typeBadge = document.createElement("span");
     typeBadge.className = `type-tag type-tag-${matchTypeColor(m.type)}`;
-    typeBadge.textContent = m.type;
+    typeBadge.textContent = matchTypeName(m.type);
     li.appendChild(typeBadge);
     li.addEventListener("click", () => {
       state.selectedMatch = i;
@@ -96,7 +97,7 @@ export function buildPieView(state: State, actions: AppActions): HTMLElement {
   if (!match) {
     const note = document.createElement("p");
     note.className = "empty-note";
-    note.textContent = "暂无比赛数据。";
+    note.textContent = t("pie.noMatch");
     wrap.appendChild(note);
     return wrap;
   }
@@ -111,9 +112,9 @@ export function buildPieView(state: State, actions: AppActions): HTMLElement {
   const meta = document.createElement("div");
   meta.className = "meta-row";
   meta.append(
-    metaBadge("比赛类型", match.type),
-    metaBadge("比赛日期", match.date),
-    metaBadge("参赛人数", `${totalDecks(match)} 人`)
+    metaBadge(t("pie.meta.type"), matchTypeName(match.type), matchTypeColor(match.type)),
+    metaBadge(t("pie.meta.date"), match.date),
+    metaBadge(t("pie.meta.players"), t("pie.meta.playersValue", { n: totalDecks(match) }))
   );
   header.appendChild(meta);
   wrap.appendChild(header);
@@ -137,11 +138,11 @@ export function buildPieView(state: State, actions: AppActions): HTMLElement {
 function buildRankings(match: Match, state: State): HTMLElement {
   const rankings = document.createElement("div");
   rankings.className = "rankings";
-  rankings.appendChild(buildRankingLine("🥇 冠军", match["1st"], match, state));
+  rankings.appendChild(buildRankingLine(t("rank.first"), match["1st"], match, state));
 
   // 亚军（可选）
   if (match["2nd"]) {
-    rankings.appendChild(buildRankingLine("🥈 亚军", match["2nd"], match, state));
+    rankings.appendChild(buildRankingLine(t("rank.second"), match["2nd"], match, state));
   }
 
   // 四强（可选）
@@ -150,7 +151,7 @@ function buildRankings(match: Match, state: State): HTMLElement {
     top4.className = "ranking-line";
     const top4Label = document.createElement("span");
     top4Label.className = "rank-label";
-    top4Label.textContent = "🥉 四强";
+    top4Label.textContent = t("rank.top4");
     top4.appendChild(top4Label);
     const top4List = document.createElement("div");
     top4List.className = "rank-players";
@@ -185,16 +186,16 @@ function buildPlayerItem(player: Player, match: Match, state: State): HTMLElemen
   deckBadge.className = "deck-badge";
 
   if (player.deck_file) {
-    const deckName = document.createElement("span");
-    deckName.textContent = player.deck;
+    const badgeName = document.createElement("span");
+    badgeName.textContent = deckName(player.deck);
     const divider = document.createElement("span");
     divider.className = "deck-badge-divider";
     const previewLink = document.createElement("span");
     previewLink.className = "deck-preview-link";
-    previewLink.textContent = "查看构筑";
+    previewLink.textContent = t("deck.view");
     previewLink.addEventListener("click", async (e) => {
       e.stopPropagation();
-      previewLink.textContent = "加载中...";
+      previewLink.textContent = t("common.loading");
       const deck = await loadDeckFile(match.date, player.id, state.config.deckDir);
       if (deck) {
         // 先补齐卡片信息：先行卡的临时编号借此换成官方密码，卡图才能落到常规图库；
@@ -204,13 +205,13 @@ function buildPlayerItem(player: Player, match: Match, state: State): HTMLElemen
         const modal = createDeckModal(deck, match.env ?? "ocg");
         document.body.appendChild(modal);
       } else {
-        alert("无法加载卡组文件");
+        alert(t("deck.loadFailed"));
       }
-      previewLink.textContent = "查看构筑";
+      previewLink.textContent = t("deck.view");
     });
-    deckBadge.append(deckName, divider, previewLink);
+    deckBadge.append(badgeName, divider, previewLink);
   } else {
-    deckBadge.textContent = player.deck;
+    deckBadge.textContent = deckName(player.deck);
   }
 
   item.append(playerName, " ", deckBadge);
@@ -219,7 +220,7 @@ function buildPlayerItem(player: Player, match: Match, state: State): HTMLElemen
 
 function updateDropdownBtn(btn: HTMLButtonElement, match: Match | undefined, state: State): void {
   if (!match) {
-    btn.textContent = "（无比赛）";
+    btn.textContent = t("pie.noMatchOption");
     return;
   }
   btn.innerHTML = "";
@@ -235,20 +236,17 @@ function updateDropdownBtn(btn: HTMLButtonElement, match: Match | undefined, sta
   }
   const typeBadge = document.createElement("span");
   typeBadge.className = `type-tag type-tag-${matchTypeColor(match.type)}`;
-  typeBadge.textContent = match.type;
+  typeBadge.textContent = matchTypeName(match.type);
   const arrow = document.createElement("span");
   arrow.className = "dropdown-arrow";
   arrow.textContent = "▼";
   btn.append(typeBadge, arrow);
 }
 
-function metaBadge(label: string, value: string): HTMLElement {
+/** color 为比赛类型徽章的配色标识，其余徽章留空 */
+function metaBadge(label: string, value: string, color = ""): HTMLElement {
   const badge = document.createElement("span");
-  badge.className = "badge";
-  // 如果是比赛类型徽章，加上对应颜色类
-  if (label === "比赛类型" && matchTypeColor(value as Match["type"])) {
-    badge.classList.add(`badge-${matchTypeColor(value as Match["type"])}`);
-  }
+  badge.className = color ? `badge badge-${color}` : "badge";
   badge.innerHTML = `<span class="badge-k">${label}</span><span class="badge-v"></span>`;
   badge.querySelector(".badge-v")!.textContent = value;
   return badge;

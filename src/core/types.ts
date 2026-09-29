@@ -66,6 +66,8 @@ export interface Match {
 export interface LimitTable {
   /** 表名，如 "2026 年 7 月表（OCG）" */
   name: string;
+  /** 英文表名，英文模式用它（见 limitName）；缺失则照显中文 */
+  name_en?: string;
   /** 英文唯一标识，如 "202607_ocg"。路由参数用它，不用表名 */
   tag: string;
   /**

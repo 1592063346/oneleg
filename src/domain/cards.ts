@@ -1,6 +1,8 @@
 // 卡片检索与卡片信息缓存：调用百鸽（ygocdb）的公开接口
 // 该接口带 Access-Control-Allow-Origin: *，可直接在浏览器中跨域访问
 
+import { t } from "../core/i18n.js";
+
 const API = "https://ygocdb.com/api/v0/";
 
 /** 卡片类型位（与 ygocdb / ydk 数据中的取值一致） */
@@ -29,6 +31,8 @@ export interface CardInfo {
   id: number; // 卡片密码（ydk 中记录的即是此值）
   cn_name: string; // 中文名，已按官方简中优先挑过（见 pickCnName）
   jp_name: string;
+  /** 英文名，已按正式英文名优先挑过（见 pickEnName） */
+  en_name: string;
   type: number; // 卡片类型位掩码
   level: number; // 星级/阶级（魔法·陷阱为 0）
 }
@@ -52,6 +56,10 @@ interface RawSearchHit {
   cn_name?: string;
   name?: string;
   jp_name?: string;
+  /** 正式英文名，只有发行过英文版的卡才有 */
+  en_name?: string;
+  /** 常用英文译名（wiki），无正式英文名时才有 */
+  wiki_en?: string;
   data?: RawData;
 }
 
@@ -65,6 +73,10 @@ interface RawCard {
     cn_name?: string;
     name?: string;
     jp_name?: string;
+    /** 正式英文名，只有发行过英文版的卡才有 */
+    en_name?: string;
+    /** 常用英文译名（wiki），无正式英文名时才有 */
+    wiki_en?: string;
   };
 }
 
@@ -167,12 +179,22 @@ function pickCnName(...candidates: Array<string | undefined>): string {
   return "";
 }
 
+/**
+ * 取英文名：正式英文名 > 常用英文译名。
+ * 接口只给发行过英文版的卡填 en_name，日版限定与早年卡则只有 wiki_en，
+ * 两者都取不到才留空（见 pickCnName）。
+ */
+function pickEnName(primary?: string, wiki?: string): string {
+  return primary || wiki || "";
+}
+
 /** 接口返回的原始条目 -> 展示与排序所需的卡片信息 */
 function toCardInfo(raw: RawCard): CardInfo {
   return {
     id: raw.id ?? 0,
     cn_name: pickCnName(raw.text?.sc_name, raw.text?.cn_name, raw.text?.name),
     jp_name: raw.text?.jp_name ?? "",
+    en_name: pickEnName(raw.text?.en_name, raw.text?.wiki_en),
     type: raw.data?.type ?? 0,
     level: raw.data?.level ?? 0,
   };
@@ -182,7 +204,7 @@ function toCardInfo(raw: RawCard): CardInfo {
 export async function searchCards(query: string): Promise<CardInfo[]> {
   const res = await fetch(`${API}?search=${encodeURIComponent(query)}`);
   if (!res.ok) {
-    throw new Error(`检索接口返回 HTTP ${res.status}`);
+    throw new Error(t("cards.searchFailed", { status: res.status }));
   }
   const data = (await res.json()) as { result?: RawSearchHit[] };
   const hits = Array.isArray(data.result) ? data.result : [];
@@ -192,6 +214,7 @@ export async function searchCards(query: string): Promise<CardInfo[]> {
       id: h.id ?? 0,
       cn_name: pickCnName(h.sc_name, h.cn_name, h.name),
       jp_name: h.jp_name ?? "",
+      en_name: pickEnName(h.en_name, h.wiki_en),
       type: h.data?.type ?? 0,
       level: h.data?.level ?? 0,
     };

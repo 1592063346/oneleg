@@ -2,6 +2,7 @@
 // 单张卡片展示大小为 60px*88px，index.html 里的 .deck-card-image 有相同配置
 
 import type { DeckData } from "../core/types.js";
+import { t } from "../core/i18n.js";
 import { TYPE, absentCard, cachedCardInfo, originalCardId, type CardInfo } from "./cards.js";
 
 /** 各区域的卡片数量上限 */
@@ -23,12 +24,12 @@ export const PRE_RELEASE_ID_MAX = 199999999;
  */
 export function deckLimitError(deck: DeckData): string | null {
   const sections: Array<[string, number, number]> = [
-    ["主卡组", deck.main.length, DECK_LIMITS.main],
-    ["额外卡组", deck.extra.length, DECK_LIMITS.extra],
-    ["副卡组", deck.side.length, DECK_LIMITS.side],
+    [t("deck.main"), deck.main.length, DECK_LIMITS.main],
+    [t("deck.extra"), deck.extra.length, DECK_LIMITS.extra],
+    [t("deck.side"), deck.side.length, DECK_LIMITS.side],
   ];
   for (const [title, count, limit] of sections) {
-    if (count > limit) return `${title} ${count} 张，超过 ${limit} 张上限`;
+    if (count > limit) return t("deck.overLimit", { title, count, limit });
   }
   return null;
 }
@@ -306,17 +307,17 @@ export function downloadDeckFile(deck: DeckData): void {
 export function createDeckModal(deck: DeckData, env: string = "ocg"): HTMLElement {
   const downloadBtn = document.createElement('button');
   downloadBtn.className = 'deck-download-btn';
-  downloadBtn.textContent = '下载构筑 YDK 文件';
+  downloadBtn.textContent = t('deck.downloadYdk');
   downloadBtn.addEventListener('click', () => {
     downloadDeckFile(deck);
   });
 
   return createCardModal(
-    '构筑预览',
+    t('deck.preview'),
     [
-      ['主卡组', deck.main],
-      ['额外卡组', deck.extra],
-      ['副卡组', deck.side],
+      [t('deck.main'), deck.main],
+      [t('deck.extra'), deck.extra],
+      [t('deck.side'), deck.side],
     ],
     env,
     downloadBtn
@@ -413,7 +414,7 @@ export function createDeckSection(
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'deck-card-link deck-card-remove';
-      btn.title = '点击移除';
+      btn.title = t('deck.removeHint');
       btn.addEventListener('click', () => onCardClick(index));
       card = btn;
     } else {
@@ -449,6 +450,6 @@ function buildLimitBadge(rank: number): HTMLElement {
   const badge = document.createElement('span');
   badge.className = `deck-limit deck-limit-${kind}`;
   badge.textContent = rank === 0 ? '' : String(rank);
-  badge.title = rank === 0 ? '禁止卡' : rank === 1 ? '限制卡' : '准限制卡';
+  badge.title = t(rank === 0 ? 'limit.forbidden' : rank === 1 ? 'limit.limited' : 'limit.semiLimited');
   return badge;
 }

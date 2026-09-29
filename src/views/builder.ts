@@ -21,6 +21,7 @@ import {
 } from "../domain/deck.js";
 import { cacheCardInfos, isExtraDeckCard, searchCards, type CardInfo } from "../domain/cards.js";
 import { allowedCopies, loadLimitTables, loadedLimitTables } from "../domain/limits.js";
+import { getLang, limitName, t } from "../core/i18n.js";
 import { buildDeckUrl, replaceUrl } from "../core/router.js";
 import { downloadBlankForm, exportDeckForm, type DeckFormLang } from "../domain/deckForm.js";
 
@@ -49,7 +50,6 @@ function resolveLimit(tag: string | null | undefined): LimitTable | null {
   return loadedLimitTables()?.find((table) => table.tag === tag) ?? null;
 }
 
-const LANG_LABELS: Record<DeckFormLang, string> = { jp: "日文", sc: "简体中文" };
 const LANGS: DeckFormLang[] = ["jp", "sc"];
 
 /**
@@ -90,7 +90,7 @@ export function buildBuilderView(state: State): HTMLElement {
   /** 只重绘构筑展示区，不打断搜索框内容与已展开的结果浮层 */
   const refresh = (): void => {
     deckHost.innerHTML = "";
-    deckHost.appendChild(buildDeckSections(deck, sync, "点击卡片可将其从构筑中移除。"));
+    deckHost.appendChild(buildDeckSections(deck, sync, t("builder.deck.editNote")));
     replaceUrl(state); // 编辑结果实时反映到地址栏（替换而非新增历史记录）
   };
 
@@ -150,7 +150,7 @@ export function buildDeckDisplayView(state: State): HTMLElement {
     dropAbsentCards(deck);
     normalizeDeckIds(deck);
     sortDeck(deck);
-    deckHost.replaceChildren(buildDeckSections(deck, undefined, "点击卡片以查看卡片详情。"));
+    deckHost.replaceChildren(buildDeckSections(deck, undefined, t("builder.deck.readOnlyNote")));
   });
 
   return wrap;
@@ -191,7 +191,7 @@ function buildYdkImport(deck: DeckData, onChange: () => Promise<void>): HTMLElem
   btn.className = "builder-plain-btn builder-ydk-toggle";
   const arrow = document.createElement("span");
   arrow.className = "builder-toggle-arrow";
-  btn.append(arrow, "导入 YDK");
+  btn.append(arrow, t("builder.ydk.import"));
 
   // 展开动画靠父层的高度过渡，故内层再包一层：外层量高度，内层裁掉溢出的内容
   const body = document.createElement("div");
@@ -219,7 +219,7 @@ function buildYdkImport(deck: DeckData, onChange: () => Promise<void>): HTMLElem
 
 /** 1. 上传 .ydk 文件，覆盖当前构筑 */
 function buildFileImport(deck: DeckData, onChange: () => Promise<void>): HTMLElement {
-  const row = controlRow("导入 YDK 文件：");
+  const row = controlRow(t("builder.ydk.file"));
 
   const fileInput = document.createElement("input");
   fileInput.type = "file";
@@ -230,7 +230,7 @@ function buildFileImport(deck: DeckData, onChange: () => Promise<void>): HTMLEle
   // 所以把 input 透明地铺在 label 上、由 label 充当按钮
   const fileLabel = document.createElement("label");
   fileLabel.className = "builder-plain-btn ydk-file-label";
-  fileLabel.textContent = "选择文件";
+  fileLabel.textContent = t("builder.ydk.chooseFile");
   fileLabel.appendChild(fileInput);
 
   const note = document.createElement("span");
@@ -239,19 +239,19 @@ function buildFileImport(deck: DeckData, onChange: () => Promise<void>): HTMLEle
   fileInput.addEventListener("change", async () => {
     const file = fileInput.files?.[0];
     if (!file) return;
-    note.textContent = "导入中…";
+    note.textContent = t("builder.ydk.importing");
     try {
       const next = parseYdk(await file.text());
       const over = deckLimitError(next); // 超限则整份拒绝，当前构筑原样保留
       if (over) {
-        reportImportFailure(note, `导入失败：${over}`);
+        reportImportFailure(note, t("builder.ydk.importFailed", { msg: over }));
       } else {
         overwriteDeck(deck, next);
         await onChange(); // 卡片信息补齐、构筑预览重绘完毕后清掉“导入中…”
         note.textContent = "";
       }
     } catch (err) {
-      reportImportFailure(note, `读取失败：${errText(err)}`);
+      reportImportFailure(note, t("builder.ydk.readFailed", { msg: errText(err) }));
     }
     fileInput.value = ""; // 清空，以便连续导入同一个文件
   });
@@ -262,18 +262,18 @@ function buildFileImport(deck: DeckData, onChange: () => Promise<void>): HTMLEle
 
 /** 2. 粘贴 ydk 文本，覆盖当前构筑 */
 function buildTextImport(deck: DeckData, onChange: () => Promise<void>): HTMLElement {
-  const row = controlRow("导入 YDK 文本：");
+  const row = controlRow(t("builder.ydk.text"));
   row.classList.add("builder-text-import");
 
   const textarea = document.createElement("textarea");
   textarea.className = "ydk-text-input";
-  textarea.placeholder = "粘贴 YDK 文本…";
+  textarea.placeholder = t("builder.ydk.textPlaceholder");
   textarea.spellcheck = false;
 
   const btn = document.createElement("button");
   btn.type = "button";
   btn.className = "builder-plain-btn";
-  btn.textContent = "导入文本";
+  btn.textContent = t("builder.ydk.importText");
 
   const note = document.createElement("span");
   note.className = "builder-note";
@@ -281,22 +281,22 @@ function buildTextImport(deck: DeckData, onChange: () => Promise<void>): HTMLEle
   btn.addEventListener("click", async () => {
     const text = textarea.value.trim();
     if (!text) {
-      reportImportFailure(note, "请先粘贴 YDK 文本。");
+      reportImportFailure(note, t("builder.ydk.emptyText"));
       return;
     }
     const next = parseYdk(text);
     const over = deckLimitError(next); // 超限则整份拒绝，当前构筑原样保留
     if (over) {
-      reportImportFailure(note, `导入失败：${over}`);
+      reportImportFailure(note, t("builder.ydk.importFailed", { msg: over }));
       return;
     }
     const total = next.main.length + next.extra.length + next.side.length;
     if (total === 0) {
-      reportImportFailure(note, "未识别到卡片，请检查文本格式。");
+      reportImportFailure(note, t("builder.ydk.unrecognized"));
       return;
     }
     overwriteDeck(deck, next);
-    note.textContent = "导入中…";
+    note.textContent = t("builder.ydk.importing");
     await onChange();
     note.textContent = "";
   });
@@ -307,20 +307,20 @@ function buildTextImport(deck: DeckData, onChange: () => Promise<void>): HTMLEle
 
 /** 3. 卡名检索：回车或点按钮发起请求，结果以浮层下拉展示 */
 function buildCardSearch(deck: DeckData, onChange: () => void): HTMLElement {
-  const row = controlRow("卡片搜索：");
+  const row = controlRow(t("builder.search"));
   row.classList.add("builder-search"); // position: relative，供结果浮层定位
 
   const input = document.createElement("input");
   input.type = "search"; // 保留原生清除按钮（×）
   input.className = "deck-input";
-  input.placeholder = "输入关键词后回车…";
+  input.placeholder = t("builder.search.placeholder");
   input.autocomplete = "off";
   input.spellcheck = false;
 
   const btn = document.createElement("button");
   btn.type = "button";
   btn.className = "builder-plain-btn";
-  btn.textContent = "搜索";
+  btn.textContent = t("builder.search.submit");
 
   const panel = document.createElement("div");
   panel.className = "builder-results";
@@ -329,10 +329,10 @@ function buildCardSearch(deck: DeckData, onChange: () => void): HTMLElement {
   const clearBtn = document.createElement("button");
   clearBtn.type = "button";
   clearBtn.className = "deck-action-btn deck-action-clear";
-  clearBtn.textContent = "清空构筑";
+  clearBtn.textContent = t("builder.search.clearDeck");
   clearBtn.addEventListener("click", () => {
     // 空构筑直接清；有卡时先确认，避免误点丢掉整份构筑
-    if (!isEmpty(deck) && !confirm("确认清空当前构筑？")) return;
+    if (!isEmpty(deck) && !confirm(t("builder.search.confirmClear"))) return;
     deck.main = [];
     deck.extra = [];
     deck.side = [];
@@ -357,11 +357,11 @@ function buildCardSearch(deck: DeckData, onChange: () => void): HTMLElement {
   const run = async (): Promise<void> => {
     const query = input.value.trim();
     if (!query) return;
-    showNote("搜索中…");
+    showNote(t("builder.search.searching"));
     try {
       const hits = await searchCards(query);
       if (hits.length === 0) {
-        showNote("没有找到匹配的卡片。");
+        showNote(t("builder.search.empty"));
         return;
       }
       const list = document.createElement("ul");
@@ -372,7 +372,7 @@ function buildCardSearch(deck: DeckData, onChange: () => void): HTMLElement {
       panel.style.display = "block";
       openResults = { row, panel };
     } catch (err) {
-      showNote(`搜索失败：${errText(err)}`);
+      showNote(t("builder.search.failed", { msg: errText(err) }));
     }
   };
 
@@ -401,11 +401,11 @@ function buildResultsHead(): HTMLElement {
 
   const info = document.createElement("span");
   info.className = "builder-head-info";
-  info.textContent = "卡片信息";
+  info.textContent = t("builder.results.info");
 
   const cols = document.createElement("span");
   cols.className = "builder-cols";
-  for (const title of ["主卡组", "副卡组"]) {
+  for (const title of [t("deck.main"), t("deck.side")]) {
     const col = document.createElement("span");
     col.className = "builder-head-col";
     col.textContent = title;
@@ -421,10 +421,13 @@ function buildResultItem(hit: CardInfo, deck: DeckData, onChange: () => void): H
   const li = document.createElement("li");
   li.className = "builder-result";
 
+  // 英文模式首行改用英文名，取不到再退到中文名
+  const primaryName = getLang() === "en" ? hit.en_name || hit.cn_name : hit.cn_name;
+
   const img = document.createElement("img");
   img.className = "deck-card-image"; // 卡图尺寸复用构筑预览的 60px*88px
   setCardImage(img, hit.id, ENV);
-  img.alt = hit.cn_name || hit.jp_name || String(hit.id);
+  img.alt = primaryName || hit.jp_name || String(hit.id);
   img.loading = "lazy";
 
   const meta = document.createElement("div");
@@ -434,10 +437,10 @@ function buildResultItem(hit: CardInfo, deck: DeckData, onChange: () => void): H
   cn.href = getCardDetailUrl(hit.id);
   cn.target = "_blank";
   cn.rel = "noopener noreferrer";
-  cn.textContent = hit.cn_name || "（无中文名）";
+  cn.textContent = primaryName || t("builder.result.noName");
   const jp = document.createElement("span");
   jp.className = "builder-result-jp";
-  jp.textContent = hit.jp_name || "（无日文名）";
+  jp.textContent = hit.jp_name || t("builder.result.noJpName");
   const idLine = document.createElement("span");
   idLine.className = "builder-result-id";
   idLine.textContent = String(hit.id);
@@ -447,13 +450,16 @@ function buildResultItem(hit: CardInfo, deck: DeckData, onChange: () => void): H
   const toExtra = isExtraDeckCard(hit);
   const primary = toExtra ? deck.extra : deck.main;
   const primaryLimit = toExtra ? DECK_LIMITS.extra : DECK_LIMITS.main;
-  const primaryLabel = toExtra ? "额外卡组" : "主卡组";
+  const primaryLabel = t(toExtra ? "deck.extra" : "deck.main");
 
   const cols = document.createElement("div");
   cols.className = "builder-cols";
+  // 单卡上限按整副卡组计，同一行的两个步进器共用它，
+  // 故放进同一个刷新组：任一区域加减后两边的数字与加号一起重算
+  const refreshGroup: Array<() => void> = [];
   cols.append(
-    buildStepper(deck, primary, hit.id, primaryLimit, primaryLabel, onChange),
-    buildStepper(deck, deck.side, hit.id, DECK_LIMITS.side, "副卡组", onChange)
+    buildStepper(deck, primary, hit.id, primaryLimit, primaryLabel, onChange, refreshGroup),
+    buildStepper(deck, deck.side, hit.id, DECK_LIMITS.side, t("deck.side"), onChange, refreshGroup)
   );
 
   li.append(img, meta, cols);
@@ -473,6 +479,7 @@ function deckCount(deck: DeckData, id: number): number {
 /**
  * “+ 1 −”步进器：中间数字即该卡在所属区域中的数量，不可手动编辑。
  * 只有单卡上限 MAX_COPIES 与下限 0 会让按钮置灰；区域上限 limit 与禁限卡表在按下时才判。
+ * 单卡上限按整副卡组计，故同一行的两个步进器共用（refreshGroup）：任一区域放满，两边的加号一起置灰。
  * onChange 只重绘构筑展示区，不会重绘本浮层，所以按钮状态就地更新。
  */
 function buildStepper(
@@ -481,7 +488,8 @@ function buildStepper(
   id: number,
   limit: number,
   label: string,
-  onChange: () => void
+  onChange: () => void,
+  refreshGroup: Array<() => void>
 ): HTMLElement {
   const box = document.createElement("div");
   box.className = "builder-stepper";
@@ -503,7 +511,13 @@ function buildStepper(
     const count = countOf(section, id);
     num.textContent = String(count);
     minus.disabled = count === 0;
-    plus.disabled = count >= MAX_COPIES;
+    plus.disabled = deckCount(deck, id) >= MAX_COPIES;
+  };
+  refreshGroup.push(update);
+
+  /** 同一行的两个步进器一起重算 */
+  const refreshRow = (): void => {
+    refreshGroup.forEach((fn) => fn());
   };
 
   minus.addEventListener("click", () => {
@@ -511,26 +525,27 @@ function buildStepper(
     if (index < 0) return;
     section.splice(index, 1);
     onChange();
-    update();
+    refreshRow();
   });
 
   plus.addEventListener("click", () => {
-    if (countOf(section, id) >= MAX_COPIES) return;
+    // 与置灰同源，按整副卡组计
+    if (deckCount(deck, id) >= MAX_COPIES) return;
     // 禁限卡表按整副卡组计张数，故主卡组与副卡组的步进器都要算上对方
     const cap = allowedCopies(activeLimit, id);
     if (cap !== undefined && deckCount(deck, id) >= cap) {
-      alert("数量超过当前适用禁限卡表要求。");
+      alert(t("builder.step.overLimit"));
       return;
     }
     // 区域已满时不置灰：移除本区其他卡即可加入，置灰会让人以为这张卡加不进去。
     // 是否加得进只在按下时才能判定，故就地提示
     if (section.length >= limit) {
-      alert(`${label}已达 ${limit} 张上限，请先移除卡片再进行添加。`);
+      alert(t("builder.step.sectionFull", { label, limit }));
       return;
     }
     section.push(id);
     onChange();
-    update();
+    refreshRow();
   });
 
   update();
@@ -543,7 +558,7 @@ function buildStepper(
  * 表是异步读的，未到位时先只列出“无”，读完后就地替换。
  */
 function buildLimitRow(state: State, onChange: () => void): HTMLElement {
-  const row = controlRow("适用禁限卡表：");
+  const row = controlRow(t("limit.label"));
 
   const host = document.createElement("span");
   const note = document.createElement("span");
@@ -554,8 +569,8 @@ function buildLimitRow(state: State, onChange: () => void): HTMLElement {
     activeLimit = resolveLimit(state.builderLimitTag); // 表刚到位的这一轮也要认清选中项
     // 候选取 tag：表名可能重复，tag 唯一，且它才是路由参数里的那个值
     const options = [
-      { value: null as string | null, label: "无（默认）" },
-      ...list.map((table) => ({ value: table.tag as string | null, label: table.name })),
+      { value: null as string | null, label: t("limit.none") },
+      ...list.map((table) => ({ value: table.tag as string | null, label: limitName(table) })),
     ];
     host.replaceChildren(
       buildDropdown(
@@ -585,7 +600,7 @@ function buildLimitRow(state: State, onChange: () => void): HTMLElement {
         onChange(); // 表读到了才能解出 URL 里指定的那张，补一次重绘
       },
       () => {
-        note.textContent = "禁卡表加载失败，将不做张数校验。";
+        note.textContent = t("limit.loadFailed");
       }
     );
   }
@@ -596,12 +611,12 @@ function buildLimitRow(state: State, onChange: () => void): HTMLElement {
 function buildViewLink(table: LimitTable): HTMLElement {
   const link = document.createElement("span");
   link.className = "deck-preview-link";
-  link.textContent = "查看";
+  link.textContent = t("limit.view");
   link.addEventListener("click", async (ev) => {
     ev.stopPropagation(); // 只查看，不选中该表
-    link.textContent = "加载中...";
+    link.textContent = t("common.loading");
     await openLimitTable(table);
-    link.textContent = "查看";
+    link.textContent = t("limit.view");
   });
   return link;
 }
@@ -621,11 +636,11 @@ async function openLimitTable(table: LimitTable): Promise<void> {
 
   document.body.appendChild(
     createCardModal(
-      table.name,
+      limitName(table),
       [
-        ["禁止卡", byRank(0)],
-        ["限制卡", byRank(1)],
-        ["准限制卡", byRank(2)],
+        [t("limit.forbidden"), byRank(0)],
+        [t("limit.limited"), byRank(1)],
+        [t("limit.semiLimited"), byRank(2)],
       ],
       ENV
     )
@@ -637,10 +652,10 @@ async function openLimitTable(table: LimitTable): Promise<void> {
  * 编辑页那行是可选的，这里只呈现本次展示所用的表。
  */
 function buildLimitInfoRow(table: LimitTable | null): HTMLElement {
-  const row = controlRow("适用禁限卡表：");
+  const row = controlRow(t("limit.label"));
 
   const name = document.createElement("span");
-  name.textContent = table?.name ?? "无（默认）";
+  name.textContent = table ? limitName(table) : t("limit.none");
 
   row.appendChild(name);
   if (table) row.appendChild(buildViewLink(table));
@@ -674,21 +689,21 @@ function buildDeckSections(
   // 三个区域恒常显示（含数量 0），让用户始终看得到构筑的构成
   box.append(
     createDeckSection(
-      "主卡组",
+      t("deck.main"),
       deck.main,
       ENV,
       onChange ? removeCard(deck.main) : undefined,
       limits
     ),
     createDeckSection(
-      "额外卡组",
+      t("deck.extra"),
       deck.extra,
       ENV,
       onChange ? removeCard(deck.extra) : undefined,
       limits
     ),
     createDeckSection(
-      "副卡组",
+      t("deck.side"),
       deck.side,
       ENV,
       onChange ? removeCard(deck.side) : undefined,
@@ -715,22 +730,22 @@ function buildExportRow(
 
   const label = document.createElement("span");
   label.className = "controls-label";
-  label.textContent = "请选择导出语言：";
+  label.textContent = t("builder.export.langLabel");
 
   const pdfBtn = document.createElement("button");
   pdfBtn.type = "button";
   pdfBtn.className = "deck-action-btn deck-action-pdf";
-  pdfBtn.textContent = "导出为 PDF 比赛卡表";
+  pdfBtn.textContent = t("builder.export.pdf");
   pdfBtn.addEventListener("click", async () => {
     if (isEmpty(deck)) {
-      alert("构筑为空，请先导入或添加卡片。");
+      alert(t("builder.export.empty"));
       return;
     }
     pdfBtn.disabled = true;
     try {
       await exportDeckForm(deck, exportLang);
     } catch (err) {
-      alert(`生成比赛卡表失败：${errText(err)}`);
+      alert(t("builder.export.pdfFailed", { msg: errText(err) }));
     }
     pdfBtn.disabled = false;
   });
@@ -738,10 +753,10 @@ function buildExportRow(
   const ydkBtn = document.createElement("button");
   ydkBtn.type = "button";
   ydkBtn.className = "builder-plain-btn";
-  ydkBtn.textContent = "导出为 YDK 文件";
+  ydkBtn.textContent = t("builder.export.ydk");
   ydkBtn.addEventListener("click", () => {
     if (isEmpty(deck)) {
-      alert("构筑为空，请先导入或添加卡片。");
+      alert(t("builder.export.empty"));
       return;
     }
     downloadDeckFile(deck);
@@ -751,12 +766,12 @@ function buildExportRow(
   const blankLink = document.createElement("button");
   blankLink.type = "button";
   blankLink.className = "builder-blank-link";
-  blankLink.textContent = "下载空卡表";
+  blankLink.textContent = t("builder.export.blank");
   blankLink.addEventListener("click", async () => {
     try {
       await downloadBlankForm();
     } catch (err) {
-      alert(`下载空白卡表失败：${errText(err)}`);
+      alert(t("builder.export.blankFailed", { msg: errText(err) }));
     }
   });
 
@@ -767,7 +782,7 @@ function buildExportRow(
   const linkBtn = document.createElement("button");
   linkBtn.type = "button";
   linkBtn.className = "builder-plain-btn";
-  linkBtn.textContent = mode === "share" ? "复制分享链接" : "编辑卡组";
+  linkBtn.textContent = t(mode === "share" ? "builder.export.share" : "builder.export.edit");
   linkBtn.addEventListener("click", async () => {
     const href = buildDeckUrl(mode === "share" ? "deck-display" : "builder", deck, getLimitTag());
     if (mode === "edit") {
@@ -779,7 +794,7 @@ function buildExportRow(
       await navigator.clipboard.writeText(url);
     } catch {
       // 非安全上下文里没有剪贴板接口，退回到手动复制
-      prompt("请手动复制分享链接：", url);
+      prompt(t("builder.export.copyPrompt"), url);
     }
   });
 
@@ -791,10 +806,13 @@ function isEmpty(deck: DeckData): boolean {
   return deck.main.length + deck.extra.length + deck.side.length === 0;
 }
 
-/** 导出语言下拉 */
+/** 导出语言下拉。导出语言与界面语言无关，故仍只提供中文与日文 */
 function buildLangDropdown(): HTMLElement {
   return buildDropdown(
-    LANGS.map((lang) => ({ value: lang, label: LANG_LABELS[lang] })),
+    LANGS.map((lang) => ({
+      value: lang,
+      label: t(lang === "jp" ? "builder.lang.jp" : "builder.lang.sc"),
+    })),
     exportLang,
     (lang) => {
       exportLang = lang;

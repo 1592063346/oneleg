@@ -1,3 +1,6 @@
+// “导出图片”按钮已下线（见 chart/pie/render.ts），本模块暂无调用方。
+// 因此文案直接写在原处，未进 i18n.ts；日后重新启用时再抽出去。
+
 /**
  * 将 SVG 转换为 data URL（包含所有内联样式和图片）
  */
@@ -149,7 +152,9 @@ export function createExportButton(container: HTMLElement, title: string): HTMLE
     const target = container;
 
     // 询问是否添加背景图片
-    const useBackground = confirm("是否添加自定义背景图片？\n\n点击“确定”选择背景图片；\n点击“取消”使用纯色背景。");
+    const useBackground = confirm(
+      "是否添加自定义背景图片？\n\n点击“确定”选择背景图片；\n点击“取消”使用纯色背景。"
+    );
 
     if (useBackground) {
       const input = document.createElement("input");

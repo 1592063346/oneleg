@@ -3,6 +3,7 @@
 import type { Match, EventEdition, DeckData } from "./types.js";
 import type { Site, State, AppActions } from "./config.js";
 import { sitePath } from "./config.js";
+import { getLang, parseLang, t, type Lang } from "./i18n.js";
 import { encodeDeck } from "../domain/deckCode.js";
 
 /**
@@ -12,8 +13,21 @@ import { encodeDeck } from "../domain/deckCode.js";
 export function navigateToSite(site: Site, state: State, actions: AppActions): void {
   if (site === state.config.site) return;
   if (!confirmLeaveDeck(state.builderDeck)) return;
-  history.pushState(null, "", sitePath(site));
+  history.pushState(null, "", sitePath(site) + langQuery());
   actions.loadSite(site);
+}
+
+/**
+ * 当前语言的 URL 后缀。中文不带参数，英文为 ?lang=en；
+ * 拼给不经过 buildUrl 的地址（如页脚里“关于网站”的 href）。
+ */
+export function langQuery(): string {
+  return getLang() === "en" ? "?lang=en" : "";
+}
+
+/** 把语言写进查询参数。中文不写，地址保持原样 */
+function appendLang(params: URLSearchParams): void {
+  if (getLang() === "en") params.set("lang", "en");
 }
 
 /** 将日期 yyyy/mm/dd 转为 URL 参数形式 yyyymmdd */
@@ -43,11 +57,15 @@ export function buildDeckUrl(
   const params = new URLSearchParams();
   if (deck && cardCount(deck) > 0) params.set("deck", encodeDeck(deck));
   if (limitTag) params.set("limits", limitTag);
+  appendLang(params);
   const qs = params.toString();
   return qs ? `${sitePath(site)}?${qs}` : sitePath(site);
 }
 
-/** 根据当前状态构建 URL（比赛详情附带 ?date=，分站附带 ?env=，构筑两站附带 ?deck=/?limits=） */
+/**
+ * 根据当前状态构建 URL（比赛详情附带 ?date=，分站附带 ?env=，
+ * 构筑两站附带 ?deck=/?limits=，英文模式一律附带 ?lang=en）
+ */
 export function buildUrl(state: State): string {
   const base = sitePath(state.config.site);
   if (state.config.site === "builder") {
@@ -60,6 +78,7 @@ export function buildUrl(state: State): string {
   if (state.config.site === "event") {
     params.set("env", state.eventEdition || "ocg");
   }
+  appendLang(params);
   // 仅在比赛详情（饼图）视图携带日期
   const match = state.matches[state.selectedMatch];
   if (state.config.hasData && state.view === "pie" && match) {
@@ -82,10 +101,11 @@ export function replaceUrl(state: State): void {
   history.replaceState(null, "", buildUrl(state));
 }
 
-/** 解析当前 URL，得到站点、板块与各查询参数（deck/limits 仅构筑导出站与构筑展示站使用） */
+/** 解析当前 URL，得到站点、板块、语言与各查询参数（deck/limits 仅构筑两站使用） */
 export function parseRoute(): {
   site: Site;
   edition?: EventEdition;
+  lang: Lang;
   dateParam: string | null;
   deckParam: string | null;
   limitsParam: string | null;
@@ -93,23 +113,25 @@ export function parseRoute(): {
   const path = window.location.pathname;
   const params = new URLSearchParams(window.location.search);
   const dateParam = params.get("date");
+  const lang = parseLang(params.get("lang"));
   if (path === "/event") {
     const env = params.get("env");
     const edition: EventEdition = env === "sc" ? "sc" : "ocg";
-    return { site: "event", edition, dateParam, deckParam: null, limitsParam: null };
+    return { site: "event", edition, lang, dateParam, deckParam: null, limitsParam: null };
   }
   if (path === "/builder" || path === "/deck-display") {
     return {
       site: path === "/builder" ? "builder" : "deck-display",
+      lang,
       dateParam: null,
       deckParam: params.get("deck"),
       limitsParam: params.get("limits"),
     };
   }
   if (path === "/faq") {
-    return { site: "faq", dateParam: null, deckParam: null, limitsParam: null };
+    return { site: "faq", lang, dateParam: null, deckParam: null, limitsParam: null };
   }
-  return { site: "main", dateParam, deckParam: null, limitsParam: null };
+  return { site: "main", lang, dateParam, deckParam: null, limitsParam: null };
 }
 
 // ---- 构筑未清空时的离开提醒 ----
@@ -136,7 +158,7 @@ function cardCount(deck: DeckData | undefined): number {
  */
 export function confirmLeaveDeck(deck: DeckData | undefined): boolean {
   if (cardCount(deck) === 0) return true;
-  return confirm("当前构筑存在已有卡片，离开后将会丢失。确定离开？");
+  return confirm(t("leave.deckConfirm"));
 }
 
 /** 注册关页提醒：构筑里有卡片时才拦，弹窗文案由浏览器决定 */

@@ -5,6 +5,7 @@ import type { State, View, AppActions } from "./config.js";
 import { EVENT_EDITION_CONFIGS, SITE_MENU } from "./config.js";
 import { allDeckNames, loadData, top4DeckNames } from "./data.js";
 import { buildColorMap } from "./palette.js";
+import { getLang, setLang, t } from "./i18n.js";
 import { navigateToSite, syncUrl } from "./router.js";
 import { buildFooter } from "./footer.js";
 
@@ -17,14 +18,14 @@ export function renderShell(state: State, actions: AppActions): void {
   const nav = document.createElement("nav");
   nav.className = "menu";
 
-  // 站点切换下拉 + 标题
+  // 站点切换下拉 + 语言切换 + 标题
   const brandWrap = document.createElement("div");
   brandWrap.className = "brand-wrap";
-  brandWrap.appendChild(buildSiteDropdown(state, actions));
+  brandWrap.append(buildSiteDropdown(state, actions), buildLangToggle(state, actions));
 
   const title = document.createElement("span");
   title.className = "brand";
-  title.textContent = state.config.title;
+  title.textContent = t(state.config.titleKey);
   brandWrap.appendChild(title);
 
   nav.appendChild(brandWrap);
@@ -59,7 +60,7 @@ function buildSiteDropdown(state: State, actions: AppActions): HTMLElement {
   const btn = document.createElement("button");
   btn.className = "site-dropdown-btn";
   btn.type = "button";
-  btn.setAttribute("aria-label", "切换站点");
+  btn.setAttribute("aria-label", t("nav.siteMenu"));
   btn.textContent = "⋯";
 
   const listWrap = document.createElement("div");
@@ -68,7 +69,7 @@ function buildSiteDropdown(state: State, actions: AppActions): HTMLElement {
   SITE_MENU.forEach((item) => {
     const li = document.createElement("li");
     if (item.site === state.config.site) li.classList.add("active");
-    li.textContent = item.label;
+    li.textContent = t(item.labelKey);
     li.addEventListener("click", () => navigateToSite(item.site, state, actions));
     list.appendChild(li);
   });
@@ -78,13 +79,41 @@ function buildSiteDropdown(state: State, actions: AppActions): HTMLElement {
   return dropdown;
 }
 
+/**
+ * 语言切换：点击即在中英之间来回切，没有下拉。
+ * 文案遍布外壳与各视图，故整壳重绘；state 与各视图的模块级状态都不受影响。
+ * 地址随之带上或去掉 ?lang=en，使当前语言可分享。
+ */
+function buildLangToggle(state: State, actions: AppActions): HTMLElement {
+  const toEn = getLang() === "zh";
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "site-dropdown-btn lang-toggle";
+  // 用 SVG 而非 🌐 表情：表情强制彩色渲染，color 与悬停变色对它都不生效
+  btn.innerHTML =
+    '<svg viewBox="0 0 16 16" width="17" height="17" fill="none"' +
+    ' stroke="currentColor" stroke-width="1.3" aria-hidden="true">' +
+    '<circle cx="8" cy="8" r="6.35"/>' +
+    '<ellipse cx="8" cy="8" rx="2.9" ry="6.35"/>' +
+    '<path d="M1.65 8h12.7"/>' +
+    "</svg>";
+  btn.title = t(toEn ? "nav.lang.toEn" : "nav.lang.toZh");
+  btn.setAttribute("aria-label", btn.title);
+  btn.addEventListener("click", () => {
+    setLang(toEn ? "en" : "zh");
+    syncUrl(state);
+    actions.renderShell(state);
+  });
+  return btn;
+}
+
 /** 分站板块切换标签（OCG / 简体中文） */
 function buildEditionTabs(state: State, actions: AppActions): HTMLElement {
   const tabs = document.createElement("div");
   tabs.className = "tabs";
   (["ocg", "sc"] as EventEdition[]).forEach((edition) => {
     const btn = document.createElement("button");
-    btn.textContent = EVENT_EDITION_CONFIGS[edition].label;
+    btn.textContent = t(EVENT_EDITION_CONFIGS[edition].labelKey);
     btn.className = "tab" + (state.eventEdition === edition ? " active" : "");
     btn.addEventListener("click", async () => {
       if (state.eventEdition === edition) return;
@@ -92,10 +121,9 @@ function buildEditionTabs(state: State, actions: AppActions): HTMLElement {
       const editionConfig = EVENT_EDITION_CONFIGS[edition];
       state.config.dataPath = editionConfig.dataPath;
       state.config.deckDir = editionConfig.deckDir;
-      state.config.editionToggleLabel = editionConfig.label;
 
       // 重新加载数据
-      app.innerHTML = `<p class="empty-note">正在加载…</p>`;
+      app.innerHTML = `<p class="empty-note">${t("app.loading")}</p>`;
       try {
         const matches = await loadData(state.config.dataPath);
         const names = allDeckNames(matches);
@@ -108,9 +136,9 @@ function buildEditionTabs(state: State, actions: AppActions): HTMLElement {
         syncUrl(state);
         actions.renderShell(state);
       } catch (err) {
-        app.innerHTML = `<div class="error">加载数据失败：${
-          err instanceof Error ? err.message : String(err)
-        }</div>`;
+        app.innerHTML = `<div class="error">${t("app.loadFailed", {
+          msg: err instanceof Error ? err.message : String(err),
+        })}</div>`;
       }
     });
     tabs.appendChild(btn);
@@ -124,7 +152,7 @@ function buildViewTabs(state: State, actions: AppActions): HTMLElement {
   tabs.className = "tabs";
   (["pie", "trend"] as View[]).forEach((v) => {
     const btn = document.createElement("button");
-    btn.textContent = v === "pie" ? "比赛详情" : "上位卡组统计";
+    btn.textContent = t(v === "pie" ? "nav.view.pie" : "nav.view.trend");
     btn.className = "tab" + (state.view === v ? " active" : "");
     btn.addEventListener("click", () => {
       state.view = v;

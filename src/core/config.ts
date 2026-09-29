@@ -2,6 +2,7 @@
 
 import type { DeckData, Match, MatchType, EventEdition } from "./types.js";
 import { MATCH_TYPES, EVENT_MATCH_TYPES } from "./types.js";
+import type { MsgKey } from "./i18n.js";
 
 export type View = "pie" | "trend";
 export type Site = "main" | "event" | "builder" | "deck-display" | "faq";
@@ -11,8 +12,8 @@ export interface SiteConfig {
   site: Site;
   /** URL 基础路径。同时是各站点的唯一来源：站点菜单也照它跳转 */
   path: string;
-  title: string;
-  toggleLabel: string; // 标题旁切换按钮文案
+  /** 站点标题文案的键（见 i18n.ts） */
+  titleKey: MsgKey;
   dataPath: string;
   deckDir: string;
   matchTypes: MatchType[];
@@ -20,23 +21,22 @@ export interface SiteConfig {
   showNameInDropdown: boolean; // 比赛下拉是否显示名称
   hasData: boolean; // 是否需要加载比赛数据（关于网站、构筑导出站不需要）
   hasEditionToggle?: boolean; // 是否有板块切换（分站专用）
-  editionToggleLabel?: string; // 板块切换按钮文案
 }
 
 /** 分站板块配置 */
 export const EVENT_EDITION_CONFIGS: Record<
   EventEdition,
-  { dataPath: string; deckDir: string; label: string }
+  { dataPath: string; deckDir: string; labelKey: MsgKey }
 > = {
   ocg: {
     dataPath: "./data/event_data_ocg.json",
     deckDir: "./data/event_deck/ocg",
-    label: "OCG",
+    labelKey: "edition.ocg",
   },
   sc: {
     dataPath: "./data/event_data_sc.json",
     deckDir: "./data/event_deck/sc",
-    label: "简体中文",
+    labelKey: "edition.sc",
   },
 };
 
@@ -44,8 +44,7 @@ export const SITE_CONFIGS: Record<Site, SiteConfig> = {
   main: {
     site: "main",
     path: "/",
-    title: "万籁阁游戏王 OCG 比赛数据站",
-    toggleLabel: "主站",
+    titleKey: "site.home.title",
     dataPath: "./data/data.json",
     deckDir: "./data/deck",
     matchTypes: MATCH_TYPES,
@@ -56,8 +55,7 @@ export const SITE_CONFIGS: Record<Site, SiteConfig> = {
   event: {
     site: "event",
     path: "/event",
-    title: "中国大陆游戏王赛事数据站",
-    toggleLabel: "国内赛事数据站",
+    titleKey: "site.event.title",
     dataPath: "./data/event_data_ocg.json",
     deckDir: "./data/event_deck/ocg",
     matchTypes: EVENT_MATCH_TYPES,
@@ -65,13 +63,11 @@ export const SITE_CONFIGS: Record<Site, SiteConfig> = {
     showNameInDropdown: true,
     hasData: true,
     hasEditionToggle: true,
-    editionToggleLabel: "OCG",
   },
   builder: {
     site: "builder",
     path: "/builder",
-    title: "万籁阁游戏王 OCG 比赛数据站",
-    toggleLabel: "构筑导出",
+    titleKey: "site.home.title",
     dataPath: "",
     deckDir: "",
     matchTypes: [],
@@ -83,8 +79,7 @@ export const SITE_CONFIGS: Record<Site, SiteConfig> = {
   "deck-display": {
     site: "deck-display",
     path: "/deck-display",
-    title: "万籁阁游戏王 OCG 比赛数据站",
-    toggleLabel: "构筑展示",
+    titleKey: "site.home.title",
     dataPath: "",
     deckDir: "",
     matchTypes: [],
@@ -95,8 +90,7 @@ export const SITE_CONFIGS: Record<Site, SiteConfig> = {
   faq: {
     site: "faq",
     path: "/faq",
-    title: "万籁阁游戏王 OCG 比赛数据站",
-    toggleLabel: "关于网站",
+    titleKey: "site.home.title",
     dataPath: "",
     deckDir: "",
     matchTypes: [],
@@ -107,11 +101,11 @@ export const SITE_CONFIGS: Record<Site, SiteConfig> = {
 };
 
 /** 站点切换下拉的选项顺序与文案。不含构筑展示站，故它不在菜单里 */
-export const SITE_MENU: { site: Site; label: string }[] = [
-  { site: "main", label: "主站" },
-  { site: "event", label: "国内赛事数据站" },
-  { site: "builder", label: "构筑导出" },
-  { site: "faq", label: "关于网站" },
+export const SITE_MENU: { site: Site; labelKey: MsgKey }[] = [
+  { site: "main", labelKey: "menu.main" },
+  { site: "event", labelKey: "menu.event" },
+  { site: "builder", labelKey: "menu.builder" },
+  { site: "faq", labelKey: "menu.faq" },
 ];
 
 /** 站点对应的 URL 基础路径 */

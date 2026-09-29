@@ -2,6 +2,7 @@
 
 import type { State } from "../core/config.js";
 import { seriesColor } from "../core/palette.js";
+import { deckName, matchTypeName, t } from "../core/i18n.js";
 import { renderLine } from "../chart/lineChart.js";
 import { matchTypeColor } from "./shared.js";
 
@@ -14,7 +15,7 @@ export function buildTrendView(state: State): HTMLElement {
   dateRow.className = "controls date-filter";
   const dateLabel = document.createElement("span");
   dateLabel.className = "controls-label";
-  dateLabel.textContent = "比赛日期：";
+  dateLabel.textContent = t("trend.date");
 
   const startInput = document.createElement("input");
   startInput.type = "date";
@@ -22,7 +23,7 @@ export function buildTrendView(state: State): HTMLElement {
   if (state.dateRange) startInput.value = state.dateRange.start;
 
   const dateSep = document.createElement("span");
-  dateSep.textContent = " 至 ";
+  dateSep.textContent = t("trend.dateSeparator");
   dateSep.className = "date-separator";
 
   const endInput = document.createElement("input");
@@ -32,7 +33,7 @@ export function buildTrendView(state: State): HTMLElement {
 
   const clearBtn = document.createElement("button");
   clearBtn.className = "date-clear-btn";
-  clearBtn.textContent = "清除";
+  clearBtn.textContent = t("trend.clear");
   clearBtn.addEventListener("click", () => {
     state.dateRange = null;
     startInput.value = "";
@@ -62,21 +63,21 @@ export function buildTrendView(state: State): HTMLElement {
   typeRow.className = "controls type-filter";
   const typeLabel = document.createElement("span");
   typeLabel.className = "controls-label";
-  typeLabel.textContent = "比赛类型：";
+  typeLabel.textContent = t("trend.type");
   typeRow.appendChild(typeLabel);
-  state.config.matchTypes.forEach((t) => {
+  state.config.matchTypes.forEach((type) => {
     const chip = document.createElement("label");
-    chip.className = `chip chip-type-${matchTypeColor(t)}`;
+    chip.className = `chip chip-type-${matchTypeColor(type)}`;
     const cb = document.createElement("input");
     cb.type = "checkbox";
-    cb.checked = state.selectedTypes.has(t);
+    cb.checked = state.selectedTypes.has(type);
     cb.addEventListener("change", () => {
-      if (cb.checked) state.selectedTypes.add(t);
-      else state.selectedTypes.delete(t);
+      if (cb.checked) state.selectedTypes.add(type);
+      else state.selectedTypes.delete(type);
       renderTrendChart(state, chartHost);
     });
     const span = document.createElement("span");
-    span.textContent = t;
+    span.textContent = matchTypeName(type);
     chip.append(cb, span);
     typeRow.appendChild(chip);
   });
@@ -89,7 +90,7 @@ export function buildTrendView(state: State): HTMLElement {
   searchRow.className = "controls deck-search";
   const sLabel = document.createElement("span");
   sLabel.className = "controls-label";
-  sLabel.textContent = "添加卡组：";
+  sLabel.textContent = t("trend.addDeck");
 
   const picker = document.createElement("div");
   picker.className = "deck-picker";
@@ -97,7 +98,7 @@ export function buildTrendView(state: State): HTMLElement {
   const input = document.createElement("input");
   input.type = "search"; // 保留原生清除按钮（×）
   input.className = "deck-input";
-  input.placeholder = "搜索卡组名并添加…";
+  input.placeholder = t("trend.searchPlaceholder");
   input.autocomplete = "off";
   input.spellcheck = false;
 
@@ -150,7 +151,7 @@ export function buildTrendView(state: State): HTMLElement {
     if (options.length === 0) {
       const empty = document.createElement("li");
       empty.className = "deck-suggest-empty";
-      empty.textContent = input.value.trim() ? "无匹配的卡组名" : "已添加全部上位卡组";
+      empty.textContent = t(input.value.trim() ? "trend.noMatchingDeck" : "trend.allDecksAdded");
       suggestList.appendChild(empty);
       return;
     }
@@ -160,7 +161,7 @@ export function buildTrendView(state: State): HTMLElement {
       swatch.className = "swatch";
       swatch.style.background = seriesColor(state.colorMap.get(name) ?? 0);
       const label = document.createElement("span");
-      label.textContent = name;
+      label.textContent = deckName(name);
       li.append(swatch, label);
       li.addEventListener("click", () => commit(name));
       itemEls.push(li);
@@ -216,7 +217,7 @@ export function buildTrendView(state: State): HTMLElement {
   // "查看全部上位卡组"按钮
   const showAllBtn = document.createElement("button");
   showAllBtn.className = "deck-action-btn";
-  showAllBtn.textContent = "查看全部上位卡组";
+  showAllBtn.textContent = t("trend.showAll");
   showAllBtn.addEventListener("click", () => {
     closeSuggest();
     input.value = "";
@@ -249,7 +250,7 @@ export function buildTrendView(state: State): HTMLElement {
   // "清空卡组"按钮
   const clearDecksBtn = document.createElement("button");
   clearDecksBtn.className = "deck-action-btn deck-action-clear";
-  clearDecksBtn.textContent = "清空卡组";
+  clearDecksBtn.textContent = t("trend.clearDecks");
   clearDecksBtn.addEventListener("click", () => {
     closeSuggest();
     state.selectedDecks = [];
@@ -285,10 +286,10 @@ function renderChips(host: HTMLElement, state: State, chartHost: HTMLElement): v
     swatch.className = "swatch";
     swatch.style.background = seriesColor(state.colorMap.get(name) ?? 0);
     const label = document.createElement("span");
-    label.textContent = name;
+    label.textContent = deckName(name);
     const rm = document.createElement("button");
     rm.className = "chip-remove";
-    rm.setAttribute("aria-label", `移除 ${name}`);
+    rm.setAttribute("aria-label", t("common.remove", { name: deckName(name) }));
     rm.textContent = "×";
     rm.addEventListener("click", () => {
       state.selectedDecks = state.selectedDecks.filter((n) => n !== name);

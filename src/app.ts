@@ -13,6 +13,7 @@ import {
   watchUnload,
 } from "./core/router.js";
 import { renderShell } from "./core/nav.js";
+import { getLang, setLang, t } from "./core/i18n.js";
 import { createEmptyDeck } from "./domain/deck.js";
 import { decodeDeck } from "./domain/deckCode.js";
 import { hasLimitTag, loadLimitTables } from "./domain/limits.js";
@@ -24,10 +25,25 @@ import { buildFaqView } from "./views/faq.js";
 const app = document.getElementById("app")!;
 let currentState: State | null = null;
 
+/**
+ * 把当前语言同步到文档本身：<html lang> 与标题、描述。
+ * index.html 里的中文副本是无脚本时的兜底，有脚本时以这里为准。
+ */
+function applyLang(): void {
+  document.documentElement.lang = getLang() === "en" ? "en" : "zh-CN";
+  document.title = t("meta.title");
+  const desc = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+  if (desc) desc.content = t("meta.description");
+}
+
 /** 注入给导航与视图的操作回调，避免它们反向依赖本文件 */
 const actions: AppActions = {
   loadSite,
-  renderShell: (state) => renderShell(state, actions),
+  // 语言切换就地重绘外壳、不经过 loadSite，故文档语言也在这里同步一次
+  renderShell: (state) => {
+    applyLang();
+    renderShell(state, actions);
+  },
   renderBody,
 };
 
@@ -39,7 +55,8 @@ async function loadSite(
   limitsParam?: string | null
 ): Promise<void> {
   const config = SITE_CONFIGS[site];
-  app.innerHTML = `<p class="empty-note">正在加载…</p>`;
+  applyLang();
+  app.innerHTML = `<p class="empty-note">${t("app.loading")}</p>`;
 
   // 关于网站与构筑导出站不需要加载数据
   if (!config.hasData) {
@@ -61,7 +78,7 @@ async function loadSite(
       await loadLimitTables().catch(() => null);
       const deck = deckParam ? decodeDeck(deckParam) : null;
       // 弹窗阻挡在本行，用户确认后才继续渲染，呈现的顺序正好是提示在前、空构筑在后
-      if (deckParam && !deck) alert("链接构筑无法解析，默认加载空构筑。");
+      if (deckParam && !deck) alert(t("app.deckDecodeFailed"));
       const limitTag = limitsParam && hasLimitTag(limitsParam) ? limitsParam : null;
       if (site === "builder") {
         state.builderDeck = deck ?? createEmptyDeck();
@@ -85,16 +102,15 @@ async function loadSite(
     const editionConfig = EVENT_EDITION_CONFIGS[eventEdition];
     config.dataPath = editionConfig.dataPath;
     config.deckDir = editionConfig.deckDir;
-    config.editionToggleLabel = editionConfig.label;
   }
 
   let matches: Match[];
   try {
     matches = await loadData(config.dataPath);
   } catch (err) {
-    app.innerHTML = `<div class="error">加载数据失败：${
-      err instanceof Error ? err.message : String(err)
-    }<br><small>请通过本地服务器访问（例如 npm run serve），而非直接双击打开文件。</small></div>`;
+    app.innerHTML = `<div class="error">${t("app.loadFailed", {
+      msg: err instanceof Error ? err.message : String(err),
+    })}<br><small>${t("app.loadFailedHint")}</small></div>`;
     return;
   }
 
@@ -139,13 +155,18 @@ function renderBody(state: State): void {
 }
 
 async function main(): Promise<void> {
-  // 根据 URL 决定加载哪个站点、板块及定位到的比赛
-  const { site, edition, dateParam, deckParam, limitsParam } = parseRoute();
-  await loadSite(site, edition, dateParam, deckParam, limitsParam);
+  // 根据 URL 决定加载哪个站点、板块及定位到的比赛。
+  // 语言要先定下来，外壳与各视图的文案都取自它
+  const route = parseRoute();
+  setLang(route.lang);
+  await loadSite(route.site, route.edition, route.dateParam, route.deckParam, route.limitsParam);
 
   // 浏览器前进/后退时响应路由变化
   window.addEventListener("popstate", () => {
-    const { site, edition, dateParam, deckParam, limitsParam } = parseRoute();
+    const { site, edition, dateParam, deckParam, limitsParam, lang } = parseRoute();
+    // 语言一变，外壳与视图的文案整体作废，得重绘而不能只改数据
+    const langChanged = lang !== getLang();
+    if (langChanged) setLang(lang);
     // 后退离开构筑导出站同样会丢构筑。取消时把地址推回原处，不重新加载，
     // 这样已经在内存里的构筑原样保留（此时浏览器已经跳走，必须补一次 pushState）
     if (
@@ -156,7 +177,7 @@ async function main(): Promise<void> {
       history.pushState(null, "", buildUrl(currentState));
       return;
     }
-    // 同站点、同板块下仅日期变化时，无需重新加载数据
+    // 同站点、同板块（可含语言变化）时无需重新加载数据，重绘即可
     if (
       currentState &&
       currentState.config.site === site &&
@@ -165,7 +186,8 @@ async function main(): Promise<void> {
     ) {
       currentState.selectedMatch = matchIndexByDateParam(currentState.matches, dateParam);
       currentState.view = "pie";
-      renderBody(currentState);
+      if (langChanged) actions.renderShell(currentState);
+      else renderBody(currentState);
       return;
     }
     loadSite(site, edition, dateParam, deckParam, limitsParam);

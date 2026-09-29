@@ -1,14 +1,15 @@
 import type { DataFile, Match, MatchType } from "./types.js";
+import { t } from "./i18n.js";
 
 /** 从指定数据文件加载数据 */
 export async function loadData(path: string = "./data/data.json"): Promise<Match[]> {
   const res = await fetch(path, { cache: "no-cache" });
   if (!res.ok) {
-    throw new Error(`无法加载数据文件 ${path}（HTTP ${res.status}）`);
+    throw new Error(t("data.loadFailed", { path, status: res.status }));
   }
   const parsed = (await res.json()) as DataFile;
   if (!parsed || !Array.isArray(parsed.decks)) {
-    throw new Error("数据文件格式不正确：缺少 decks 数组");
+    throw new Error(t("data.badFormat"));
   }
   // 按日期升序排列，确保趋势图 x 轴按时间顺序
   return [...parsed.decks].sort((a, b) => a.date.localeCompare(b.date));

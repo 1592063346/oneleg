@@ -1,6 +1,7 @@
 // 适用禁限卡表：读取 data/limits/ 下的表，供构筑预览校验投入张数与标注禁限角标
 
 import type { LimitTable } from "../core/types.js";
+import { t } from "../core/i18n.js";
 
 /** 表清单。静态服务不列目录，故由索引文件列出全部表 */
 const INDEX_URL = "./data/limits/index.json";
@@ -41,7 +42,7 @@ async function fetchTables(): Promise<LimitTable[]> {
 
 async function fetchJson<T>(url: string): Promise<T> {
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`读取 ${url} 失败（HTTP ${res.status}）`);
+  if (!res.ok) throw new Error(t("limit.readFailed", { url, status: res.status }));
   return (await res.json()) as T;
 }
 
