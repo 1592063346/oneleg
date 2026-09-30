@@ -204,6 +204,8 @@ const MESSAGES = {
   "pieChart.aria": msg("{title} 卡组分布饼图", "{title} deck breakdown pie chart"),
   "pieChart.tooltip": msg("数量 {num} · 占比 {pct}%", "Count {num} · {pct}%"),
   "pieChart.subdeckSeparator": msg("；", "; "),
+  // 子卡组名与主卡组名之间：中文直接相连，英文留一个空格
+  "pieChart.subdeckGap": msg("", " "),
   "others.title": msg(
     "others 详情（共 {count} 种 / {sum} 个卡组）",
     "others details ({count} archetypes / {sum} decks)"

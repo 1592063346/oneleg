@@ -753,8 +753,9 @@ function drawLeaderLabels(group: SVGGElement, slices: Slice[]): void {
 
     // 如果有子卡组，添加第三行
     if (s.subdecks && s.subdecks.length > 0) {
+      const gap = t("pieChart.subdeckGap");
       const subdeckParts = s.subdecks.map(
-        (sd) => `${deckName(sd.deck)}${deckName(s.name)} ${sd.num}`
+        (sd) => `${deckName(sd.deck)}${gap}${deckName(s.name)} ${sd.num}`
       );
       const subdeckText = subdeckParts.join(t("pieChart.subdeckSeparator"));
       const subdeckLine = el(
