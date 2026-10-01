@@ -9,7 +9,7 @@
             "3_4th": [{"id": "苦", "deck": "狱神", "deck_file": true}, {"id": "橙汁", "deck": "耀圣", "deck_file": true}],
             "decks": [
                 {"name": "耀圣", "num": 158},
-                {"name": "卡通", "num": 136, "subdecks": [{"deck": "雷热涡炉", "num": 74}]},
+                {"name": "卡通", "num": 136, "archetypes": [{"name": "雷热涡炉", "num": 74}]},
                 {"name": "神艺", "num": 35},
                 {"name": "闪刀姬", "num": 43},
                 {"name": "杀手旋律", "num": 31},
@@ -96,9 +96,9 @@
                 {"name": "活死人的呼声", "num": 1}
             ],
             "elimination_decks": [
-                {"name": "耀圣", "num": 13, "subdecks": [{"deck": "奥艺", "num": 3}]},
-                {"name": "卡通", "num": 5, "subdecks": [{"deck": "雷热涡炉", "num": 2}]},
-                {"name": "烙印", "num": 3, "subdecks": [{"deck": "星宿", "num": 2}]},
+                {"name": "耀圣", "num": 13, "archetypes": [{"name": "奥艺", "num": 3}]},
+                {"name": "卡通", "num": 5, "archetypes": [{"name": "雷热涡炉", "num": 2}]},
+                {"name": "烙印", "num": 3, "archetypes": [{"name": "星宿", "num": 2}]},
                 {"name": "杀手旋律", "num": 2},
                 {"name": "自鸣天琴", "num": 2},
                 {"name": "命运英雄", "num": 1},

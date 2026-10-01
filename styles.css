@@ -40,6 +40,9 @@
   --active-bg: rgba(255, 255, 255, 0.22);
 }
 
+/* 关掉移动端浏览器的文字自动放大：横竖屏切换时视口宽度变了，字号不跟着变 */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
 * { box-sizing: border-box; }
 body {
   margin: 0;

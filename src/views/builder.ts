@@ -642,7 +642,8 @@ async function openLimitTable(table: LimitTable): Promise<void> {
         [t("limit.limited"), byRank(1)],
         [t("limit.semiLimited"), byRank(2)],
       ],
-      ENV
+      // 简中卡表（tag 以 _sc 结尾）配中文卡图，其余沿用日文卡图
+      table.tag.endsWith("_sc") ? "sc" : ENV
     )
   );
 }

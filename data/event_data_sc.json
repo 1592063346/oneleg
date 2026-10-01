@@ -10,7 +10,7 @@
             "3_4th": [{"id": "小湫漓", "deck": "烙印", "deck_file": true}, {"id": "SA@wkkp", "deck": "烙印", "deck_file": true}],
             "decks": [
                 {"name": "耀圣", "num": 59},
-                {"name": "卡通", "num": 81, "subdecks": [{"deck": "雷热涡炉", "num": 27}]},
+                {"name": "卡通", "num": 81, "archetypes": [{"name": "雷热涡炉", "num": 27}]},
                 {"name": "杀手旋律", "num": 35},
                 {"name": "码丽丝", "num": 34},
                 {"name": "破械", "num": 21},
@@ -71,8 +71,8 @@
                 {"name": "狱炎机", "num": 1}
             ],
             "elimination_decks": [
-                {"name": "卡通", "num": 11, "subdecks": [{"deck": "雷热涡炉", "num": 5}]},
-                {"name": "烙印", "num": 3, "subdecks": [{"deck": "星宿", "num": 2}]},
+                {"name": "卡通", "num": 11, "archetypes": [{"name": "雷热涡炉", "num": 5}]},
+                {"name": "烙印", "num": 3, "archetypes": [{"name": "星宿", "num": 2}]},
                 {"name": "杀手旋律", "num": 3},
                 {"name": "耀圣", "num": 3},
                 {"name": "破械", "num": 3},

@@ -203,12 +203,12 @@ const MESSAGES = {
   "pieChart.loading": msg("饼图加载中……", "Loading chart…"),
   "pieChart.aria": msg("{title} 卡组分布饼图", "{title} deck breakdown pie chart"),
   "pieChart.tooltip": msg("数量 {num} · 占比 {pct}%", "Count {num} · {pct}%"),
-  "pieChart.subdeckSeparator": msg("；", "; "),
+  "pieChart.archetypeSeparator": msg("；", "; "),
   // 子卡组名与主卡组名之间：中文直接相连，英文留一个空格
-  "pieChart.subdeckGap": msg("", " "),
+  "pieChart.archetypeGap": msg("", " "),
   "others.title": msg(
     "others 详情（共 {count} 种 / {sum} 个卡组）",
-    "others details ({count} archetypes / {sum} decks)"
+    "Details of others ({count} archetypes / {sum} decks)"
   ),
 
   // ---- 折线图 ----
@@ -224,28 +224,28 @@ const MESSAGES = {
   "faq.q1": msg("Q：这是什么网站？", "Q: What is this site for?"),
   "faq.a1": msg(
     "A：这是北京万籁阁（ONELEG）游戏王 OCG 比赛数据站，用于整理并展示所有由北京万籁阁举办的游戏王 OCG 比赛的结果与环境分布数据，并对上位结果进行统计。同时，网站有中国大陆游戏王赛事数据分站，用于收集、整理并展示 WCQ2026 后举办的所有国内大型赛事（包括 OCG 与简体中文环境）的结果与环境分布数据。数据均会实时更新。此外，本网站也支持卡组构筑与比赛卡表导出。",
-    "A: This is the Yu-Gi-Oh! OCG tournament data hub for Beijing ONELEG. It organizes and presents the results and meta breakdowns of every Yu-Gi-Oh! OCG tournament held by ONELEG, and compiles top cut statistics from them. The site also has a China Mainland tournament data section, which collects and presents the results and meta breakdowns of all major domestic tournaments held since WCQ2026 (covering both OCG and Simplified Chinese). All data is updated in real time. The site also supports deck building and tournament decklist export."
+    "A: This is the Yu-Gi-Oh! OCG tournament data hub for Beijing ONELEG. It gathers the tournaments ONELEG has run and presents the results, the meta breakdowns and the top cut statistics for each. A second section covers all major events in Chinese mainland since WCQ2026, again with results and meta breakdowns. All of the data updates in real time. This site also offers a deck builder and decklist export."
   ),
   "faq.q2": msg(
     "Q：为什么部分比赛的部分上位选手构筑未录入？",
-    "Q: Why are some top cut decklists missing from some tournaments?"
+    "Q: Why are some top cut decklists missing?"
   ),
   "faq.a2": msg(
     "A：网站上线前的比赛上位构筑我们均未录入，我们会尽量保证录入后续所有积分赛与王中王邀请赛的上位构筑。",
-    "A: We have not entered any top cut decklists from tournaments held before the site went live. We will do our best to include the top cut decklists of every upcoming Ranking and Invite-only tournament."
+    "A: We did not record top cut decklists for tournaments held before this site launched; we will do our best to record all top cut decklists for every upcoming Ranking and Invite-only tournament."
   ),
   "faq.q3": msg(
     "Q：为什么构筑预览与构筑导出的卡图有时会无法加载，或者构筑导出功能无法导入或搜索到部分卡片？",
-    "Q: Why do card images sometimes fail to load in the deck preview and deck builder, and why can't the builder import or find some cards?"
+    "Q: Why do some card images fail to load in the deck preview and deck builder, and why can't the builder import or find certain cards?"
   ),
   "faq.a3": msg(
     'A：构筑预览与构筑导出部分的卡图 CDN 由 <a href="https://cdn.233.momobako.com" target="_blank" rel="noopener noreferrer">cdn.233.momobako.com</a> 提供（超先行卡卡图由 <a href="https://cdntx.moecube.com/" target="_blank" rel="noopener noreferrer">cdntx.moecube.com</a> 提供），卡片检索与详情由<a href="https://ygocdb.com" target="_blank" rel="noopener noreferrer">百鸽</a>提供，在此一并感谢。如果出现卡图无法正常加载，一般情况下非本网站问题。同时，对于仅公布信息但尚未正式发售的先行卡，<a href="https://ygocdb.com" target="_blank" rel="noopener noreferrer">百鸽</a>尚不支持检索；通过 YDK 导入的卡片也均需借助<a href="https://ygocdb.com" target="_blank" rel="noopener noreferrer">百鸽</a>数据库查询基础信息，故本网站功能尚不支持该类卡片。',
-    'A: Card images in the deck preview and deck builder are served by <a href="https://cdn.233.momobako.com" target="_blank" rel="noopener noreferrer">cdn.233.momobako.com</a> (images for superpre cards come from <a href="https://cdntx.moecube.com/" target="_blank" rel="noopener noreferrer">cdntx.moecube.com</a>), and card search and data are provided by <a href="https://ygocdb.com" target="_blank" rel="noopener noreferrer">百鸽</a> — our thanks to them all. If an image fails to load, it is usually not an issue with this site. Cards that have been revealed but not yet officially released are not searchable on <a href="https://ygocdb.com" target="_blank" rel="noopener noreferrer">百鸽</a>, and cards imported through YDK also need the <a href="https://ygocdb.com" target="_blank" rel="noopener noreferrer">百鸽</a> database for their basic information, so the site does not yet support them.'
+    'A: Card images in the deck preview and deck builder are mostly served by <a href="https://cdn.233.momobako.com" target="_blank" rel="noopener noreferrer">cdn.233.momobako.com</a>, with superpre card images coming from <a href="https://cdntx.moecube.com/" target="_blank" rel="noopener noreferrer">cdntx.moecube.com</a>; card search and data come from <a href="https://ygocdb.com" target="_blank" rel="noopener noreferrer">百鸽</a> — our thanks to all of them. If an image fails to load, the cause is usually not this site. Cards that have been revealed but not yet released cannot be searched on <a href="https://ygocdb.com" target="_blank" rel="noopener noreferrer">百鸽</a> yet, and cards imported from a YDK file also need its database for their basic information, so this site cannot support them for now.'
   ),
   "faq.q4": msg("Q：对网站有其他疑问或建议？", "Q: Other questions or suggestions about this site?"),
   "faq.a4": msg(
     'A：欢迎<a href="mailto:imagine076@qq.com">联系作者</a>进行讨论与修改。',
-    'A: Feel free to <a href="mailto:imagine076@qq.com">contact the author</a> to discuss or suggest changes.'
+    'A: Feel free to <a href="mailto:imagine076@qq.com">contact the author</a>.'
   ),
   "faq.links": msg("相关链接", "Related links"),
   "faq.link.oneleg": msg("北京ONELEG万籁阁游戏王 B 站官方账号", "Beijing ONELEG Official on Bilibili"),

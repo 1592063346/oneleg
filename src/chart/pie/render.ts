@@ -150,15 +150,15 @@ function buildPieSection(
     num: number,
     color: string,
     isOthers: boolean,
-    subdecks?: Array<{ deck: string; num: number }>
+    archetypes?: Array<{ name: string; num: number }>
   ) => {
     const pct = num / total;
     const sweep = pct * 360;
-    slices.push({ name, num, pct, start: angle, end: angle + sweep, color, isOthers, subdecks });
+    slices.push({ name, num, pct, start: angle, end: angle + sweep, color, isOthers, archetypes });
     angle += sweep;
   };
   for (const d of shown) {
-    pushSlice(d.name, d.num, seriesColor(colorMap.get(d.name) ?? 0), false, d.subdecks);
+    pushSlice(d.name, d.num, seriesColor(colorMap.get(d.name) ?? 0), false, d.archetypes);
   }
   if (othersSum > 0) {
     pushSlice(OTHERS_LABEL, othersSum, othersColor(), true);
@@ -169,9 +169,9 @@ function buildPieSection(
   for (const slice of slices) {
     if (loadOthersImage || !slice.isOthers) {
       imageUrls.add(imageHref(slice.name));
-      if (slice.subdecks) {
-        for (const subdeck of slice.subdecks) {
-          imageUrls.add(imageHref(subdeck.deck));
+      if (slice.archetypes) {
+        for (const archetype of slice.archetypes) {
+          imageUrls.add(imageHref(archetype.name));
         }
       }
     }
@@ -464,7 +464,7 @@ function buildSvg(match: Match, slices: Slice[], loadOthersImage: boolean): SVGS
   });
 
   // 渲染子卡组（双层饼图）
-  renderSubdecks(svg, slices, defs, uid, surface);
+  renderArchetypes(svg, slices, defs, uid, surface);
 
   // 引导线标签：每块饼旁标注"名称 数量（占比）"。
   // 单独成组：收边只量这一组，不连带被裁剪的图片
@@ -476,7 +476,7 @@ function buildSvg(match: Match, slices: Slice[], loadOthersImage: boolean): SVGS
 }
 
 /** 渲染子卡组在外圈 (0.8R 到 R) */
-function renderSubdecks(
+function renderArchetypes(
   svg: SVGSVGElement,
   slices: Slice[],
   defs: SVGDefsElement,
@@ -485,46 +485,46 @@ function renderSubdecks(
 ): void {
   const innerR = 0.8 * R;
   const outerR = R;
-  const subdeckImgR = 0.9 * R; // 子卡组图片中心距离圆心的距离
+  const archetypeImgR = 0.9 * R; // 子卡组图片中心距离圆心的距离
 
   slices.forEach((parentSlice, sliceIdx) => {
-    if (!parentSlice.subdecks || parentSlice.subdecks.length === 0) {
+    if (!parentSlice.archetypes || parentSlice.archetypes.length === 0) {
       return; // 没有子卡组，跳过
     }
 
-    const subdeckTotal = parentSlice.subdecks.reduce((sum, sd) => sum + sd.num, 0);
+    const archetypeTotal = parentSlice.archetypes.reduce((sum, arch) => sum + arch.num, 0);
 
     // 子卡组占据父卡组的末尾部分
     // 父卡组总角度
     const parentSweep = parentSlice.end - parentSlice.start;
     // 子卡组总角度 = 父卡组角度 * (子卡组总数 / 父卡组总数)
-    const subdeckSweep = parentSweep * (subdeckTotal / parentSlice.num);
+    const archetypeSweep = parentSweep * (archetypeTotal / parentSlice.num);
     // 子卡组起始角度 = 父卡组结束角度 - 子卡组总角度
-    const subdeckStartAngle = parentSlice.end - subdeckSweep;
+    const archetypeStartAngle = parentSlice.end - archetypeSweep;
 
-    let currentAngle = subdeckStartAngle;
+    let currentAngle = archetypeStartAngle;
 
     // 边界线向内偏移的角度（度）
     const angleOffset = 0.2;
 
-    parentSlice.subdecks.forEach((subdeck, subIdx) => {
-      const subPct = subdeck.num / subdeckTotal;
-      const subSweep = subdeckSweep * subPct;
-      const subStart = currentAngle;
-      const subEnd = currentAngle + subSweep;
+    parentSlice.archetypes.forEach((archetype, archIdx) => {
+      const archPct = archetype.num / archetypeTotal;
+      const archSweep = archetypeSweep * archPct;
+      const archStart = currentAngle;
+      const archEnd = currentAngle + archSweep;
 
       // 创建子卡组的环形扇区路径
-      const subPath = arcRingPath(CX, CY, innerR, outerR, subStart, subEnd);
+      const archPath = arcRingPath(CX, CY, innerR, outerR, archStart, archEnd);
 
       // 裁剪路径
-      const clipId = `subdeck-${uid}-${sliceIdx}-${subIdx}`;
+      const clipId = `archetype-${uid}-${sliceIdx}-${archIdx}`;
       const clip = el("clipPath", { id: clipId });
-      clip.appendChild(el("path", { d: subPath }));
+      clip.appendChild(el("path", { d: archPath }));
       defs.appendChild(clip);
 
       // 子卡组图片
-      const subMid = (subStart + subEnd) / 2;
-      const customCenterConfig = imageCenters[subdeck.deck];
+      const archMid = (archStart + archEnd) / 2;
+      const customCenterConfig = imageCenters[archetype.name];
 
       if (customCenterConfig) {
         const [centerX, centerY] = customCenterConfig.center;
@@ -534,20 +534,20 @@ function renderSubdecks(
         const normCenterY = centerY / originalHeight;
 
         // 子卡组图片中心位于角平分线上的 0.9R 处
-        const imgCenterPos = polarToCartesian(CX, CY, subdeckImgR, subMid);
+        const imgCenterPos = polarToCartesian(CX, CY, archetypeImgR, archMid);
 
         // 计算需要覆盖的关键点：环形扇区的所有顶点和边界采样点
         const keyPoints = [
-          polarToCartesian(CX, CY, innerR, subStart),
-          polarToCartesian(CX, CY, innerR, subEnd),
-          polarToCartesian(CX, CY, outerR, subStart),
-          polarToCartesian(CX, CY, outerR, subEnd),
+          polarToCartesian(CX, CY, innerR, archStart),
+          polarToCartesian(CX, CY, innerR, archEnd),
+          polarToCartesian(CX, CY, outerR, archStart),
+          polarToCartesian(CX, CY, outerR, archEnd),
         ];
 
         // 在内弧和外弧上采样
         const numSamples = 10;
         for (let i = 1; i < numSamples; i++) {
-          const angle = subStart + (subEnd - subStart) * (i / numSamples);
+          const angle = archStart + (archEnd - archStart) * (i / numSamples);
           keyPoints.push(polarToCartesian(CX, CY, innerR, angle));
           keyPoints.push(polarToCartesian(CX, CY, outerR, angle));
         }
@@ -596,7 +596,7 @@ function renderSubdecks(
         const imgY = imgCenterPos.y - normCenterY * imgSize;
 
         const image = el("image", {
-          href: imageHref(subdeck.deck),
+          href: imageHref(archetype.name),
           x: imgX,
           y: imgY,
           width: imgSize,
@@ -605,7 +605,7 @@ function renderSubdecks(
           "clip-path": `url(#${clipId})`,
           "pointer-events": "none",
         });
-        image.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", imageHref(subdeck.deck));
+        image.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", imageHref(archetype.name));
         image.addEventListener("error", () => image.remove());
         svg.appendChild(image);
       }
@@ -613,12 +613,12 @@ function renderSubdecks(
       // 绘制子卡组分隔线（白色）
       // 条件1：不是第一个子卡组 - 绘制左边界
       // 条件2：是第一个子卡组但子卡组总数 < 父卡组总数 - 绘制左边界（与父卡组非边界的分隔）
-      // 条件3：是第一个子卡组且 subdeckTotal == parentSlice.num - 绘制左边界（与父卡组边界重合）
-      if (subIdx > 0 || subdeckTotal < parentSlice.num || (subIdx === 0 && subdeckTotal === parentSlice.num)) {
+      // 条件3：是第一个子卡组且 archetypeTotal == parentSlice.num - 绘制左边界（与父卡组边界重合）
+      if (archIdx > 0 || archetypeTotal < parentSlice.num || (archIdx === 0 && archetypeTotal === parentSlice.num)) {
         // 判断是否与父卡组边界重合（第一个子卡组且占满父卡组）
-        const isAtParentBoundary = (subIdx === 0 && subdeckTotal === parentSlice.num);
+        const isAtParentBoundary = (archIdx === 0 && archetypeTotal === parentSlice.num);
         // 如果与父卡组边界重合，向内偏移；否则不偏移
-        const angleToUse = isAtParentBoundary ? subStart + angleOffset : subStart;
+        const angleToUse = isAtParentBoundary ? archStart + angleOffset : archStart;
         const lineStart = polarToCartesian(CX, CY, innerR, angleToUse);
         const lineEnd = polarToCartesian(CX, CY, outerR, angleToUse);
         const separatorLine = el("line", {
@@ -634,9 +634,9 @@ function renderSubdecks(
       }
 
       // 如果是最后一个子卡组，绘制右边界（与父卡组边界重合）
-      if (subIdx === parentSlice.subdecks!.length - 1) {
+      if (archIdx === parentSlice.archetypes!.length - 1) {
         // 最后一个子卡组的右边界总是与父卡组边界重合，向内偏移
-        const angleToUse = subEnd - angleOffset;
+        const angleToUse = archEnd - angleOffset;
         const lineStart = polarToCartesian(CX, CY, innerR, angleToUse);
         const lineEnd = polarToCartesian(CX, CY, outerR, angleToUse);
         const separatorLine = el("line", {
@@ -651,13 +651,13 @@ function renderSubdecks(
         svg.appendChild(separatorLine);
       }
 
-      currentAngle = subEnd;
+      currentAngle = archEnd;
     });
 
     // 绘制子卡组区域的内圈边界线（白色圆弧，只是圆弧不是扇形）
-    const innerArcStart = polarToCartesian(CX, CY, innerR, subdeckStartAngle);
+    const innerArcStart = polarToCartesian(CX, CY, innerR, archetypeStartAngle);
     const innerArcEnd = polarToCartesian(CX, CY, innerR, parentSlice.end);
-    const largeArc = (parentSlice.end - subdeckStartAngle) > 180 ? 1 : 0;
+    const largeArc = (parentSlice.end - archetypeStartAngle) > 180 ? 1 : 0;
     const innerArcPath = `M ${innerArcStart.x} ${innerArcStart.y} A ${innerR} ${innerR} 0 ${largeArc} 1 ${innerArcEnd.x} ${innerArcEnd.y}`;
     const innerArcLine = el("path", {
       d: innerArcPath,
@@ -752,13 +752,13 @@ function drawLeaderLabels(group: SVGGElement, slices: Slice[]): void {
     group.appendChild(valText);
 
     // 如果有子卡组，添加第三行
-    if (s.subdecks && s.subdecks.length > 0) {
-      const gap = t("pieChart.subdeckGap");
-      const subdeckParts = s.subdecks.map(
-        (sd) => `${deckName(sd.deck)}${gap}${deckName(s.name)} ${sd.num}`
+    if (s.archetypes && s.archetypes.length > 0) {
+      const gap = t("pieChart.archetypeGap");
+      const archetypeParts = s.archetypes.map(
+        (arch) => `${deckName(arch.name)}${gap}${deckName(s.name)} ${arch.num}`
       );
-      const subdeckText = subdeckParts.join(t("pieChart.subdeckSeparator"));
-      const subdeckLine = el(
+      const archetypeText = archetypeParts.join(t("pieChart.archetypeSeparator"));
+      const archetypeLine = el(
         "text",
         {
           x: textX,
@@ -768,9 +768,9 @@ function drawLeaderLabels(group: SVGGElement, slices: Slice[]): void {
           fill: leader,
           "font-size": 12,
         },
-        [subdeckText]
+        [archetypeText]
       );
-      group.appendChild(subdeckLine);
+      group.appendChild(archetypeLine);
     }
   }
 }

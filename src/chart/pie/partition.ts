@@ -14,7 +14,7 @@ export interface Slice {
   end: number;
   color: string;
   isOthers: boolean;
-  subdecks?: Array<{ deck: string; num: number }>;
+  archetypes?: Array<{ name: string; num: number }>;
 }
 
 export interface Partition {
