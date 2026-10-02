@@ -12,11 +12,26 @@ const DOT = '<span class="footer-dot" aria-hidden="true"></span>';
 export function buildFooter(state: State, actions: AppActions): HTMLElement {
   const footer = document.createElement("footer");
   footer.className = "site-footer";
+  // footer.innerHTML = `
+  //   <div class="footer-col">
+  //     <p class="footer-line"><a class="footer-faq" href="${sitePath("faq") + langQuery()}">${t(
+  //       "footer.faq"
+  //     )}</a>${DOT}<a href="https://github.com/1592063346/oneleg">${t("footer.repo")}</a></p>
+  //     <p class="footer-line footer-updated"></p>
+  //     <p class="footer-line">${t("footer.cardSupport")}<a href="https://ygocdb.com/">${t(
+  //       "footer.ygocdb"
+  //     )}</a></p>
+  //   </div>
+  //   <div class="footer-col footer-right">
+  //     <p class="footer-line">Created by <strong>Imagine076</strong></p>
+  //     <p class="footer-line"><a href="https://space.bilibili.com/353773164">BiliBili</a>${DOT}<a href="https://qm.qq.com/q/4VHZybgazK">QQ</a></p>
+  //   </div>
+  // `;
   footer.innerHTML = `
     <div class="footer-col">
       <p class="footer-line"><a class="footer-faq" href="${sitePath("faq") + langQuery()}">${t(
         "footer.faq"
-      )}</a>${DOT}<a href="https://github.com/1592063346/oneleg">${t("footer.repo")}</a></p>
+      )}</a></p>
       <p class="footer-line footer-updated"></p>
       <p class="footer-line">${t("footer.cardSupport")}<a href="https://ygocdb.com/">${t(
         "footer.ygocdb"
