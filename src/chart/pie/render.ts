@@ -14,6 +14,7 @@ const LEADER_HORIZ = 26; // 水平段
 const LABEL_GAP = 6; // 末段到文字的水平间距
 const NAME_FONT = 14; // 名称行字号
 const CROP_PAD = 8; // 收边时内容外侧留的余量
+const FOCUS_SHIFT_MIN_PCT = 0.08; // 焦点沿四等分线偏移的最小占比
 
 // 基准画布：绘制坐标由它推出，实际幅面在画完后按标签实测收边（见 cropPies）
 const W = 760;
@@ -320,11 +321,11 @@ function buildSvg(match: Match, slices: Slice[], loadOthersImage: boolean): SVGS
         const normCenterX = centerX / originalWidth;
         const normCenterY = centerY / originalHeight;
 
-        // 角平分线的单位方向向量
-        // 注意：polarToCartesian 已经处理了 -90 转换，所以这里直接用 mid 角度
-        const midRad = ((mid - 90) * Math.PI) / 180;
-        const dirX = Math.cos(midRad);
-        const dirY = Math.sin(midRad);
+        // 方向向量：polarToCartesian 已经处理了 -90 转换，故角度直接代入
+        const dirOf = (deg: number) => {
+          const rad = ((deg - 90) * Math.PI) / 180;
+          return { x: Math.cos(rad), y: Math.sin(rad) };
+        };
 
         // 需要覆盖的关键点（固定）
         const keyPoints = [
@@ -340,11 +341,9 @@ function buildSvg(match: Match, slices: Slice[], loadOthersImage: boolean): SVGS
           keyPoints.push(polarToCartesian(CX, CY, R, angle));
         }
 
-        // 在角平分线上搜索最优位置
-        // 图片中心位置 = (CX, CY) + t * (dirX, dirY)
-        // 对于每个关键点，计算需要的最小缩放比例
+        // 焦点位置 = (CX, CY) + t * (dirX, dirY)，对每个关键点求覆盖它所需的最小边长
 
-        const findMinImgSize = (t: number): number => {
+        const findMinImgSize = (t: number, dirX: number, dirY: number): number => {
           const imgCenterX = CX + t * dirX;
           const imgCenterY = CY + t * dirY;
 
@@ -396,41 +395,48 @@ function buildSvg(match: Match, slices: Slice[], loadOthersImage: boolean): SVGS
           return maxImgSize;
         };
 
-        // 三分搜索找到最小图片尺寸对应的 t
-        // t 的范围：从圆心(0)到圆弧(R)，图片中心必须在饼块内
-        // let left = 0;
-        // let right = R;
+        // 沿某方向三分搜索焦点位置，返回所需边长最小的那个位置。
+        // t 取 (0.25R, 0.75R)：不取 (0, R) 是不希望焦点落在过于边缘的位置。
+        const searchAlong = (dirX: number, dirY: number) => {
+          let left = 0.25 * R;
+          let right = 0.75 * R;
+          const eps = 0.1;
 
-        // t 的范围：(0.25R, 0.75R)
-        // 不选择 (0, R) 因为不希望图片中心位于过于边缘的位置
-        let left = 0.25 * R;
-        let right = 0.75 * R;
-        const eps = 0.1;
+          while (right - left > eps) {
+            const m1 = left + (right - left) / 3;
+            const m2 = right - (right - left) / 3;
+            const size1 = findMinImgSize(m1, dirX, dirY);
+            const size2 = findMinImgSize(m2, dirX, dirY);
 
-        while (right - left > eps) {
-          const m1 = left + (right - left) / 3;
-          const m2 = right - (right - left) / 3;
-          const size1 = findMinImgSize(m1);
-          const size2 = findMinImgSize(m2);
-
-          if (size1 > size2) {
-            left = m1;
-          } else {
-            right = m2;
+            if (size1 > size2) {
+              left = m1;
+            } else {
+              right = m2;
+            }
           }
+
+          const t = (left + right) / 2;
+          return { x: CX + t * dirX, y: CY + t * dirY, size: findMinImgSize(t, dirX, dirY) };
+        };
+
+        const midDir = dirOf(mid);
+        let best = searchAlong(midDir.x, midDir.y);
+
+        // 角平分线近水平（与水平线夹角不超过 45°）时，再沿四等分线各做一次三分，取更优值
+        if (s.pct >= FOCUS_SHIFT_MIN_PCT && ((mid >= 45 && mid <= 135) || (mid >= 225 && mid <= 315))) {
+          const q1 = dirOf(mid - sweep / 4);
+          const q2 = dirOf(mid + sweep / 4);
+          const upper = q1.y <= q2.y ? q1 : q2;
+          const lower = upper === q1 ? q2 : q1;
+          const quarter = normCenterY < 0.5 ? upper : lower;
+
+          const alt = searchAlong(quarter.x, quarter.y);
+          if (alt.size < best.size) best = alt;
         }
 
-        const bestT = (left + right) / 2;
-        imgSize = findMinImgSize(bestT);
-
-        // 计算最终图片位置
-        const imgCenterX = CX + bestT * dirX;
-        const imgCenterY = CY + bestT * dirY;
-        imgX = imgCenterX - normCenterX * imgSize;
-        imgY = imgCenterY - normCenterY * imgSize;
-
-
-
+        imgSize = best.size;
+        imgX = best.x - normCenterX * imgSize;
+        imgY = best.y - normCenterY * imgSize;
 
 
       } else {
