@@ -652,6 +652,11 @@ button.deck-card-link {
   .builder-results { max-height: 320px; }
 }
 
+/* 禁限卡表页（/limits/<tag>）：标题沿用比赛详情的样式 */
+.limits-view { color: var(--text-primary); }
+/* 卡片区不加边框、左右不留内边距，卡阵直接铺满内容宽度 */
+.limits-deck { padding: 0 0 20px; }
+
 /* FAQ 页面 */
 .faq-view {
   /* padding: 20px; */

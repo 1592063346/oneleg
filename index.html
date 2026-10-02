@@ -2,6 +2,9 @@
 <html lang="zh-CN" class="viz-root">
 <head>
   <meta charset="UTF-8" />
+  <!-- 站内资源一律用相对路径，两级以上的路由（如 /limits/<tag>）若不钉住基准，
+       浏览器会拿 /limits/ 当目录，资源全部请求到 /limits/... 下 -->
+  <base href="/" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>万籁阁比赛数据站 | ONELEG OCG Tournament Data</title>
   <meta

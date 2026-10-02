@@ -5,7 +5,7 @@ import { MATCH_TYPES, EVENT_MATCH_TYPES } from "./types.js";
 import type { MsgKey } from "./i18n.js";
 
 export type View = "pie" | "trend";
-export type Site = "main" | "event" | "builder" | "deck-display" | "faq";
+export type Site = "main" | "event" | "builder" | "deck-display" | "limits" | "faq";
 
 /** 站点配置：主站与国内赛事数据站（分站）的差异集中在此 */
 export interface SiteConfig {
@@ -75,10 +75,20 @@ export const SITE_CONFIGS: Record<Site, SiteConfig> = {
     showNameInDropdown: false,
     hasData: false,
   },
-  // 构筑展示站：只读，不在站点菜单里，仅能通过分享链接进入
   "deck-display": {
     site: "deck-display",
     path: "/deck-display",
+    titleKey: "site.home.title",
+    dataPath: "",
+    deckDir: "",
+    matchTypes: [],
+    hasTrend: false,
+    showNameInDropdown: false,
+    hasData: false,
+  },
+  limits: {
+    site: "limits",
+    path: "/limits",
     titleKey: "site.home.title",
     dataPath: "",
     deckDir: "",
@@ -100,7 +110,6 @@ export const SITE_CONFIGS: Record<Site, SiteConfig> = {
   },
 };
 
-/** 站点切换下拉的选项顺序与文案。不含构筑展示站，故它不在菜单里 */
 export const SITE_MENU: { site: Site; labelKey: MsgKey }[] = [
   { site: "main", labelKey: "menu.main" },
   { site: "event", labelKey: "menu.event" },
@@ -125,15 +134,12 @@ export interface State {
   selectedTypes: Set<MatchType>; // 趋势图选中的比赛类型
   dateRange: { start: string; end: string } | null; // 趋势图日期区间筛选
   eventEdition?: EventEdition; // 分站当前板块（仅分站使用）
-  // 构筑导出站正在编辑的卡组。放在 State 而非视图闭包里：
-  // 主题切换时 app.ts 会重绘视图，放闭包里会把用户编辑到一半的构筑丢掉。
-  builderDeck?: DeckData;
-  // 构筑导出站当前适用的禁限卡表（存 tag 而非表本身，路由靠它拼参数）
-  builderLimitTag?: string | null;
+  builderDeck?: DeckData; // 构筑导出站正在编辑的卡组
+  builderLimitTag?: string | null; // 构筑导出站当前适用的禁限卡表
   // 构筑展示站（只读）正在展示的卡组与其适用的禁限卡表。
-  // 与 builderDeck 分开存：展示站是只读的，不该被“离开会丢构筑”的提醒拦下
-  displayDeck?: DeckData;
+  displayDeck?: DeckData; // 构筑展示站（只读）正在展示的卡组与其适用的禁限卡表。
   displayLimitTag?: string | null;
+  limitViewTag?: string | null; // 禁限卡表页正在浏览的表 tag
 }
 
 /**

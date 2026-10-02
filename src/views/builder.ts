@@ -6,7 +6,6 @@ import type { State } from "../core/config.js";
 import type { DeckData, LimitTable } from "../core/types.js";
 import {
   DECK_LIMITS,
-  createCardModal,
   createDeckSection,
   createEmptyDeck,
   deckLimitError,
@@ -16,14 +15,14 @@ import {
   normalizeDeckIds,
   parseYdk,
   setCardImage,
-  sortCardIds,
   sortDeck,
 } from "../domain/deck.js";
 import { cacheCardInfos, isExtraDeckCard, searchCards, type CardInfo } from "../domain/cards.js";
 import { allowedCopies, loadLimitTables, loadedLimitTables } from "../domain/limits.js";
 import { getLang, limitName, t } from "../core/i18n.js";
-import { buildDeckUrl, replaceUrl } from "../core/router.js";
+import { buildDeckUrl, limitsPageUrl, replaceUrl } from "../core/router.js";
 import { downloadBlankForm, exportDeckForm, type DeckFormLang } from "../domain/deckForm.js";
+import { buildDropdown } from "./shared.js";
 
 /** 本站不区分卡图环境，统一使用日文卡图 */
 const ENV = "ocg";
@@ -59,18 +58,11 @@ const LANGS: DeckFormLang[] = ["jp", "sc"];
  */
 let openResults: { row: HTMLElement; panel: HTMLElement } | null = null;
 
-/** 当前展开的下拉（导出语言、禁限卡表共用，同样至多一个） */
-let openDropdownList: HTMLElement | null = null;
-
 document.addEventListener("click", (ev) => {
   // 点在搜索行内（含浮层里的按钮）一律不收起，方便连续添加多张卡
   if (openResults && !openResults.row.contains(ev.target as Node)) {
     openResults.panel.style.display = "none";
     openResults = null;
-  }
-  if (openDropdownList) {
-    openDropdownList.style.display = "none";
-    openDropdownList = null;
   }
 });
 
@@ -607,50 +599,22 @@ function buildLimitRow(state: State, onChange: () => void): HTMLElement {
   return row;
 }
 
-/** 卡表名称后的“查看”：点开该表的禁止/限制/准限制卡名单 */
+/**
+ * 卡表名称后的“查看”：在新标签页打开该表的名单页。
+ */
 function buildViewLink(table: LimitTable): HTMLElement {
-  const link = document.createElement("span");
+  const link = document.createElement("a");
   link.className = "deck-preview-link";
+  link.href = limitsPageUrl(table.tag);
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
   link.textContent = t("limit.view");
-  link.addEventListener("click", async (ev) => {
-    ev.stopPropagation(); // 只查看，不选中该表
-    link.textContent = t("common.loading");
-    await openLimitTable(table);
-    link.textContent = t("limit.view");
-  });
+  link.addEventListener("click", (ev) => ev.stopPropagation()); // 只查看，不选中该表
   return link;
 }
 
 /**
- * 弹窗展示一张卡表的三类名单。
- * 排序规则与构筑展示相同，故先补齐全表的卡片信息（联网，按 100 张一批）。
- */
-async function openLimitTable(table: LimitTable): Promise<void> {
-  await cacheCardInfos(Object.keys(table.all).map(Number));
-  const byRank = (rank: number): number[] =>
-    sortCardIds(
-      Object.keys(table.all)
-        .filter((id) => table.all[id] === rank)
-        .map(Number)
-    );
-
-  document.body.appendChild(
-    createCardModal(
-      limitName(table),
-      [
-        [t("limit.forbidden"), byRank(0)],
-        [t("limit.limited"), byRank(1)],
-        [t("limit.semiLimited"), byRank(2)],
-      ],
-      // 简中卡表（tag 以 _sc 结尾）配中文卡图，其余沿用日文卡图
-      table.tag.endsWith("_sc") ? "sc" : ENV
-    )
-  );
-}
-
-/**
  * 只读的一行适用禁限卡表：表名，非“无”时附查看名单的链接。
- * 编辑页那行是可选的，这里只呈现本次展示所用的表。
  */
 function buildLimitInfoRow(table: LimitTable | null): HTMLElement {
   const row = controlRow(t("limit.label"));
@@ -819,73 +783,6 @@ function buildLangDropdown(): HTMLElement {
       exportLang = lang;
     }
   );
-}
-
-/**
- * 通用下拉，结构沿用主站的“选择比赛”。
- * items 为候选（值 + 显示文字），onPick 在选中后回调。
- * renderExtra 返回的节点追加在名称之后（如禁卡表的“查看”），可省略。
- */
-function buildDropdown<T>(
-  items: Array<{ value: T; label: string }>,
-  current: T,
-  onPick: (value: T) => void,
-  renderExtra?: (item: { value: T; label: string }) => Node | null
-): HTMLElement {
-  const dropdown = document.createElement("div");
-  dropdown.className = "match-dropdown";
-
-  const btn = document.createElement("button");
-  btn.className = "match-dropdown-btn";
-  btn.type = "button";
-
-  let selected = current;
-  const setLabel = (): void => {
-    const text = document.createElement("span");
-    text.textContent = items.find((item) => item.value === selected)?.label ?? "";
-    const arrow = document.createElement("span");
-    arrow.className = "dropdown-arrow";
-    arrow.textContent = "▼";
-    btn.replaceChildren(text, arrow);
-  };
-  setLabel();
-
-  const listWrap = document.createElement("div");
-  listWrap.className = "match-dropdown-list";
-  listWrap.style.display = "none";
-  const list = document.createElement("ul");
-  items.forEach((item) => {
-    const li = document.createElement("li");
-    if (item.value === selected) li.classList.add("active");
-    const name = document.createElement("span");
-    name.textContent = item.label;
-    li.appendChild(name);
-    const extra = renderExtra?.(item);
-    if (extra) li.appendChild(extra);
-    li.addEventListener("click", () => {
-      selected = item.value;
-      onPick(item.value);
-      setLabel();
-      items.forEach((each, i) =>
-        list.children[i].classList.toggle("active", each.value === selected)
-      );
-      listWrap.style.display = "none";
-      openDropdownList = null;
-    });
-    list.appendChild(li);
-  });
-  listWrap.appendChild(list);
-
-  btn.addEventListener("click", (ev) => {
-    ev.stopPropagation(); // 阻止冒泡到 document，否则会被“点击其他位置”的监听立即关闭
-    const isOpen = listWrap.style.display === "block";
-    if (openDropdownList && openDropdownList !== listWrap) openDropdownList.style.display = "none";
-    listWrap.style.display = isOpen ? "none" : "block";
-    openDropdownList = isOpen ? null : listWrap;
-  });
-
-  dropdown.append(btn, listWrap);
-  return dropdown;
 }
 
 /** 用新卡组覆盖当前卡组（保持 deck 的对象引用不变） */

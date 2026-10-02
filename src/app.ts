@@ -20,6 +20,7 @@ import { hasLimitTag, loadLimitTables } from "./domain/limits.js";
 import { buildPieView } from "./views/pie.js";
 import { buildTrendView } from "./views/trend.js";
 import { buildBuilderView, buildDeckDisplayView } from "./views/builder.js";
+import { buildLimitsView } from "./views/limits.js";
 import { buildFaqView } from "./views/faq.js";
 
 const app = document.getElementById("app")!;
@@ -52,7 +53,8 @@ async function loadSite(
   edition?: EventEdition,
   dateParam?: string | null,
   deckParam?: string | null,
-  limitsParam?: string | null
+  limitsParam?: string | null,
+  limitTagParam?: string | null
 ): Promise<void> {
   const config = SITE_CONFIGS[site];
   applyLang();
@@ -73,11 +75,13 @@ async function loadSite(
       dateRange: null,
     };
     // 构筑两站（可编辑的构筑导出、只读的构筑展示）共用同一套 deck / limits 解析
+    if (site === "limits") {
+      await loadLimitTables().catch(() => null);
+      state.limitViewTag = limitTagParam ?? null;
+    }
     if (site === "builder" || site === "deck-display") {
-      // 卡表先读进来，带 limits 的链接首屏就能定下选中项，非法 tag 也能当场判掉
       await loadLimitTables().catch(() => null);
       const deck = deckParam ? decodeDeck(deckParam) : null;
-      // 弹窗阻挡在本行，用户确认后才继续渲染，呈现的顺序正好是提示在前、空构筑在后
       if (deckParam && !deck) alert(t("app.deckDecodeFailed"));
       const limitTag = limitsParam && hasLimitTag(limitsParam) ? limitsParam : null;
       if (site === "builder") {
@@ -145,6 +149,8 @@ function renderBody(state: State): void {
     body.appendChild(buildBuilderView(state));
   } else if (state.config.site === "deck-display") {
     body.appendChild(buildDeckDisplayView(state));
+  } else if (state.config.site === "limits") {
+    body.appendChild(buildLimitsView(state, actions));
   } else if (state.config.site === "faq") {
     body.appendChild(buildFaqView());
   } else if (state.view === "pie") {
@@ -159,11 +165,18 @@ async function main(): Promise<void> {
   // 语言要先定下来，外壳与各视图的文案都取自它
   const route = parseRoute();
   setLang(route.lang);
-  await loadSite(route.site, route.edition, route.dateParam, route.deckParam, route.limitsParam);
+  await loadSite(
+    route.site,
+    route.edition,
+    route.dateParam,
+    route.deckParam,
+    route.limitsParam,
+    route.limitTagParam
+  );
 
   // 浏览器前进/后退时响应路由变化
   window.addEventListener("popstate", () => {
-    const { site, edition, dateParam, deckParam, limitsParam, lang } = parseRoute();
+    const { site, edition, dateParam, deckParam, limitsParam, limitTagParam, lang } = parseRoute();
     // 语言一变，外壳与视图的文案整体作废，得重绘而不能只改数据
     const langChanged = lang !== getLang();
     if (langChanged) setLang(lang);
@@ -190,7 +203,7 @@ async function main(): Promise<void> {
       else renderBody(currentState);
       return;
     }
-    loadSite(site, edition, dateParam, deckParam, limitsParam);
+    loadSite(site, edition, dateParam, deckParam, limitsParam, limitTagParam);
   });
 
   // 关闭标签页/刷新/地址栏跳走时提醒（弹窗文案由浏览器决定）

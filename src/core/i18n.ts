@@ -147,7 +147,7 @@ const MESSAGES = {
     "{label} is already at its limit of {limit}. Remove a card before adding another."
   ),
   "builder.deck.editNote": msg("点击卡片可将其从构筑中移除。", "Click a card to remove it from the deck."),
-  "builder.deck.readOnlyNote": msg("点击卡片以查看卡片详情。", "Click a card to view its details."),
+  "builder.deck.readOnlyNote": msg("点击卡片以查看卡片详情。", "Click a card to view its detail."),
   "builder.export.langLabel": msg("请选择导出语言：", "Export language:"),
   "builder.export.pdf": msg("导出为 PDF 比赛卡表", "Export PDF"),
   "builder.export.ydk": msg("导出为 YDK 文件", "Export YDK"),
@@ -181,6 +181,9 @@ const MESSAGES = {
   "limit.forbidden": msg("禁止卡", "Forbidden"),
   "limit.limited": msg("限制卡", "Limited"),
   "limit.semiLimited": msg("准限制卡", "Semi-Limited"),
+  "limit.notFound": msg("未找到该禁限卡表", "Limit regulation not found"),
+  "limit.select": msg("选择禁限卡表：", "Select limit regulation:"),
+  "limit.cardsFailed": msg("卡片信息加载失败，卡片按卡密排列", "Failed to load card data; the list is ordered by card ID"),
   "limit.readFailed": msg("读取 {url} 失败（HTTP {status}）", "Failed to read {url} (HTTP {status})"),
 
   // ---- 卡片检索 ----
