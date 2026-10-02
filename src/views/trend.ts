@@ -1,6 +1,7 @@
 // 上位卡组统计视图（趋势折线图 + 日期/类型筛选 + 卡组搜索）
 
 import type { State } from "../core/config.js";
+import { top4Decks } from "../core/data.js";
 import { seriesColor } from "../core/palette.js";
 import { deckName, matchTypeName, t } from "../core/i18n.js";
 import { renderLine } from "../chart/lineChart.js";
@@ -233,13 +234,9 @@ export function buildTrendView(state: State): HTMLElement {
       matches = matches.filter((m) => m.date >= startFormatted && m.date <= endFormatted);
     }
 
-    // 收集所有上位卡组（去重）
+    // 收集所有上位卡组（去重）。与趋势图的候选一致，故复用 top4Decks
     const allDecks = new Set<string>();
-    matches.forEach((m) => {
-      allDecks.add(m["1st"].deck);
-      if (m["2nd"]) allDecks.add(m["2nd"].deck);
-      if (m["3_4th"]) m["3_4th"].forEach((p) => allDecks.add(p.deck));
-    });
+    matches.forEach((m) => top4Decks(m).forEach((d) => allDecks.add(d)));
 
     // 添加到已展示卡组（按字母顺序）
     state.selectedDecks = Array.from(allDecks).sort();

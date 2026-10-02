@@ -1,5 +1,8 @@
-import type { DataFile, Match, MatchType } from "./types.js";
+import type { DataFile, Match, MatchType, Player } from "./types.js";
 import { t } from "./i18n.js";
+
+/** 未定：比赛尚未开始时，选手名与卡组以此占位，不计入上位统计 */
+const TBD_DECK = "[TBD]";
 
 /** 从指定数据文件加载数据 */
 export async function loadData(path: string = "./data/data.json"): Promise<Match[]> {
@@ -61,12 +64,10 @@ export function allDeckNames(matches: Match[]): string[] {
   return names;
 }
 
-/** 提取某场比赛四强使用的卡组名称（冠军、亚军、两位四强选手） */
+/** 提取某场比赛四强使用的卡组名称（冠军、亚军、两位四强选手）；[TBD] 占位不计入 */
 export function top4Decks(match: Match): string[] {
-  const decks = [match["1st"].deck];
-  if (match["2nd"]) decks.push(match["2nd"].deck);
-  if (match["3_4th"]) decks.push(...match["3_4th"].map((p) => p.deck));
-  return decks;
+  const players = [match["1st"], match["2nd"], ...(match["3_4th"] ?? [])];
+  return players.filter((p): p is Player => !!p && p.deck !== TBD_DECK).map((p) => p.deck);
 }
 
 /** 某卡组在某场比赛四强中出现的次数 */

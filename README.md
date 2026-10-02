@@ -27,7 +27,8 @@ npm run serve
   "env": "ocg", // 比赛环境，可选项，"ocg" | "sc" | "tcg"（默认 "ocg"）
   "1st": {"id": "选手名", "deck": "卡组名", "deck_file": true},
   // 冠军是必填项，亚军和四强是可选项
-  // 对于单个选手：deck_file 是可选项，如果为 true，则需要在 data/deck/ 文件夹中添加相应的构筑 ydk 文件，
+  // 选手名和卡组名可用字符串 [TBD] 充当临时占位符
+  // 对于单个选手：构筑文件 deck_file 是可选项，如果为 true，则需要在 data/deck/ 文件夹中添加相应的构筑 ydk 文件，
   // 命名为 [当前比赛日期]_[选手名].ydk
   "2nd": {"id": "选手名", "deck": "卡组名"},
   "3_4th": [
