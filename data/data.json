@@ -537,7 +537,7 @@
             "disc": "比赛适用 2026.10 禁限卡表（OCG）。",
             "1st": {"id": "高进@星华", "deck": "闪刀姬", "deck_file": true},
             "2nd": {"id": "哈利kamori", "deck": "水晶机巧", "deck_file": true},
-            "3_4th": [{"id": "小御门让叶", "deck": "盈彩月夜", "deck_file": true}, {"id": "Cosmos", "deck": "光与暗的仪式"}],
+            "3_4th": [{"id": "小御门让叶", "deck": "盈彩月夜", "deck_file": true}, {"id": "Cosmos", "deck": "光与暗的仪式", "deck_file": true}],
             "decks": [
                 {"name": "耀圣", "num": 4},
                 {"name": "闪刀姬", "num": 3},
@@ -565,10 +565,26 @@
             "date": "2026/10/03",
             "title": "2026/10/03 万籁阁积分赛",
             "type": "积分赛",
-            "1st": {"id": "[TBD]", "deck": "[TBD]"},
-            "2nd": {"id": "[TBD]", "deck": "[TBD]"},
-            "3_4th": [{"id": "[TBD]", "deck": "[TBD]"}, {"id": "[TBD]", "deck": "[TBD]"}],
+            "1st": {"id": "五氟化锑", "deck": "小丑戏帮"},
+            "2nd": {"id": "Cosmos", "deck": "光与暗的仪式", "deck_file": true},
+            "3_4th": [{"id": "Os", "deck": "光与暗的仪式", "deck_file": true}, {"id": "若叶睦提斯", "deck": "异解△"}],
             "decks": [
+                {"name": "光与暗的仪式", "num": 10},
+                {"name": "纠罪巧", "num": 1},
+                {"name": "盈彩月夜", "num": 2},
+                {"name": "-英雄", "num": 1},
+                {"name": "耀圣", "num": 1},
+                {"name": "海皇", "num": 1},
+                {"name": "小丑戏帮", "num": 2},
+                {"name": "码丽丝", "num": 1},
+                {"name": "青眼", "num": 4},
+                {"name": "黯蜜", "num": 4},
+                {"name": "破械", "num": 1},
+                {"name": "巳剑", "num": 1},
+                {"name": "磁石战士", "num": 1},
+                {"name": "异解△", "num": 3},
+                {"name": "闪刀姬", "num": 3},
+                {"name": "烙印", "num": 3}
             ]
         }
     ]

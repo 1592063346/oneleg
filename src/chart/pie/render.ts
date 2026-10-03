@@ -14,7 +14,9 @@ const LEADER_HORIZ = 26; // 水平段
 const LABEL_GAP = 6; // 末段到文字的水平间距
 const NAME_FONT = 14; // 名称行字号
 const CROP_PAD = 8; // 收边时内容外侧留的余量
-const FOCUS_SHIFT_MIN_PCT = 0.08; // 焦点沿四等分线偏移的最小占比
+// 焦点沿四等分线偏移的占比检测区间
+const FOCUS_SHIFT_MIN_PCT = 0.08;
+const FOCUS_SHIFT_MAX_PCT = 0.25;
 
 // 基准画布：绘制坐标由它推出，实际幅面在画完后按标签实测收边（见 cropPies）
 const W = 760;
@@ -423,7 +425,8 @@ function buildSvg(match: Match, slices: Slice[], loadOthersImage: boolean): SVGS
         let best = searchAlong(midDir.x, midDir.y);
 
         // 角平分线近水平（与水平线夹角不超过 45°）时，再沿四等分线各做一次三分，取更优值
-        if (s.pct >= FOCUS_SHIFT_MIN_PCT && ((mid >= 45 && mid <= 135) || (mid >= 225 && mid <= 315))) {
+        if (s.pct >= FOCUS_SHIFT_MIN_PCT && s.pct <= FOCUS_SHIFT_MAX_PCT &&
+          ((mid >= 45 && mid <= 135) || (mid >= 225 && mid <= 315))) {
           const q1 = dirOf(mid - sweep / 4);
           const q2 = dirOf(mid + sweep / 4);
           const upper = q1.y <= q2.y ? q1 : q2;
