@@ -565,9 +565,9 @@
             "date": "2026/10/03",
             "title": "2026/10/03 万籁阁积分赛",
             "type": "积分赛",
-            "1st": {"id": "五氟化锑", "deck": "小丑戏帮"},
+            "1st": {"id": "五氟化锑", "deck": "小丑戏帮", "deck_file": true},
             "2nd": {"id": "Cosmos", "deck": "光与暗的仪式", "deck_file": true},
-            "3_4th": [{"id": "Os", "deck": "光与暗的仪式", "deck_file": true}, {"id": "若叶睦提斯", "deck": "异解△"}],
+            "3_4th": [{"id": "Os", "deck": "光与暗的仪式", "deck_file": true}, {"id": "若叶睦提斯", "deck": "异解△", "deck_file": true}],
             "decks": [
                 {"name": "光与暗的仪式", "num": 10},
                 {"name": "纠罪巧", "num": 1},
