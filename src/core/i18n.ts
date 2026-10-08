@@ -344,7 +344,7 @@ export const DECK_NAMES_EN: Record<string, string> = {
   巳剑: "Mitsurugi",
   帝王: "Monarch",
   幻想魔族: "Illusions",
-  "异解△": "Xenovader△",
+  "异解△": "Trirealm Rift",
   弈勇: "Vaylantz",
   影依: "Shaddoll",
   影灵衣: "Nekroz",
