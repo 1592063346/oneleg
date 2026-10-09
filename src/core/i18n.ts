@@ -83,7 +83,7 @@ const MESSAGES = {
   "pie.noMatchOption": msg("（无比赛）", "(no tournament)"),
   "pie.meta.type": msg("比赛类型", "Type"),
   "pie.meta.date": msg("比赛日期", "Date"),
-  "pie.meta.players": msg("参赛人数", "Players"),
+  "pie.meta.players": msg("参赛人数", "Participants"),
   "pie.meta.playersValue": msg("{n} 人", "{n}"),
   "rank.first": msg("🥇 冠军", "🥇 1st"),
   "rank.second": msg("🥈 亚军", "🥈 2nd"),
@@ -105,10 +105,10 @@ const MESSAGES = {
   "trend.dateSeparator": msg(" 至 ", " to "),
   "trend.clear": msg("清除", "Clear"),
   "trend.type": msg("比赛类型：", "Type:"),
-  "trend.addDeck": msg("添加卡组：", "Add archetype:"),
-  "trend.searchPlaceholder": msg("搜索卡组名并添加…", "Search archetype names…"),
-  "trend.noMatchingDeck": msg("无匹配的卡组名", "No matching archetype name"),
-  "trend.allDecksAdded": msg("已添加全部上位卡组", "All archetypes added"),
+  "trend.addDeck": msg("添加卡组：", "Add deck:"),
+  "trend.searchPlaceholder": msg("搜索卡组名并添加…", "Search theme names…"),
+  "trend.noMatchingDeck": msg("无匹配的卡组名", "No matching theme name"),
+  "trend.allDecksAdded": msg("已添加全部上位卡组", "All themes added"),
   "trend.showAll": msg("查看全部上位卡组", "Show all"),
   "trend.clearDecks": msg("清空卡组", "Clear"),
 
@@ -211,13 +211,13 @@ const MESSAGES = {
   "pieChart.archetypeGap": msg("", " "),
   "others.title": msg(
     "others 详情（共 {count} 种 / {sum} 个卡组）",
-    "Details of others ({count} archetypes / {sum} decks)"
+    "Details of others ({count} themes / {sum} decks)"
   ),
 
   // ---- 折线图 ----
   "line.empty": msg(
     "请选择至少一个卡组以查看上位数量统计",
-    "Select at least one archetype to see top cut counts"
+    "Select at least one deck to see top cut counts"
   ),
   "line.aria": msg("卡组数量趋势折线图", "Deck count trend line chart"),
 
