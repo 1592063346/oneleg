@@ -6,11 +6,11 @@ import { seriesColor } from "../core/palette.js";
 import { el, svgRoot } from "./svg.js";
 import { hideTooltip, showTooltip } from "./tooltip.js";
 
-const W = 820;
 const H = 460;
 const M = { top: 24, right: 60, bottom: 72, left: 48 };
-const PLOT_W = W - M.left - M.right;
 const PLOT_H = H - M.top - M.bottom;
+const MIN_PLOT_W = 712;
+const MIN_STEP = 56;
 
 interface SeriesPoint {
   x: number;
@@ -51,9 +51,13 @@ export function renderLine(
   }
   const yMax = Math.max(1, maxVal);
 
+  // 画布不随页面宽度缩放：高度固定，宽度按比赛数排布，放不下时由外层横向滚动
   const n = matches.length;
+  const plotW = Math.max(MIN_PLOT_W, (n - 1) * MIN_STEP);
+  const W = M.left + M.right + plotW;
+
   const xAt = (i: number): number =>
-    M.left + (n <= 1 ? PLOT_W / 2 : (i / (n - 1)) * PLOT_W);
+    M.left + (n <= 1 ? plotW / 2 : (i / (n - 1)) * plotW);
   const yAt = (v: number): number => M.top + PLOT_H - (v / yMax) * PLOT_H;
 
   const series: Series[] = selected.map((name) => ({
@@ -68,14 +72,21 @@ export function renderLine(
   }));
 
   const svg = svgRoot(W, H);
+  // 按画布自身的尺寸绘制，不用 CSS 缩放：页面再窄也不会把它压小
+  svg.style.width = `${W}px`;
+  svg.style.height = `${H}px`;
   svg.setAttribute("aria-label", t("line.aria"));
 
-  drawGridAndAxes(svg, matches, yMax, xAt, yAt);
+  drawGridAndAxes(svg, matches, yMax, xAt, yAt, plotW);
   drawSeries(svg, series);
-  attachHover(svg, matches, series, xAt);
+  attachHover(svg, matches, series, xAt, plotW, W);
 
-  container.appendChild(svg);
-  container.appendChild(buildLegend(series));
+  const scroll = document.createElement("div");
+  scroll.className = "line-scroll";
+  scroll.appendChild(svg);
+
+  container.append(scroll, buildLegend(series));
+  enableDragPan(scroll);
   return container;
 }
 
@@ -90,7 +101,8 @@ function drawGridAndAxes(
   matches: Match[],
   yMax: number,
   xAt: (i: number) => number,
-  yAt: (v: number) => number
+  yAt: (v: number) => number,
+  plotW: number
 ): void {
   const grid = cssVar("--grid", "#e1e0d9");
   const axis = cssVar("--baseline", "#c3c2b7");
@@ -104,7 +116,7 @@ function drawGridAndAxes(
       el("line", {
         x1: M.left,
         y1: y,
-        x2: M.left + PLOT_W,
+        x2: M.left + plotW,
         y2: y,
         stroke: v === 0 ? axis : grid,
         "stroke-width": 1,
@@ -182,7 +194,9 @@ function attachHover(
   svg: SVGSVGElement,
   matches: Match[],
   series: Series[],
-  xAt: (i: number) => number
+  xAt: (i: number) => number,
+  plotW: number,
+  canvasW: number
 ): void {
   const n = matches.length;
   if (n === 0) return;
@@ -203,7 +217,7 @@ function attachHover(
   const overlay = el("rect", {
     x: M.left,
     y: M.top,
-    width: PLOT_W,
+    width: plotW,
     height: PLOT_H,
     fill: "transparent",
   });
@@ -225,7 +239,7 @@ function attachHover(
   const onMove = (ev: MouseEvent) => {
     const rect = svg.getBoundingClientRect();
     // 将屏幕坐标映射回 viewBox 坐标
-    const svgX = ((ev.clientX - rect.left) / rect.width) * W;
+    const svgX = ((ev.clientX - rect.left) / rect.width) * canvasW;
     const i = nearestIndex(svgX);
     const cx = xAt(i);
     crosshair.setAttribute("x1", String(cx));
@@ -253,6 +267,53 @@ function attachHover(
     hideTooltip();
   });
   svg.appendChild(overlay);
+}
+
+/** 上次停留的横向位置。视图重绘会把滚动区整个重建，记在这里才能停在原处 */
+let savedScrollLeft = 0;
+
+/**
+ * 鼠标按住横向拖动图表。触屏不接管：横向滚动交给浏览器自身的滑动（见 .line-scroll）。
+ * 放不下时才允许拖动，也只在这时给出抓手光标。
+ */
+function enableDragPan(box: HTMLElement): void {
+  let startX = 0;
+  let startScroll = 0;
+  let dragging = false;
+
+  box.addEventListener("scroll", () => {
+    savedScrollLeft = box.scrollLeft;
+  });
+  // 刚建好的节点还量不到宽度，等这一帧排完版再恢复位置、判是否可拖
+  requestAnimationFrame(() => {
+    box.scrollLeft = savedScrollLeft;
+    box.classList.toggle("scrollable", box.scrollWidth > box.clientWidth);
+  });
+
+  box.addEventListener("pointerdown", (ev) => {
+    if (ev.pointerType !== "mouse" || ev.button !== 0) return;
+    if (box.scrollWidth <= box.clientWidth) return;
+    dragging = true;
+    startX = ev.clientX;
+    startScroll = box.scrollLeft;
+    box.setPointerCapture(ev.pointerId);
+    box.classList.add("dragging");
+    ev.preventDefault(); // 免得拖出文字选区
+  });
+
+  box.addEventListener("pointermove", (ev) => {
+    if (!dragging) return;
+    box.scrollLeft = startScroll - (ev.clientX - startX);
+  });
+
+  const end = (ev: PointerEvent): void => {
+    if (!dragging) return;
+    dragging = false;
+    box.releasePointerCapture(ev.pointerId);
+    box.classList.remove("dragging");
+  };
+  box.addEventListener("pointerup", end);
+  box.addEventListener("pointercancel", end);
 }
 
 function buildLegend(series: Series[]): HTMLElement {

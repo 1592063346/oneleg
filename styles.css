@@ -308,7 +308,11 @@ select {
 .pie-caption {
   font-size: 15px; font-weight: 700; color: var(--text-secondary); line-height: 1;
 }
-.line-wrap svg { max-width: 100%; height: auto; }
+/* 折线图的横向滚动区：画布按自身尺寸绘制（尺寸由 JS 给），页面再窄也不缩；
+   放不下时横向滚动，鼠标按住可拖动（见 chart/lineChart.ts 的 enableDragPan） */
+.line-scroll { overflow-x: auto; overflow-y: hidden; }
+.line-scroll.scrollable { cursor: grab; }
+.line-scroll.dragging { cursor: grabbing; }
 
 /* 折线图图例（趋势模式仍使用） */
 .legend { list-style: none; margin: 0; padding: 0; display: flex;
