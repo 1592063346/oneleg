@@ -3,6 +3,7 @@
         {
             "date": "2026/07/25",
             "title": "中国城市巡回赛 2026 简体中文 苏州站",
+            "title_en": "CCT 2026 Simplified Chinese Suzhou",
             "type": "城市巡回赛",
             "env": "sc",
             "1st": {"id": "献给阿尔吉侬的花束", "deck": "绚岚", "deck_file": true},
@@ -88,6 +89,7 @@
         {
             "date": "2026/08/22",
             "title": "中国城市巡回赛 2026 简体中文 长沙站",
+            "title_en": "CCT 2026 Simplified Chinese Changsha",
             "type": "城市巡回赛",
             "env": "sc",
             "1st": {"id": "周复", "deck": "耀圣", "deck_file": true},
@@ -150,6 +152,7 @@
         {
             "date": "2026/09/05",
             "title": "中国城市巡回赛 2026 简体中文 武汉站",
+            "title_en": "CCT 2026 Simplified Chinese Wuhan",
             "type": "城市巡回赛",
             "env": "sc",
             "1st": {"id": "王与凡骨@牌客盟", "deck": "黑魔导", "deck_file": true},

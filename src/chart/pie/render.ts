@@ -1,7 +1,7 @@
 import type { DeckCount, Match } from "../../core/types.js";
 import { totalDecks } from "../../core/data.js";
 import { escapeHtml } from "../../core/html.js";
-import { deckName, t } from "../../core/i18n.js";
+import { deckName, matchTitle, t } from "../../core/i18n.js";
 import { seriesColor } from "../../core/palette.js";
 import { arcPath, arcRingPath, el, polarToCartesian, svgRoot } from "../svg.js";
 import { hideTooltip, showTooltip } from "../tooltip.js";
@@ -94,7 +94,7 @@ export function renderPie(
         elimTotal,
         colorMap,
         false,
-        t("pieChart.elimTitle", { title: match.title }),
+        t("pieChart.elimTitle", { title: matchTitle(match) }),
         t("pieChart.elimCaption"),
         container
       )
@@ -118,7 +118,7 @@ export function renderPie(
   container.appendChild(
     buildPieSection(
       match, shown, others, total, colorMap, loadOthersImage,
-      match.title, t("pieChart.caption"), container
+      matchTitle(match), t("pieChart.caption"), container
     )
   );
 
@@ -236,7 +236,7 @@ function buildSvg(match: Match, slices: Slice[], loadOthersImage: boolean): SVGS
   const svg = svgRoot(W, H);
   // 收边失败时的兜底：不放得比基准画布更宽
   svg.style.maxWidth = `${W}px`;
-  svg.setAttribute("aria-label", t("pieChart.aria", { title: match.title }));
+  svg.setAttribute("aria-label", t("pieChart.aria", { title: matchTitle(match) }));
   const surface =
     getComputedStyle(document.documentElement).getPropertyValue("--surface-1").trim() ||
     "#fcfcfb";

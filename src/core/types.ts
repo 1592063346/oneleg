@@ -42,6 +42,8 @@ export interface Match {
   date: string;
   /** 比赛标题 */
   title: string;
+  /** 英文标题，英文模式下用它（见 matchTitle）；缺失则照显中文 */
+  title_en?: string;
   /** 比赛类型 */
   type: MatchType;
   /** 冠军 */
@@ -60,6 +62,8 @@ export interface Match {
   env?: string;
   /** 比赛描述，可含 HTML 标签，可选 */
   disc?: string;
+  /** 英文描述，英文模式下用它（见 matchDisc）；缺失则照显中文 */
+  disc_en?: string;
 }
 
 /** 一份禁限卡表（data/limits/ 下的单个文件） */

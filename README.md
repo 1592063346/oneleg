@@ -91,6 +91,6 @@ npm run serve
 
 这不是必需的。如果网站的确支持中英文切换，那么要做的事有：
 
-- 对于比赛数据：**[TODO]**
+- 对于比赛数据：英文标题与英文描述的条目名为原本条目名后加 `_en`，也即 `title_en` 与 `desc_en`。如果没有则默认使用中文名。
 - 对于卡组名：如果有新添加的卡组名，需要向 `src/core/i18n.ts` 的 `DECK_NAMES_EN` 里添加相应的中英文对照。
-- 对于禁限卡表：需要添加英文名 `name_en`。格式一般是 `YYYY.MM Limit regulation (OCG/SC)`。
+- 对于禁限卡表：需要添加英文名 `name_en`。格式一般是 `YYYY.MM Forbidden & Limited List (OCG/SC)`。

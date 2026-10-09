@@ -2,7 +2,7 @@
 // 英文留空的条目一律回退到中文，故可以逐条补全，未补的照常显示。
 // 文案里的 {xxx} 为占位符，调用处用 t(key, { xxx: ... }) 填值。
 
-import type { LimitTable } from "./types.js";
+import type { LimitTable, Match } from "./types.js";
 
 /** 一条文案 */
 interface Msg {
@@ -444,7 +444,7 @@ export function deckName(zh: string): string {
 const MATCH_TYPE_NAMES_EN: Record<string, string> = {
   娱乐赛: "Casual",
   积分赛: "Ranking",
-  王中王邀请赛: "Invite-only",
+  王中王邀请赛: "Invitational",
   特殊规则赛: "Special Format",
   城市巡回赛: "CCT",
   YCS: "YCS",
@@ -453,18 +453,23 @@ const MATCH_TYPE_NAMES_EN: Record<string, string> = {
   WCQ: "WCQ",
 };
 
-/** 按当前语言取比赛类型显示名 */
+/** 按当前语言取显示名 */
 export function matchTypeName(zh: string): string {
   if (lang !== "en") return zh;
   return MATCH_TYPE_NAMES_EN[zh] || zh;
 }
 
-/**
- * 按当前语言取禁限卡表显示名。
- * 与上面两张表不同，英文名存在卡表文件自身（data/limits/*.json 的 name_en），
- * 故表里读不到时回退中文，规则与 deckName 一致。
- */
 export function limitName(table: LimitTable): string {
   if (lang !== "en") return table.name;
   return table.name_en || table.name;
+}
+
+export function matchTitle(match: Match): string {
+  if (lang !== "en") return match.title;
+  return match.title_en || match.title;
+}
+
+export function matchDisc(match: Match): string {
+  if (lang !== "en") return match.disc || "";
+  return match.disc_en || match.disc || "";
 }

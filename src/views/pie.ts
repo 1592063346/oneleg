@@ -3,7 +3,7 @@
 import type { Match, Player } from "../core/types.js";
 import type { State, AppActions } from "../core/config.js";
 import { totalDecks } from "../core/data.js";
-import { deckName, matchTypeName, t } from "../core/i18n.js";
+import { deckName, matchDisc, matchTitle, matchTypeName, t } from "../core/i18n.js";
 import { renderPie } from "../chart/pie/index.js";
 import { loadDeckFile, createDeckModal, dropAbsentCards } from "../domain/deck.js";
 import { cacheCardInfos } from "../domain/cards.js";
@@ -58,7 +58,7 @@ export function buildPieView(state: State, actions: AppActions): HTMLElement {
     if (state.config.showNameInDropdown) {
       const nameSpan = document.createElement("span");
       nameSpan.className = "match-dropdown-name";
-      nameSpan.textContent = m.title || "";
+      nameSpan.textContent = matchTitle(m);
       li.appendChild(nameSpan);
     }
     const typeBadge = document.createElement("span");
@@ -106,7 +106,7 @@ export function buildPieView(state: State, actions: AppActions): HTMLElement {
   header.className = "detail-header";
 
   const h = document.createElement("h2");
-  h.textContent = match.title || match.date;
+  h.textContent = matchTitle(match) || match.date;
   header.appendChild(h);
 
   const meta = document.createElement("div");
@@ -120,10 +120,11 @@ export function buildPieView(state: State, actions: AppActions): HTMLElement {
   wrap.appendChild(header);
 
   // 比赛描述：置于信息行与饼图之间，内容按 HTML 解析
-  if (match.disc) {
+  const disc = matchDisc(match);
+  if (disc) {
     const desc = document.createElement("div");
     desc.className = "match-desc";
-    desc.innerHTML = match.disc;
+    desc.innerHTML = disc;
     wrap.appendChild(desc);
   }
 
@@ -231,7 +232,7 @@ function updateDropdownBtn(btn: HTMLButtonElement, match: Match | undefined, sta
   if (state.config.showNameInDropdown) {
     const nameSpan = document.createElement("span");
     nameSpan.className = "match-dropdown-name";
-    nameSpan.textContent = match.title || "";
+    nameSpan.textContent = matchTitle(match);
     btn.appendChild(nameSpan);
   }
   const typeBadge = document.createElement("span");

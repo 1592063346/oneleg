@@ -3,8 +3,10 @@
         {
             "date": "2026/04/26",
             "title": "第一届万籁阁王中王邀请赛",
+            "title_en": "1st ONELEG King of Kings Invitational",
             "type": "王中王邀请赛",
             "disc": "比赛为邀请赛，仅 2026/04/26 前万籁阁积分赛八强以上（含）选手以及部分特邀选手可报名参赛。",
+            "disc_en": "Only players who ranked Top 8 or higher in ONELEG ranking tournaments before 2026/04/26, as well as certain invited players, are eligible to participate.",
             "1st": {"id": "公爵", "deck": "烙印"},
             "2nd": {"id": "超级输骰", "deck": "耀圣"},
             "3_4th": [{"id": "救援猫", "deck": "杀手旋律"}, {"id": "gallop", "deck": "光与暗的仪式"}],
@@ -29,6 +31,7 @@
         {
             "date": "2026/05/05",
             "title": "2026/05/05 万籁阁积分赛",
+            "title_en": "2026/05/05 ONELEG Ranking Tournament",
             "type": "积分赛",
             "1st": {"id": "Os", "deck": "杀手旋律"},
             "2nd": {"id": "嘉豪", "deck": "烙印"},
@@ -59,6 +62,7 @@
         {
             "date": "2026/05/10",
             "title": "2026/05/10 万籁阁积分赛",
+            "title_en": "2026/05/10 ONELEG Ranking Tournament",
             "type": "积分赛",
             "1st": {"id": "零件", "deck": "小丑戏帮"},
             "2nd": {"id": "公爵", "deck": "烙印"},
@@ -92,6 +96,7 @@
         {
             "date": "2026/05/17",
             "title": "2026/05/17 万籁阁积分赛",
+            "title_en": "2026/05/17 ONELEG Ranking Tournament",
             "type": "积分赛",
             "1st": {"id": "公爵", "deck": "烙印"},
             "2nd": {"id": "onoe", "deck": "杀手旋律"},
@@ -120,6 +125,7 @@
         {
             "date": "2026/05/24",
             "title": "2026/05/24 万籁阁娱乐赛",
+            "title_en": "2026/05/24 ONELEG Casual Tournament",
             "type": "娱乐赛",
             "1st": {"id": "鳄鱼叔叔", "deck": "杀手旋律"},
             "2nd": {"id": "小哼22声", "deck": "召唤兽"},
@@ -147,6 +153,7 @@
         {
             "date": "2026/06/07",
             "title": "2026/06/07 万籁阁积分赛",
+            "title_en": "2026/06/07 ONELEG Ranking Tournament",
             "type": "积分赛",
             "1st": {"id": "鳄鱼骑士", "deck": "耀圣"},
             "2nd": {"id": "超级输骰", "deck": "耀圣"},
@@ -180,6 +187,7 @@
         {
             "date": "2026/06/14",
             "title": "2026/06/14 万籁阁积分赛",
+            "title_en": "2026/06/14 ONELEG Ranking Tournament",
             "type": "积分赛",
             "1st": {"id": "城崎芽衣晓山瑞希铃见奏的狗@万籁阁", "deck": "狱神"},
             "2nd": {"id": "在雨后醒来", "deck": "卡通"},
@@ -210,6 +218,7 @@
         {
             "date": "2026/06/21",
             "title": "2026/06/21 万籁阁积分赛",
+            "title_en": "2026/06/21 ONELEG Ranking Tournament",
             "type": "积分赛",
             "1st": {"id": "玩神碑的", "deck": "召唤兽"},
             "2nd": {"id": "帆", "deck": "破械"},
@@ -243,6 +252,7 @@
         {
             "date": "2026/06/28",
             "title": "2026/06/28 万籁阁娱乐赛",
+            "title_en": "2026/06/28 ONELEG Casual Tournament",
             "type": "娱乐赛",
             "1st": {"id": "Ellutus", "deck": "耀圣"},
             "2nd": {"id": "神艺最强combo", "deck": "神艺"},
@@ -271,6 +281,7 @@
         {
             "date": "2026/07/05",
             "title": "2026/07/05 万籁阁积分赛",
+            "title_en": "2026/07/05 ONELEG Ranking Tournament",
             "type": "积分赛",
             "1st": {"id": "onoe", "deck": "卡通"},
             "2nd": {"id": "鳄鱼引导了", "deck": "耀圣"},
@@ -306,6 +317,7 @@
         {
             "date": "2026/07/12",
             "title": "2026/07/12 万籁阁积分赛",
+            "title_en": "2026/07/12 ONELEG Ranking Tournament",
             "type": "积分赛",
             "1st": {"id": "Os", "deck": "杀手旋律"},
             "2nd": {"id": "抽牌小丑与增殖的G", "deck": "妖精传姬"},
@@ -336,6 +348,7 @@
         {
             "date": "2026/07/19",
             "title": "2026/07/19 万籁阁积分赛",
+            "title_en": "2026/07/19 ONELEG Ranking Tournament",
             "type": "积分赛",
             "1st": {"id": "重铸宝骑荣光", "deck": "黯蜜"},
             "2nd": {"id": "镖师十四", "deck": "卡通"},
@@ -367,8 +380,10 @@
         {
             "date": "2026/08/02",
             "title": "第二届万籁阁王中王邀请赛",
+            "title_en": "2nd ONELEG King of Kings Invitational",
             "type": "王中王邀请赛",
             "disc": "比赛为邀请赛，仅 2026/05/05 至 2026/07/19 期间内万籁阁积分赛八强以上（含）选手以及部分特邀选手可报名参赛。",
+            "disc_en": "Only players who ranked Top 8 or higher in ONELEG ranking tournaments from 2026/05/05 to 2026/07/19, as well as certain invited players, are eligible to participate.",
             "1st": {"id": "Os", "deck": "杀手旋律"},
             "2nd": {"id": "小哼22声", "deck": "召唤兽"},
             "3_4th": [{"id": "onoe", "deck": "耀圣"}, {"id": "lzyy@ooo", "deck": "卡通"}],
@@ -392,6 +407,7 @@
         {
             "date": "2026/08/09",
             "title": "2026/08/09 万籁阁积分赛",
+            "title_en": "2026/08/09 ONELEG Ranking Tournament",
             "type": "积分赛",
             "1st": {"id": "黑暗艾路基基", "deck": "卡通"},
             "2nd": {"id": "UMR@SRDS", "deck": "卡通"},
@@ -403,6 +419,7 @@
         {
             "date": "2026/08/16",
             "title": "2026/08/16 万籁阁积分赛",
+            "title_en": "2026/08/16 ONELEG Ranking Tournament",
             "type": "积分赛",
             "1st": {"id": "Cosmos", "deck": "光与暗的仪式", "deck_file": true},
             "2nd": {"id": "超级输骰", "deck": "星宿", "deck_file": true},
@@ -438,6 +455,7 @@
         {
             "date": "2026/08/23",
             "title": "2026/08/23 万籁阁积分赛",
+            "title_en": "2026/08/23 ONELEG Ranking Tournament",
             "type": "积分赛",
             "1st": {"id": "丁丁", "deck": "耀圣", "deck_file": true},
             "2nd": {"id": "Cosmos", "deck": "光与暗的仪式", "deck_file": true},
@@ -473,6 +491,7 @@
         {
             "date": "2026/08/30",
             "title": "2026/08/30 万籁阁娱乐赛",
+            "title_en": "2026/08/30 ONELEG Casual Tournament",
             "type": "娱乐赛",
             "1st": {"id": "Stalker", "deck": "耀圣", "deck_file": true},
             "2nd": {"id": "琇莹", "deck": "黯蜜", "deck_file": true},
@@ -484,8 +503,10 @@
         {
             "date": "2026/09/06",
             "title": "2026/09/06 万籁阁 WCS2026 庆典活动",
+            "title_en": "2026/09/06 ONELEG WCS2026 Celebration Event",
             "type": "特殊规则赛",
-            "disc": "比赛适用 WCS2026 特殊禁限卡表，详情可见<a href=\"https://www.bilibili.com/opus/1240769670481444866\" target=\"_blank\" rel=\"noopener noreferrer\">官方动态</a>。",
+            "disc": "比赛适用 <a href=\"https://img.konami.com/yugioh/worldchampionship/2026/data/limitregulation-tcg.pdf\" target=\"_blank\" rel=\"noopener noreferrer\">WCS2026 禁限卡表</a>。",
+            "disc_en": "Players need to follow the <a href=\"https://img.konami.com/yugioh/worldchampionship/2026/data/limitregulation-tcg.pdf\" target=\"_blank\" rel=\"noopener noreferrer\">Forbidden & Limited List in WCS2026 Main Event</a>.",
             "1st": {"id": "小哼22声", "deck": "召唤兽", "deck_file": true},
             "2nd": {"id": "Reborn", "deck": "耀圣", "deck_file": true},
             "decks": [
@@ -509,6 +530,7 @@
         {
             "date": "2026/09/13",
             "title": "2026/09/13 万籁阁积分赛",
+            "title_en": "2026/09/13 ONELEG Ranking Tournament",
             "type": "积分赛",
             "1st": {"id": "呆槑呆槑呆", "deck": "烙印", "deck_file": true},
             "2nd": {"id": "守银大师", "deck": "卡通", "deck_file": true},
@@ -533,8 +555,10 @@
         {
             "date": "2026/09/27",
             "title": "2026/09/27 万籁阁娱乐赛",
+            "title_en": "2026/09/27 ONELEG Casual Tournament",
             "type": "娱乐赛",
             "disc": "比赛适用 2026.10 禁限卡表（OCG）。",
+            "disc_en": "Players need to follow the 2026.10 Forbidden & Limited List (OCG).",
             "1st": {"id": "高进@星华", "deck": "闪刀姬", "deck_file": true},
             "2nd": {"id": "哈利kamori", "deck": "水晶机巧", "deck_file": true},
             "3_4th": [{"id": "小御门让叶", "deck": "盈彩月夜", "deck_file": true}, {"id": "Cosmos", "deck": "光与暗的仪式", "deck_file": true}],
@@ -564,6 +588,7 @@
         {
             "date": "2026/10/03",
             "title": "2026/10/03 万籁阁积分赛",
+            "title_en": "2026/10/03 ONELEG Ranking Tournament",
             "type": "积分赛",
             "1st": {"id": "五氟化锑", "deck": "小丑戏帮", "deck_file": true},
             "2nd": {"id": "Cosmos", "deck": "光与暗的仪式", "deck_file": true},
@@ -590,6 +615,7 @@
         {
             "date": "2026/10/06",
             "title": "2026/10/06 万籁阁积分赛",
+            "title_en": "2026/10/06 ONELEG Ranking Tournament",
             "type": "积分赛",
             "1st": {"id": "公爵", "deck": "烙印", "deck_file": true},
             "2nd": {"id": "yswlll", "deck": "光与暗的仪式", "deck_file": true},
