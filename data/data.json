@@ -638,6 +638,17 @@
                 {"name": "魔女工艺", "num": 1},
                 {"name": "纠罪巧", "num": 1}
             ]
+        },
+        {
+            "date": "2026/10/11",
+            "title": "2026/10/11 万籁阁积分赛",
+            "title_en": "2026/10/11 ONELEG Ranking Tournament",
+            "type": "积分赛",
+            "1st": {"id": "[TBD]", "deck": "[TBD]"},
+            "2nd": {"id": "[TBD]", "deck": "[TBD]"},
+            "3_4th": [{"id": "[TBD]", "deck": "[TBD]"}, {"id": "[TBD]", "deck": "[TBD]"}],
+            "decks": [
+            ]
         }
     ]
 }
