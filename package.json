@@ -5,10 +5,11 @@
   "type": "module",
   "scripts": {
     "stamp": "node scripts/stamp.mjs",
+    "katex": "node scripts/katex.mjs",
     "typecheck": "tsc --noEmit",
     "bundle": "esbuild src/app.ts --bundle --minify --format=esm --target=es2020 --legal-comments=none --splitting --outdir=dist",
-    "build": "npm run stamp && npm run typecheck && npm run bundle",
-    "watch": "npm run stamp && esbuild src/app.ts --bundle --format=esm --target=es2020 --sourcemap=inline --splitting --outdir=dist --watch",
+    "build": "npm run stamp && npm run typecheck && npm run bundle && npm run katex",
+    "watch": "npm run stamp && npm run katex && esbuild src/app.ts --bundle --format=esm --target=es2020 --sourcemap=inline --splitting --outdir=dist --watch",
     "serve": "npx --yes http-server -p 8080 -c-1 -d false --proxy http://localhost:8080? ."
   },
   "devDependencies": {
@@ -16,6 +17,9 @@
     "typescript": "^7.0.2"
   },
   "dependencies": {
+    "highlight.js": "^11.12.0",
+    "katex": "^0.19.0",
+    "marked": "^18.1.0",
     "pdf-lib": "^1.17.1"
   }
 }

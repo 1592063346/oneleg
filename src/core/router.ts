@@ -4,6 +4,7 @@ import type { Match, EventEdition, DeckData } from "./types.js";
 import type { Site, State, AppActions } from "./config.js";
 import { sitePath } from "./config.js";
 import { getLang, parseLang, t, type Lang } from "./i18n.js";
+import { extensionFor, matchExtension } from "./extension.js";
 import { encodeDeck } from "../domain/deckCode.js";
 
 /**
@@ -36,6 +37,15 @@ function appendLang(params: URLSearchParams): void {
  */
 export function limitsPageUrl(tag: string): string {
   return `${sitePath("limits")}/${encodeURIComponent(tag)}${langQuery()}`;
+}
+
+/**
+ * 扩展模块页面的地址。param 即地址中基础前缀之后的部分，为空则是模块的入口页。
+ * 扩展模块不支持多语言，故不带语言参数。
+ */
+export function extensionPageUrl(site: Site, param: string | null): string {
+  const base = sitePath(site);
+  return param ? `${base}/${encodeURIComponent(param)}` : base;
 }
 
 /** 将日期 yyyy/mm/dd 转为 URL 参数形式 yyyymmdd */
@@ -82,6 +92,10 @@ export function buildUrl(state: State): string {
   if (state.config.site === "deck-display") {
     return buildDeckUrl("deck-display", state.displayDeck, state.displayLimitTag);
   }
+  // 扩展模块（如文章）：地址参数即 state.extensionParam
+  if (extensionFor(state.config.site)) {
+    return extensionPageUrl(state.config.site, state.extensionParam ?? null);
+  }
   if (state.config.site === "limits") {
     const path = state.limitViewTag ? `${base}/${encodeURIComponent(state.limitViewTag)}` : base;
     const params = new URLSearchParams();
@@ -125,12 +139,19 @@ export function parseRoute(): {
   deckParam: string | null;
   limitsParam: string | null;
   limitTagParam: string | null;
+  extensionParam: string | null;
 } {
   const path = window.location.pathname;
   const params = new URLSearchParams(window.location.search);
   const dateParam = params.get("date");
   const lang = parseLang(params.get("lang"));
-  const none = { dateParam: null, deckParam: null, limitsParam: null, limitTagParam: null };
+  const none = {
+    dateParam: null,
+    deckParam: null,
+    limitsParam: null,
+    limitTagParam: null,
+    extensionParam: null,
+  };
   if (path === "/event") {
     const env = params.get("env");
     const edition: EventEdition = env === "sc" ? "sc" : "ocg";
@@ -151,6 +172,11 @@ export function parseRoute(): {
   }
   if (path === "/faq") {
     return { site: "faq", lang, ...none };
+  }
+  // 扩展模块（如文章）：前缀与剩余路径由模块自己登记，这里只做统一匹配
+  const extension = matchExtension(path);
+  if (extension) {
+    return { site: extension.module.site, lang, ...none, extensionParam: extension.param };
   }
   return { site: "main", lang, ...none, dateParam };
 }

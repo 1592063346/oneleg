@@ -10,6 +10,12 @@
   --border: rgba(11, 11, 11, 0.10);
   --hover-bg: rgba(11, 11, 11, 0.08);
   --active-bg: rgba(11, 11, 11, 0.16);
+  /* 代码高亮：关、串、数、函数名、注释 */
+  --code-keyword: #cf222e;
+  --code-string: #0a3069;
+  --code-number: #0550ae;
+  --code-function: #8250df;
+  --code-comment: #6e7781;
 }
 @media (prefers-color-scheme: dark) {
   :root:where(:not([data-theme="light"])).viz-root {
@@ -24,6 +30,11 @@
     --border: rgba(255, 255, 255, 0.10);
     --hover-bg: rgba(255, 255, 255, 0.12);
     --active-bg: rgba(255, 255, 255, 0.22);
+    --code-keyword: #ff7b72;
+    --code-string: #a5d6ff;
+    --code-number: #79c0ff;
+    --code-function: #d2a8ff;
+    --code-comment: #8b949e;
   }
 }
 :root[data-theme="dark"].viz-root {
@@ -38,6 +49,11 @@
   --border: rgba(255, 255, 255, 0.10);
   --hover-bg: rgba(255, 255, 255, 0.12);
   --active-bg: rgba(255, 255, 255, 0.22);
+  --code-keyword: #ff7b72;
+  --code-string: #a5d6ff;
+  --code-number: #79c0ff;
+  --code-function: #d2a8ff;
+  --code-comment: #8b949e;
 }
 
 /* 关掉移动端浏览器的文字自动放大：横竖屏切换时视口宽度变了，字号不跟着变 */
@@ -109,9 +125,10 @@ select {
 .match-dropdown-list li.active { background: var(--active-bg); font-weight: 600; }
 /* 卡表名后的“查看”：比条目文字小一号 */
 .match-dropdown-list .deck-preview-link { font-size: 13px; }
-/* 站点切换下拉：省略号按钮，悬停展开 */
+/* 站点切换下拉的省略号按钮，悬停展开 */
 .site-dropdown { position: relative; }
-.site-dropdown-btn {
+/* 图标按钮：站点菜单的省略号、语言切换的地球、文章页的返回入口共用 */
+.icon-btn {
   display: inline-flex; align-items: center; justify-content: center;
   font: inherit; font-size: 20px; line-height: 1;
   width: 36px; height: 36px; padding: 0;
@@ -120,10 +137,10 @@ select {
   transition: color .15s;
   user-select: none;
 }
-.site-dropdown-btn:hover { color: #2a78d6; }
+.icon-btn:hover { color: #2a78d6; }
+.icon-btn svg { display: block; }
 /* 语言切换：与站点菜单按钮同样式，图标为地球；负外边距用来抵消按钮的内边距，使两钮靠紧 */
 .lang-toggle { margin-left: -6px; }
-.lang-toggle svg { display: block; }
 /* z-index 高过正文里的下拉（.match-dropdown-list 为 10），使站点菜单压在它们之上 */
 .site-dropdown-list { display: none; min-width: 160px; z-index: 20; }
 /* 悬停按钮或菜单时展开；菜单与按钮相接，留出容错间隙避免闪烁 */
@@ -344,6 +361,7 @@ select {
   /* 只调上下留白，左右沿用 #app 的页面留白，避免两处叠加 */
   .pie-view-inner { padding: 12px 0; }
   .detail-header h2 { font-size: 18px; }
+  .post-list-title { font-size: 17px; }
   .meta-row { gap: 6px; }
   .badge { font-size: 12px; }
   .export-btn { padding: 6px 10px; font-size: 13px; }
@@ -503,13 +521,13 @@ select {
 .builder-view .controls { margin-bottom: 14px; }
 /* 字号一律继承正文，不刻意缩小 */
 /* 白底次要按钮：“选择文件”“导入文本”“搜索”共用 */
-.builder-plain-btn {
+.plain-btn {
   font: inherit; padding: 7px 14px; border-radius: 8px;
   border: 1px solid var(--border); background: var(--surface-1);
   color: var(--text-primary); cursor: pointer; white-space: nowrap;
   transition: background 0.15s;
 }
-.builder-plain-btn:hover { background: var(--page); }
+.plain-btn:hover { background: var(--page); }
 /* 导入 YDK 折叠区：按钮与展开的两行同在一个只有边框的框内 */
 .builder-ydk-import {
   border: 1px solid var(--border); border-radius: 10px;
@@ -688,6 +706,95 @@ button.deck-card-link {
   content: "•"; position: absolute; left: 0;
   color: var(--text-secondary);
 }
+
+/* 文章页（/posts 与 /posts/<id>）：配色与行距沿用 FAQ 页，正文由 marked 渲染 */
+.post-view { color: var(--text-primary); line-height: 1.6; }
+.post-view a { color: #2a78d6; text-decoration: none; }
+.post-view a:hover { color: #1e5fa8; }
+
+/* 页首：扩展模块不套站点外壳，上下留白与下方分隔线都照 .menu 自己给一份。
+   两个返回入口是图标按钮，间距取主站品牌行里两枚图标的实际间距（12px 减去语言切换的负外边距） */
+.post-nav {
+  display: flex; align-items: center; gap: 6px; padding: 18px 0;
+  border-bottom: 1px solid var(--border); margin-bottom: 24px;
+}
+
+/* 列表页 */
+.post-list { list-style: none; padding: 0; margin: 0; }
+.post-list li { border-bottom: 1px solid var(--border); }
+.post-list-link { display: block; padding: 14px 2px; }
+.post-list-title { display: block; font-size: 19px; font-weight: 600; }
+.post-list-desc { display: block; margin-top: 4px; font-size: 14px; color: var(--text-secondary); }
+.post-list-meta { display: block; margin-top: 4px; font-size: 13px; color: var(--muted); }
+
+/* 正文页。文章标题沿用 .detail-header h2，与比赛标题同字号 */
+.post-meta { margin: 0 0 4px; font-size: 13px; color: var(--muted); }
+.post-body { margin-top: 18px; }
+
+/* 正文里的 markdown 元素。标题自 h1 起，故整体比页面标题低一档 */
+.post-body h1 { font-size: 19px; font-weight: 600; margin: 28px 0 12px; }
+.post-body h2 { font-size: 17px; font-weight: 600; margin: 26px 0 12px; }
+.post-body h3 { font-size: 15px; font-weight: 600; margin: 22px 0 10px; }
+.post-body h4, .post-body h5, .post-body h6 {
+  font-size: 15px; font-weight: 600; margin: 20px 0 8px;
+}
+.post-body h1:first-child, .post-body h2:first-child, .post-body h3:first-child { margin-top: 0; }
+.post-body p { margin: 12px 0; }
+.post-body ul, .post-body ol { margin: 12px 0; padding-left: 24px; }
+.post-body li { margin: 6px 0; }
+.post-body li > ul, .post-body li > ol { margin: 6px 0; }
+.post-body img { max-width: 100%; height: auto; }
+.post-body blockquote {
+  margin: 16px 0; padding: 2px 16px;
+  border-left: 3px solid var(--baseline); color: var(--text-secondary);
+}
+.post-body code {
+  padding: 1px 5px; border-radius: 4px; background: var(--hover-bg);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 0.9em;
+}
+.post-body pre {
+  margin: 16px 0; padding: 12px 14px; overflow-x: auto;
+  background: var(--surface-1); border: 1px solid var(--border); border-radius: 6px;
+}
+.post-body pre code { padding: 0; background: none; }
+/* 代码块：语言标注与复制入口合成一条头栏，与代码同在一个框内 */
+.code-block {
+  margin: 16px 0; border: 1px solid var(--border); border-radius: 6px;
+  background: var(--surface-1); overflow: hidden;
+}
+.code-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 8px 5px 14px; border-bottom: 1px solid var(--border);
+  font-size: 13px; line-height: 1.4; color: var(--muted);
+}
+.code-lang { text-transform: uppercase; }
+.code-copy {
+  margin-left: auto; font: inherit; font-size: 13px;
+  padding: 3px 8px; border: 0; border-radius: 6px;
+  background: transparent; color: var(--muted); cursor: pointer;
+  transition: color .15s, background .15s;
+}
+.code-copy:hover { color: var(--text-primary); background: var(--hover-bg); }
+/* 框线与底色移到 .code-block 上，内层 pre 只留排版 */
+.code-block pre {
+  margin: 0; border: 0; border-radius: 0; background: none;
+}
+/* 代码高亮的着色。highlight.js 只给出标记类别，配色由这里决定 */
+.hljs-keyword, .hljs-selector-tag, .hljs-literal, .hljs-type,
+.hljs-name, .hljs-tag, .hljs-template-tag, .hljs-deletion { color: var(--code-keyword); }
+.hljs-string, .hljs-regexp, .hljs-addition, .hljs-meta .hljs-string { color: var(--code-string); }
+.hljs-number, .hljs-symbol, .hljs-bullet, .hljs-variable, .hljs-template-variable,
+.hljs-attr, .hljs-attribute, .hljs-built_in, .hljs-selector-attr,
+.hljs-selector-pseudo, .hljs-subst { color: var(--code-number); }
+.hljs-title, .hljs-title.function_, .hljs-section, .hljs-selector-id,
+.hljs-selector-class { color: var(--code-function); }
+.hljs-comment, .hljs-quote, .hljs-meta, .hljs-doctag { color: var(--code-comment); }
+.hljs-emphasis { font-style: italic; }
+.hljs-strong { font-weight: 600; }
+.post-body hr { margin: 28px 0; border: 0; border-top: 1px solid var(--border); }
+.post-body table { margin: 16px 0; border-collapse: collapse; width: 100%; font-size: 14px; }
+.post-body th, .post-body td { padding: 8px 10px; border: 1px solid var(--border); text-align: left; }
+.post-body th { background: var(--hover-bg); font-weight: 600; }
 
 /* 页脚：与上方内容以横线分隔，左右两栏之间以竖线分隔。
    两栏各按内容宽度紧贴排布、整组水平居中，使内容尽量靠近中线而非分贴两侧 */

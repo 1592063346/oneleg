@@ -3,6 +3,7 @@
 // - 构筑展示（/deck-display）：只读，只有构筑展示（点击开详情页）与导出
 
 import type { State } from "../core/config.js";
+import { copyText } from "../core/clipboard.js";
 import type { DeckData, LimitTable } from "../core/types.js";
 import {
   DECK_LIMITS,
@@ -180,7 +181,7 @@ function buildYdkImport(deck: DeckData, onChange: () => Promise<void>): HTMLElem
   row.className = "controls";
   const btn = document.createElement("button");
   btn.type = "button";
-  btn.className = "builder-plain-btn builder-ydk-toggle";
+  btn.className = "plain-btn builder-ydk-toggle";
   const arrow = document.createElement("span");
   arrow.className = "builder-toggle-arrow";
   btn.append(arrow, t("builder.ydk.import"));
@@ -221,7 +222,7 @@ function buildFileImport(deck: DeckData, onChange: () => Promise<void>): HTMLEle
   // 原生 file 输入自带“未选择任何文件”文案，没有选择器能把它单独去掉，
   // 所以把 input 透明地铺在 label 上、由 label 充当按钮
   const fileLabel = document.createElement("label");
-  fileLabel.className = "builder-plain-btn ydk-file-label";
+  fileLabel.className = "plain-btn ydk-file-label";
   fileLabel.textContent = t("builder.ydk.chooseFile");
   fileLabel.appendChild(fileInput);
 
@@ -264,7 +265,7 @@ function buildTextImport(deck: DeckData, onChange: () => Promise<void>): HTMLEle
 
   const btn = document.createElement("button");
   btn.type = "button";
-  btn.className = "builder-plain-btn";
+  btn.className = "plain-btn";
   btn.textContent = t("builder.ydk.importText");
 
   const note = document.createElement("span");
@@ -311,7 +312,7 @@ function buildCardSearch(deck: DeckData, onChange: () => void): HTMLElement {
 
   const btn = document.createElement("button");
   btn.type = "button";
-  btn.className = "builder-plain-btn";
+  btn.className = "plain-btn";
   btn.textContent = t("builder.search.submit");
 
   const panel = document.createElement("div");
@@ -717,7 +718,7 @@ function buildExportRow(
 
   const ydkBtn = document.createElement("button");
   ydkBtn.type = "button";
-  ydkBtn.className = "builder-plain-btn";
+  ydkBtn.className = "plain-btn";
   ydkBtn.textContent = t("builder.export.ydk");
   ydkBtn.addEventListener("click", () => {
     if (isEmpty(deck)) {
@@ -746,7 +747,7 @@ function buildExportRow(
    */
   const linkBtn = document.createElement("button");
   linkBtn.type = "button";
-  linkBtn.className = "builder-plain-btn";
+  linkBtn.className = "plain-btn";
   linkBtn.textContent = t(mode === "share" ? "builder.export.share" : "builder.export.edit");
   linkBtn.addEventListener("click", async () => {
     const href = buildDeckUrl(mode === "share" ? "deck-display" : "builder", deck, getLimitTag());
@@ -755,9 +756,7 @@ function buildExportRow(
       return;
     }
     const url = new URL(href, window.location.origin).href;
-    try {
-      await navigator.clipboard.writeText(url);
-    } catch {
+    if (!(await copyText(url))) {
       // 非安全上下文里没有剪贴板接口，退回到手动复制
       prompt(t("builder.export.copyPrompt"), url);
     }

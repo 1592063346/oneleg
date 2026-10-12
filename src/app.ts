@@ -9,10 +9,12 @@ import {
   buildUrl,
   confirmLeaveDeck,
   matchIndexByDateParam,
+  navigateToSite,
   parseRoute,
   watchUnload,
 } from "./core/router.js";
 import { renderShell } from "./core/nav.js";
+import { extensionFor, extensionReady } from "./core/extension.js";
 import { getLang, setLang, t } from "./core/i18n.js";
 import { createEmptyDeck } from "./domain/deck.js";
 import { decodeDeck } from "./domain/deckCode.js";
@@ -25,6 +27,9 @@ import { buildFaqView } from "./views/faq.js";
 
 const app = document.getElementById("app")!;
 let currentState: State | null = null;
+
+/** 解析出的路由，见 router.parseRoute */
+type Route = ReturnType<typeof parseRoute>;
 
 /**
  * 把当前语言同步到文档本身：<html lang> 与标题、描述。
@@ -46,16 +51,22 @@ const actions: AppActions = {
     renderShell(state, actions);
   },
   renderBody,
+  navigateToSite: (site) => {
+    if (currentState) navigateToSite(site, currentState, actions);
+  },
+  // 扩展模块内部的跳转：数据在进入模块时已加载，就地重绘即可，无须重走 loadSite
+  openExtension: (site, param) => {
+    if (!currentState || currentState.config.site !== site) return;
+    if ((currentState.extensionParam ?? null) === param) return;
+    if (!confirmLeaveDeck(currentState.builderDeck)) return;
+    currentState.extensionParam = param;
+    history.pushState(null, "", buildUrl(currentState));
+    refresh(currentState);
+  },
 };
 
-async function loadSite(
-  site: Site,
-  edition?: EventEdition,
-  dateParam?: string | null,
-  deckParam?: string | null,
-  limitsParam?: string | null,
-  limitTagParam?: string | null
-): Promise<void> {
+async function loadSite(site: Site, route: Partial<Route> = {}): Promise<void> {
+  const { edition, dateParam, deckParam, limitsParam, limitTagParam, extensionParam } = route;
   const config = SITE_CONFIGS[site];
   applyLang();
   app.innerHTML = `<p class="empty-note">${t("app.loading")}</p>`;
@@ -74,6 +85,12 @@ async function loadSite(
       selectedTypes: new Set(),
       dateRange: null,
     };
+    // 扩展模块自行取数据；失败由模块自己的视图提示，此处不打断外壳渲染
+    const extension = extensionFor(site);
+    if (extension) {
+      state.extensionParam = extensionParam ?? null;
+      await extension.load(extensionParam ?? null).catch(() => null);
+    }
     // 构筑两站（可编辑的构筑导出、只读的构筑展示）共用同一套 deck / limits 解析
     if (site === "limits") {
       await loadLimitTables().catch(() => null);
@@ -139,11 +156,27 @@ async function loadSite(
   renderShell(state, actions);
 }
 
+/**
+ * 重绘当前页面。扩展模块的页首含有随地址参数变化的部分（列表页与正文页的按钮不同），
+ * 故外壳与视图一并重绘；普通站点只换视图主体。
+ */
+function refresh(state: State): void {
+  if (extensionFor(state.config.site)) actions.renderShell(state);
+  else renderBody(state);
+}
+
 /** 根据当前状态渲染视图主体 */
 function renderBody(state: State): void {
   const body = document.getElementById("view-body");
   if (!body) return;
   body.innerHTML = "";
+
+  // 扩展模块自带视图
+  const extension = extensionFor(state.config.site);
+  if (extension) {
+    body.appendChild(extension.render(state, actions));
+    return;
+  }
 
   if (state.config.site === "builder") {
     body.appendChild(buildBuilderView(state));
@@ -165,18 +198,12 @@ async function main(): Promise<void> {
   // 语言要先定下来，外壳与各视图的文案都取自它
   const route = parseRoute();
   setLang(route.lang);
-  await loadSite(
-    route.site,
-    route.edition,
-    route.dateParam,
-    route.deckParam,
-    route.limitsParam,
-    route.limitTagParam
-  );
+  await loadSite(route.site, route);
 
   // 浏览器前进/后退时响应路由变化
   window.addEventListener("popstate", () => {
-    const { site, edition, dateParam, deckParam, limitsParam, limitTagParam, lang } = parseRoute();
+    const route = parseRoute();
+    const { site, edition, dateParam, extensionParam, lang } = route;
     // 语言一变，外壳与视图的文案整体作废，得重绘而不能只改数据
     const langChanged = lang !== getLang();
     if (langChanged) setLang(lang);
@@ -190,20 +217,22 @@ async function main(): Promise<void> {
       history.pushState(null, "", buildUrl(currentState));
       return;
     }
-    // 同站点、同板块（可含语言变化）时无需重新加载数据，重绘即可
+    // 同站点、同板块（可含语言变化）时无需重新加载数据，重绘即可。
+    // 扩展模块的数据在进入时已缓存，同样就地重绘，免得在模块内部翻页时闪一次“加载中”
     if (
       currentState &&
       currentState.config.site === site &&
       currentState.eventEdition === edition &&
-      currentState.config.hasData
+      (currentState.config.hasData || extensionReady(site))
     ) {
       currentState.selectedMatch = matchIndexByDateParam(currentState.matches, dateParam);
       currentState.view = "pie";
+      currentState.extensionParam = extensionParam;
       if (langChanged) actions.renderShell(currentState);
-      else renderBody(currentState);
+      else refresh(currentState);
       return;
     }
-    loadSite(site, edition, dateParam, deckParam, limitsParam, limitTagParam);
+    loadSite(site, route);
   });
 
   // 关闭标签页/刷新/地址栏跳走时提醒（弹窗文案由浏览器决定）

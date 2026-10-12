@@ -273,8 +273,7 @@ function attachHover(
 let savedScrollLeft = 0;
 
 /**
- * 鼠标按住横向拖动图表。触屏不接管：横向滚动交给浏览器自身的滑动（见 .line-scroll）。
- * 放不下时才允许拖动，也只在这时给出抓手光标。
+ * 鼠标按住横向拖动图表。触屏横向滚动交给浏览器自身的滑动（见 .line-scroll）。
  */
 function enableDragPan(box: HTMLElement): void {
   let startX = 0;
@@ -284,7 +283,6 @@ function enableDragPan(box: HTMLElement): void {
   box.addEventListener("scroll", () => {
     savedScrollLeft = box.scrollLeft;
   });
-  // 刚建好的节点还量不到宽度，等这一帧排完版再恢复位置、判是否可拖
   requestAnimationFrame(() => {
     box.scrollLeft = savedScrollLeft;
     box.classList.toggle("scrollable", box.scrollWidth > box.clientWidth);
@@ -298,7 +296,7 @@ function enableDragPan(box: HTMLElement): void {
     startScroll = box.scrollLeft;
     box.setPointerCapture(ev.pointerId);
     box.classList.add("dragging");
-    ev.preventDefault(); // 免得拖出文字选区
+    ev.preventDefault();
   });
 
   box.addEventListener("pointermove", (ev) => {

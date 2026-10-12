@@ -2,10 +2,12 @@
 
 import type { DeckData, Match, MatchType, EventEdition } from "./types.js";
 import { MATCH_TYPES, EVENT_MATCH_TYPES } from "./types.js";
+import { EXTENSIONS } from "./extension.js";
 import type { MsgKey } from "./i18n.js";
 
 export type View = "pie" | "trend";
-export type Site = "main" | "event" | "builder" | "deck-display" | "limits" | "faq";
+/** 站点标识。内置站点固定，扩展模块各自登记一个，故不写成联合类型 */
+export type Site = string;
 
 /** 站点配置：主站与国内赛事数据站（分站）的差异集中在此 */
 export interface SiteConfig {
@@ -40,7 +42,8 @@ export const EVENT_EDITION_CONFIGS: Record<
   },
 };
 
-export const SITE_CONFIGS: Record<Site, SiteConfig> = {
+/** 内置站点的配置 */
+const BUILTIN_SITES: Record<string, SiteConfig> = {
   main: {
     site: "main",
     path: "/",
@@ -110,6 +113,26 @@ export const SITE_CONFIGS: Record<Site, SiteConfig> = {
   },
 };
 
+/**
+ * 扩展模块共有的配置项：不取比赛数据、不列入站点菜单，
+ * 也不显示品牌标题（页首由模块自己给出），故 titleKey 只作占位。
+ */
+const EXTENSION_SITE: Omit<SiteConfig, "site" | "path"> = {
+  titleKey: "site.home.title",
+  dataPath: "",
+  deckDir: "",
+  matchTypes: [],
+  hasTrend: false,
+  showNameInDropdown: false,
+  hasData: false,
+};
+
+/** 全部站点配置：内置站点加上扩展模块登记的站点 */
+export const SITE_CONFIGS: Record<string, SiteConfig> = { ...BUILTIN_SITES };
+EXTENSIONS.forEach((module) => {
+  SITE_CONFIGS[module.site] = { ...EXTENSION_SITE, site: module.site, path: module.path };
+});
+
 export const SITE_MENU: { site: Site; labelKey: MsgKey }[] = [
   { site: "main", labelKey: "menu.main" },
   { site: "event", labelKey: "menu.event" },
@@ -140,6 +163,7 @@ export interface State {
   displayDeck?: DeckData; // 构筑展示站（只读）正在展示的卡组与其适用的禁限卡表。
   displayLimitTag?: string | null;
   limitViewTag?: string | null; // 禁限卡表页正在浏览的表 tag
+  extensionParam?: string | null; // 扩展模块页面的地址参数（如文章 id）；无则表示模块入口页
 }
 
 /**
@@ -147,7 +171,11 @@ export interface State {
  * 避免视图模块反向依赖入口文件形成循环引用。
  */
 export interface AppActions {
-  loadSite(site: Site, edition?: EventEdition, dateParam?: string | null): Promise<void>;
+  loadSite(site: Site): Promise<void>;
+  /** 切换站点：含离开构筑的确认、写地址与加载 */
+  navigateToSite(site: Site): void;
   renderShell(state: State): void;
   renderBody(state: State): void;
+  /** 扩展模块内部的站内跳转（如文章列表与正文之间）：含确认、写地址与重绘 */
+  openExtension(site: Site, param: string | null): void;
 }

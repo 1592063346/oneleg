@@ -5,6 +5,7 @@ import type { State, View, AppActions } from "./config.js";
 import { EVENT_EDITION_CONFIGS, SITE_MENU } from "./config.js";
 import { allDeckNames, loadData, top4DeckNames } from "./data.js";
 import { buildColorMap } from "./palette.js";
+import { extensionFor } from "./extension.js";
 import { getLang, setLang, t } from "./i18n.js";
 import { navigateToSite, syncUrl } from "./router.js";
 import { buildFooter } from "./footer.js";
@@ -15,6 +16,26 @@ const app = document.getElementById("app")!;
 export function renderShell(state: State, actions: AppActions): void {
   app.innerHTML = "";
 
+  const extension = extensionFor(state.config.site);
+  if (extension) {
+    const nav = extension.nav?.(state, actions);
+    if (nav) app.appendChild(nav);
+  } else {
+    app.appendChild(buildNav(state, actions));
+  }
+
+  const body = document.createElement("main");
+  body.id = "view-body";
+  body.className = "view-body";
+  app.appendChild(body);
+
+  app.appendChild(buildFooter(state, actions));
+
+  actions.renderBody(state);
+}
+
+/** 站点导航栏 */
+function buildNav(state: State, actions: AppActions): HTMLElement {
   const nav = document.createElement("nav");
   nav.className = "menu";
 
@@ -40,16 +61,7 @@ export function renderShell(state: State, actions: AppActions): void {
     nav.appendChild(buildViewTabs(state, actions));
   }
 
-  app.appendChild(nav);
-
-  const body = document.createElement("main");
-  body.id = "view-body";
-  body.className = "view-body";
-  app.appendChild(body);
-
-  app.appendChild(buildFooter(state, actions));
-
-  actions.renderBody(state);
+  return nav;
 }
 
 /** 标题左侧的站点切换下拉：一个省略号按钮，悬停展开菜单 */
@@ -58,7 +70,7 @@ function buildSiteDropdown(state: State, actions: AppActions): HTMLElement {
   dropdown.className = "site-dropdown";
 
   const btn = document.createElement("button");
-  btn.className = "site-dropdown-btn";
+  btn.className = "icon-btn";
   btn.type = "button";
   btn.setAttribute("aria-label", t("nav.siteMenu"));
   btn.textContent = "⋯";
@@ -88,7 +100,7 @@ function buildLangToggle(state: State, actions: AppActions): HTMLElement {
   const toEn = getLang() === "zh";
   const btn = document.createElement("button");
   btn.type = "button";
-  btn.className = "site-dropdown-btn lang-toggle";
+  btn.className = "icon-btn lang-toggle";
   // 用 SVG 而非 🌐 表情：表情强制彩色渲染，color 与悬停变色对它都不生效
   btn.innerHTML =
     '<svg viewBox="0 0 16 16" width="17" height="17" fill="none"' +
