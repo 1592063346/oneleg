@@ -259,6 +259,7 @@ const MESSAGES = {
   "post.backList": msg("返回文章列表", "All posts"),
   "post.backHome": msg("返回主站", "Home"),
   "post.author": msg("作者：{name}", "By {name}"),
+  "post.listTitle": msg("文章列表", "Posts"),
   "post.copyCode": msg("复制", "Copy"),
   "post.copied": msg("已复制", "Copied"),
   "post.copyPrompt": msg("请手动复制以下内容：", "Copy the following manually:"),

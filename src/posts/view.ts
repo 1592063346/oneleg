@@ -48,14 +48,14 @@ export function buildPostView(state: State, actions: AppActions): HTMLElement {
 
   if (post) {
     renderDetail(wrap, post);
-    document.title = `${post.title} | ${t("meta.title")}`;
   } else if (id) {
+    // 清单没读到与文章不存在是两回事，分开提示
     wrap.appendChild(note(loadedPostIndex() ? t("post.notFound") : t("post.indexFailed")));
-    document.title = t("meta.title");
   } else {
     renderList(wrap, state, actions);
-    document.title = t("meta.title");
   }
+  // 页签名不带站名：文章页用文章标题，其余用列表页的名字
+  document.title = post ? post.title : t("post.listTitle");
 
   return wrap;
 }
