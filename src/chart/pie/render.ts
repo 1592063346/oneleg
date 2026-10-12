@@ -35,22 +35,27 @@ interface ImageCenterConfig {
   size: [number, number];
 }
 let imageCenters: Record<string, ImageCenterConfig> = {};
+/** 进行中或已完成的加载；失败时置空，下次绘制饼图时重试 */
+let centersPending: Promise<void> | null = null;
 
-// 加载图片中心配置
-async function loadImageCenters(): Promise<void> {
-  try {
-    const response = await fetch(PIC_DIR + "center.json");
-    if (response.ok) {
-      const data = await response.json();
-      imageCenters = data.centers || {};
-    }
-  } catch (err) {
-    console.warn("Failed to load image centers:", err);
+/** 加载图片中心配置。饼图须待其就绪后绘制，否则焦点一律退回默认值 */
+function loadImageCenters(): Promise<void> {
+  if (!centersPending) {
+    centersPending = fetch(PIC_DIR + "center.json")
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json() as Promise<{ centers?: Record<string, ImageCenterConfig> }>;
+      })
+      .then((data) => {
+        imageCenters = data.centers || {};
+      })
+      .catch((err: unknown) => {
+        centersPending = null;
+        console.warn("Failed to load image centers:", err);
+      });
   }
+  return centersPending;
 }
-
-// 初始化时加载
-loadImageCenters();
 
 
 /**
@@ -198,8 +203,8 @@ function buildPieSection(
     });
   });
 
-  // 所有图片预加载完成后，再构建和显示饼图
-  Promise.all(imageLoadPromises).then(() => {
+  // 所有图片预加载完成、图片中心配置就绪后，再构建和显示饼图
+  Promise.all([...imageLoadPromises, loadImageCenters()]).then(() => {
     // 移除加载提示
     loadingMsg.remove();
 

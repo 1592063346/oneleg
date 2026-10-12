@@ -485,7 +485,7 @@ export function matchTitle(match: Match): string {
   return match.title_en || match.title;
 }
 
-export function matchDisc(match: Match): string {
-  if (lang !== "en") return match.disc || "";
-  return match.disc_en || match.disc || "";
+export function matchDesc(match: Match): string {
+  if (lang !== "en") return match.desc || "";
+  return match.desc_en || match.desc || "";
 }

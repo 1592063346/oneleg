@@ -3,7 +3,7 @@
 import type { Match, Player } from "../core/types.js";
 import type { State, AppActions } from "../core/config.js";
 import { totalDecks } from "../core/data.js";
-import { deckName, matchDisc, matchTitle, matchTypeName, t } from "../core/i18n.js";
+import { deckName, matchDesc, matchTitle, matchTypeName, t } from "../core/i18n.js";
 import { renderPie } from "../chart/pie/index.js";
 import { loadDeckFile, createDeckModal, dropAbsentCards } from "../domain/deck.js";
 import { cacheCardInfos } from "../domain/cards.js";
@@ -120,11 +120,11 @@ export function buildPieView(state: State, actions: AppActions): HTMLElement {
   wrap.appendChild(header);
 
   // 比赛描述：置于信息行与饼图之间，内容按 HTML 解析
-  const disc = matchDisc(match);
-  if (disc) {
+  const descHtml = matchDesc(match);
+  if (descHtml) {
     const desc = document.createElement("div");
     desc.className = "match-desc";
-    desc.innerHTML = disc;
+    desc.innerHTML = descHtml;
     wrap.appendChild(desc);
   }
 

@@ -1,7 +1,7 @@
 // URL 与应用状态之间的映射，以及离开页面时的构筑提醒
 
 import type { Match, EventEdition, DeckData } from "./types.js";
-import type { Site, State, AppActions } from "./config.js";
+import type { Site, State, AppActions, View } from "./config.js";
 import { sitePath } from "./config.js";
 import { getLang, parseLang, t, type Lang } from "./i18n.js";
 import { extensionFor, matchExtension } from "./extension.js";
@@ -81,7 +81,7 @@ export function buildDeckUrl(
 }
 
 /**
- * 根据当前状态构建 URL（比赛详情附带 ?date=，分站附带 ?env=，
+ * 根据当前状态构建 URL（比赛详情附带 ?date=，上位卡组统计附带 ?view=trend，分站附带 ?env=，
  * 构筑两站附带 ?deck=/?limits=，英文模式一律附带 ?lang=en）
  */
 export function buildUrl(state: State): string {
@@ -108,6 +108,8 @@ export function buildUrl(state: State): string {
     params.set("env", state.eventEdition || "ocg");
   }
   appendLang(params);
+  // 视图须写进地址，否则前进、后退无从区分比赛详情与上位卡组统计
+  if (state.config.hasTrend && state.view === "trend") params.set("view", "trend");
   // 仅在比赛详情（饼图）视图携带日期
   const match = state.matches[state.selectedMatch];
   if (state.config.hasData && state.view === "pie" && match) {
@@ -130,11 +132,12 @@ export function replaceUrl(state: State): void {
   history.replaceState(null, "", buildUrl(state));
 }
 
-/** 解析当前 URL，得到站点、板块、语言与各查询参数（deck/limits 仅构筑两站使用） */
+/** 解析当前 URL，得到站点、板块、视图、语言与各查询参数（deck/limits 仅构筑两站使用） */
 export function parseRoute(): {
   site: Site;
   edition?: EventEdition;
   lang: Lang;
+  view: View;
   dateParam: string | null;
   deckParam: string | null;
   limitsParam: string | null;
@@ -146,6 +149,7 @@ export function parseRoute(): {
   const dateParam = params.get("date");
   const lang = parseLang(params.get("lang"));
   const none = {
+    view: "pie" as View,
     dateParam: null,
     deckParam: null,
     limitsParam: null,
@@ -178,7 +182,8 @@ export function parseRoute(): {
   if (extension) {
     return { site: extension.module.site, lang, ...none, extensionParam: extension.param };
   }
-  return { site: "main", lang, ...none, dateParam };
+  const view: View = params.get("view") === "trend" ? "trend" : "pie";
+  return { site: "main", lang, ...none, view, dateParam };
 }
 
 /** 构筑里的卡片总数 */

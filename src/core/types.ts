@@ -61,9 +61,9 @@ export interface Match {
   /** 卡图环境（影响卡图 CDN 路径），可选，默认 "ocg" */
   env?: string;
   /** 比赛描述，可含 HTML 标签，可选 */
-  disc?: string;
-  /** 英文描述，英文模式下用它（见 matchDisc）；缺失则照显中文 */
-  disc_en?: string;
+  desc?: string;
+  /** 英文描述，英文模式下用它（见 matchDesc）；缺失则照显中文 */
+  desc_en?: string;
 }
 
 /** 一份禁限卡表（data/limits/ 下的单个文件） */

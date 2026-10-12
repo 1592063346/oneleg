@@ -66,7 +66,8 @@ const actions: AppActions = {
 };
 
 async function loadSite(site: Site, route: Partial<Route> = {}): Promise<void> {
-  const { edition, dateParam, deckParam, limitsParam, limitTagParam, extensionParam } = route;
+  const { edition, view, dateParam, deckParam, limitsParam, limitTagParam, extensionParam } =
+    route;
   const config = SITE_CONFIGS[site];
   applyLang();
   app.innerHTML = `<p class="empty-note">${t("app.loading")}</p>`;
@@ -143,7 +144,7 @@ async function loadSite(site: Site, route: Partial<Route> = {}): Promise<void> {
     names,
     trendDeckNames,
     colorMap: buildColorMap(names),
-    view: "pie",
+    view: config.hasTrend ? view ?? "pie" : "pie",
     selectedMatch: matchIndexByDateParam(matches, dateParam ?? null), // 按日期参数定位，否则最近一场
     selectedDecks: [], // 趋势图默认空，由用户搜索添加
     selectedTypes: new Set(config.matchTypes), // 默认全部类型
@@ -203,7 +204,7 @@ async function main(): Promise<void> {
   // 浏览器前进/后退时响应路由变化
   window.addEventListener("popstate", () => {
     const route = parseRoute();
-    const { site, edition, dateParam, extensionParam, lang } = route;
+    const { site, edition, view, dateParam, extensionParam, lang } = route;
     // 语言一变，外壳与视图的文案整体作废，得重绘而不能只改数据
     const langChanged = lang !== getLang();
     if (langChanged) setLang(lang);
@@ -225,10 +226,12 @@ async function main(): Promise<void> {
       currentState.eventEdition === edition &&
       (currentState.config.hasData || extensionReady(site))
     ) {
+      // 导航栏的视图标签随视图高亮，视图一变须连外壳一并重绘
+      const viewChanged = currentState.view !== view;
       currentState.selectedMatch = matchIndexByDateParam(currentState.matches, dateParam);
-      currentState.view = "pie";
+      currentState.view = view;
       currentState.extensionParam = extensionParam;
-      if (langChanged) actions.renderShell(currentState);
+      if (langChanged || viewChanged) actions.renderShell(currentState);
       else refresh(currentState);
       return;
     }

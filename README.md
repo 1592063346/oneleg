@@ -23,7 +23,7 @@ npm run serve
   "date": "2026/08/10", // 按实际情况写，标题也是
   "title": "2026/08/10 万籁阁积分赛",
   "type": "积分赛", // "积分赛" | "娱乐赛" | "王中王邀请赛" | "特殊规则赛"
-  "disc": "一次普普通通的积分赛。", // 比赛描述，可选项
+  "desc": "一次普普通通的积分赛。", // 比赛描述，可选项
   "env": "ocg", // 比赛环境，可选项，"ocg" | "sc" | "tcg"（默认 "ocg"）
   "1st": {"id": "选手名", "deck": "卡组名", "deck_file": true},
   // 冠军是必填项，亚军和四强是可选项
@@ -50,10 +50,10 @@ npm run serve
 
 ### 更新国内大赛数据
 
-向 `data/event_data.json` 中添加新的比赛记录，格式整体上与上面一致，不过要注意：
+按板块向 `data/event_data_ocg.json`（OCG）或 `data/event_data_sc.json`（简体中文）中添加新的比赛记录，格式整体上与上面一致，不过要注意：
 
 1. 比赛类型（`type`）：“城市巡回赛”、“YCS”、“特别大会”、“WCQ 预选赛”、“WCQ”。
-2. 选手构筑放置文件夹为 `data/event_deck/`。
+2. 选手构筑按板块放置在 `data/event_deck/ocg/` 或 `data/event_deck/sc/` 文件夹中。
 3. 新增字段 `elimination_decks`，表示淘汰赛卡组列表，格式与 `decks` 相同。
 4. 环境数据可能需要自己做一些处理……
 
