@@ -1,6 +1,6 @@
 // 文章数据：清单与正文 markdown 的加载与缓存
 
-import { t } from "../core/i18n.js";
+import { t } from "../../core/i18n.js";
 import type { PostIndexFile, PostMeta } from "./types.js";
 
 /** 文章目录。静态服务不列目录，故由索引文件列出全部文章（与 data/limits/ 同理） */

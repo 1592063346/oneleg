@@ -1,6 +1,40 @@
 // 视图间共享的小工具
 
 import type { MatchType } from "../core/types.js";
+import { t } from "../core/i18n.js";
+import type { CardInfo } from "../domain/cards.js";
+import { getCardDetailUrl, setCardImage } from "../domain/deck.js";
+
+/**
+ * 单卡的卡图与三行文字（首行卡名、日文名、卡密），首行卡名链接到卡片详情页。
+ * 构筑导出页的检索结果与文章里的单卡条目块共用；卡图统一用日文版。
+ * primaryName 为空时显示“无中文名”。
+ */
+export function buildCardBrief(hit: CardInfo, primaryName: string): [HTMLElement, HTMLElement] {
+  const img = document.createElement("img");
+  img.className = "deck-card-image"; // 卡图尺寸复用构筑预览的 60px*88px
+  setCardImage(img, hit.id, "ocg");
+  img.alt = primaryName || hit.jp_name || String(hit.id);
+  img.loading = "lazy";
+
+  const meta = document.createElement("div");
+  meta.className = "builder-result-meta";
+  const cn = document.createElement("a");
+  cn.className = "builder-result-cn";
+  cn.href = getCardDetailUrl(hit.id);
+  cn.target = "_blank";
+  cn.rel = "noopener noreferrer";
+  cn.textContent = primaryName || t("builder.result.noName");
+  const jp = document.createElement("span");
+  jp.className = "builder-result-jp";
+  jp.textContent = hit.jp_name || t("builder.result.noJpName");
+  const idLine = document.createElement("span");
+  idLine.className = "builder-result-id";
+  idLine.textContent = String(hit.id);
+  meta.append(cn, jp, idLine);
+
+  return [img, meta];
+}
 
 /** 比赛类型对应的颜色标识（用于徽章、标签、类型筛选） */
 export function matchTypeColor(type: MatchType): string {

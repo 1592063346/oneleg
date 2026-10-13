@@ -1,6 +1,6 @@
 // 把 KaTeX 的样式与字体从 node_modules 拷进 dist/，供文章里的公式使用。
 // 由 npm run build / watch 调用，不必手动执行。
-// 代码侧只在文章确实写了公式时才注入这份样式（见 src/posts/render/math.ts）。
+// 代码侧只在文章确实写了公式时才注入这份样式（见 src/extensions/posts/render/math.ts）。
 
 import { copyFileSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";

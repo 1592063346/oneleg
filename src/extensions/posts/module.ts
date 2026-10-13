@@ -1,6 +1,6 @@
 // 文章模块：在扩展机制里的登记项（见 core/extension.ts）
 
-import type { ExtensionModule } from "../core/extension.js";
+import type { ExtensionModule } from "../../core/extension.js";
 import { loadPostIndex, loadedPostIndex } from "./data.js";
 import { buildPostNav, buildPostView } from "./view.js";
 

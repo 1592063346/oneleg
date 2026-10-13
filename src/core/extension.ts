@@ -1,11 +1,11 @@
 // 扩展模块：不列入站点菜单、只在 URL 可及的页面。
 //
 // 模块自带站点前缀、数据加载、页首与视图，核心只把它们接进路由、外壳与渲染分发，
-// 故新增一个同类页面只需写一个模块目录，再把模块加进下面的 EXTENSIONS 数组，
+// 故新增一个同类页面只需在 src/extensions/ 下写一个模块目录，再把模块加进下面的 EXTENSIONS 数组，
 // 其余代码一律无须改动。
 
 import type { Site, State, AppActions } from "./config.js";
-import { postModule } from "../posts/module.js";
+import { postModule } from "../extensions/posts/module.js";
 
 export interface ExtensionModule {
   /** 站点标识，路由与应用状态里的 site */

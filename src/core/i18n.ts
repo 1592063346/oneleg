@@ -263,6 +263,8 @@ const MESSAGES = {
   "post.copyCode": msg("复制", "Copy"),
   "post.copied": msg("已复制", "Copied"),
   "post.copyPrompt": msg("请手动复制以下内容：", "Copy the following manually:"),
+  "post.cardNotFound": msg("未找到与“{keyword}”匹配的卡片。", "No card matches “{keyword}”."),
+  "post.cardFailed": msg("卡片检索失败：{msg}", "Card search failed: {msg}"),
   "post.empty": msg("暂无文章。", "No posts yet."),
   "post.notFound": msg("未找到该文章。", "No such post."),
   "post.indexFailed": msg("文章列表加载失败。", "Failed to load the post list."),

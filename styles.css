@@ -791,6 +791,25 @@ button.deck-card-link {
 .hljs-comment, .hljs-quote, .hljs-meta, .hljs-doctag { color: var(--code-comment); }
 .hljs-emphasis { font-style: italic; }
 .hljs-strong { font-weight: 600; }
+/* 构筑块：头栏同代码块，正文为卡组区域 */
+.ydk-deck { padding: 14px; }
+/* 正文图片的 height: auto 会盖过卡图的固定高度，卡图未加载完时塌成 0 */
+.post-body .deck-card-image { height: 88px; }
+/* 单卡条目块：卡片条目同构筑导出页的检索结果，说明文字在下，整体一个框 */
+.card-entry {
+  margin: 16px 0; padding: 12px 14px;
+  border: 1px solid var(--border); border-radius: 6px; background: var(--surface-1);
+}
+.card-entry-card {
+  display: flex; align-items: center; gap: 12px;
+  font-size: 13px; color: var(--muted);
+}
+.card-entry-card .deck-card-image { flex: none; border-radius: 4px; }
+.card-entry-card .builder-result-meta { line-height: 1.4; }
+.card-entry-card .builder-result-cn { text-decoration: underline; }
+.card-entry-text { margin-top: 10px; }
+.card-entry-text > :first-child { margin-top: 0; }
+.card-entry-text > :last-child { margin-bottom: 0; }
 .post-body hr { margin: 28px 0; border: 0; border-top: 1px solid var(--border); }
 .post-body table { margin: 16px 0; border-collapse: collapse; width: 100%; font-size: 14px; }
 .post-body th, .post-body td { padding: 8px 10px; border: 1px solid var(--border); text-align: left; }

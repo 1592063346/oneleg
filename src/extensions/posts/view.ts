@@ -1,9 +1,11 @@
 // 文章视图：/posts 列出全部文章，/posts/<id> 渲染单篇 markdown
 
-import type { AppActions, State } from "../core/config.js";
-import { t } from "../core/i18n.js";
+import type { AppActions, State } from "../../core/config.js";
+import { t } from "../../core/i18n.js";
 import { findPost, isValidPostId, loadPostBody, loadedPostIndex } from "./data.js";
+import { configureCardEntry, renderCardEntries } from "./render/card.js";
 import { decorateCodeBlocks } from "./render/code.js";
+import { renderDeckBlocks } from "./render/deck.js";
 import type { PostMeta } from "./types.js";
 
 /** 本模块的站点标识 */
@@ -152,7 +154,12 @@ async function renderMarkdown(md: string, target: HTMLElement): Promise<void> {
     const { configureMarked } = await import("./render/math.js");
     await configureMarked();
   }
+  // 单卡条目块须在解析前注册，故按原文判断
+  if (/^@\[/m.test(md)) await configureCardEntry();
   target.innerHTML = marked.parse(md, { async: false });
+  renderCardEntries(target);
+  // 构筑块先于高亮换掉，免得 highlight.js 去处理 ydk
+  renderDeckBlocks(target);
   // 语法高亮同理，只在正文确实有标了语言的代码块时才拉
   if (target.querySelector("code[class*='language-']")) {
     const { highlightCodeBlocks } = await import("./render/highlight.js");

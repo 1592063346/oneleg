@@ -12,10 +12,8 @@ import {
   deckLimitError,
   downloadDeckFile,
   dropAbsentCards,
-  getCardDetailUrl,
   normalizeDeckIds,
   parseYdk,
-  setCardImage,
   sortDeck,
 } from "../domain/deck.js";
 import { cacheCardInfos, isExtraDeckCard, searchCards, type CardInfo } from "../domain/cards.js";
@@ -23,7 +21,7 @@ import { allowedCopies, loadLimitTables, loadedLimitTables } from "../domain/lim
 import { getLang, limitName, t } from "../core/i18n.js";
 import { buildDeckUrl, limitsPageUrl, replaceUrl } from "../core/router.js";
 import { downloadBlankForm, exportDeckForm, type DeckFormLang } from "../domain/deckForm.js";
-import { buildDropdown } from "./shared.js";
+import { buildCardBrief, buildDropdown } from "./shared.js";
 
 /** 本站不区分卡图环境，统一使用日文卡图 */
 const ENV = "ocg";
@@ -416,28 +414,7 @@ function buildResultItem(hit: CardInfo, deck: DeckData, onChange: () => void): H
 
   // 英文模式首行改用英文名，取不到再退到中文名
   const primaryName = getLang() === "en" ? hit.en_name || hit.cn_name : hit.cn_name;
-
-  const img = document.createElement("img");
-  img.className = "deck-card-image"; // 卡图尺寸复用构筑预览的 60px*88px
-  setCardImage(img, hit.id, ENV);
-  img.alt = primaryName || hit.jp_name || String(hit.id);
-  img.loading = "lazy";
-
-  const meta = document.createElement("div");
-  meta.className = "builder-result-meta";
-  const cn = document.createElement("a");
-  cn.className = "builder-result-cn";
-  cn.href = getCardDetailUrl(hit.id);
-  cn.target = "_blank";
-  cn.rel = "noopener noreferrer";
-  cn.textContent = primaryName || t("builder.result.noName");
-  const jp = document.createElement("span");
-  jp.className = "builder-result-jp";
-  jp.textContent = hit.jp_name || t("builder.result.noJpName");
-  const idLine = document.createElement("span");
-  idLine.className = "builder-result-id";
-  idLine.textContent = String(hit.id);
-  meta.append(cn, jp, idLine);
+  const [img, meta] = buildCardBrief(hit, primaryName);
 
   // 融合/同调/超量/连接怪放不进主卡组，按卡片类型自动归到额外卡组
   const toExtra = isExtraDeckCard(hit);
