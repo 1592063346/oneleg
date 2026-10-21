@@ -13,6 +13,9 @@ const LEADER_RADIAL = 22; // 自圆弧引出的径向段
 const LEADER_HORIZ = 26; // 水平段
 const LABEL_GAP = 6; // 末段到文字的水平间距
 const NAME_FONT = 14; // 名称行字号
+const SUB_FONT = 12; // 数量行与子卡组行字号
+const ARCHETYPE_LINE_MAX = 200; // 子卡组行超过此宽度即在分号后折行
+const ARCHETYPE_LINE_HEIGHT = 15; // 子卡组折行后的行距
 const CROP_PAD = 8; // 收边时内容外侧留的余量
 // 焦点沿四等分线偏移的占比检测区间
 const FOCUS_SHIFT_MIN_PCT = 0.08;
@@ -758,7 +761,7 @@ function drawLeaderLabels(group: SVGGElement, slices: Slice[]): void {
         "text-anchor": right ? "start" : "end",
         "dominant-baseline": "central",
         fill: leader,
-        "font-size": 12,
+        "font-size": SUB_FONT,
       },
       [`${s.num}（${(s.pct * 100).toFixed(1)}%）`]
     );
@@ -771,22 +774,58 @@ function drawLeaderLabels(group: SVGGElement, slices: Slice[]): void {
       const archetypeParts = s.archetypes.map(
         (arch) => `${deckName(arch.name)}${gap}${deckName(s.name)} ${arch.num}`
       );
-      const archetypeText = archetypeParts.join(t("pieChart.archetypeSeparator"));
-      const archetypeLine = el(
-        "text",
-        {
-          x: textX,
-          y: p1.y + 26,
-          "text-anchor": right ? "start" : "end",
-          "dominant-baseline": "central",
-          fill: leader,
-          "font-size": 12,
-        },
-        [archetypeText]
-      );
+      const lines = wrapArchetypeParts(archetypeParts, t("pieChart.archetypeSeparator"));
+      const archetypeLine = el("text", {
+        x: textX,
+        y: p1.y + 26,
+        "text-anchor": right ? "start" : "end",
+        "dominant-baseline": "central",
+        fill: leader,
+        "font-size": SUB_FONT,
+      });
+      lines.forEach((line, i) => {
+        archetypeLine.appendChild(
+          el("tspan", i === 0 ? { x: textX } : { x: textX, dy: ARCHETYPE_LINE_HEIGHT }, [line])
+        );
+      });
       group.appendChild(archetypeLine);
     }
   }
+}
+
+/** 文字宽度测量用的画布上下文，按子卡组行字号初始化一次 */
+let measureCtx: CanvasRenderingContext2D | null = null;
+
+/** 估算一行文字的渲染宽度 */
+function textWidth(text: string): number {
+  if (!measureCtx) {
+    measureCtx = document.createElement("canvas").getContext("2d");
+    if (measureCtx) {
+      const family = getComputedStyle(document.body).fontFamily || "sans-serif";
+      measureCtx.font = `${SUB_FONT}px ${family}`;
+    }
+  }
+  return measureCtx ? measureCtx.measureText(text).width : text.length * SUB_FONT;
+}
+
+/**
+ * 将子卡组各段排成若干行，仅在分隔符处断行；除末行外分隔符留在行尾。
+ * 单段本身超宽时不拆。
+ */
+function wrapArchetypeParts(parts: string[], separator: string): string[] {
+  const lines: string[] = [];
+  let line = "";
+  for (const part of parts) {
+    const candidate = line ? line + separator + part : part;
+    if (line && textWidth(candidate) > ARCHETYPE_LINE_MAX) {
+      lines.push(line + separator);
+      line = part;
+    } else {
+      line = candidate;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
 }
 
 /**
