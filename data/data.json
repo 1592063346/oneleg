@@ -666,6 +666,36 @@
                 {"name": "拉比丽斯", "num": 1},
                 {"name": "D.D.ダイナマイト", "num": 1}
             ]
+        },
+        {
+            "date": "2026/10/25",
+            "title": "第三届万籁阁王中王邀请赛",
+            "title_en": "3rd ONELEG King of Kings Invitational",
+            "type": "王中王邀请赛",
+            "desc": "比赛为邀请赛，仅 2026/08/09 至 2026/09/27 期间内万籁阁积分赛八强以上（含）选手以及部分特邀选手可报名参赛。",
+            "desc_en": "Only players who ranked Top 8 or higher in ONELEG ranking tournaments from 2026/08/09 to 2026/09/27, as well as certain invited players, are eligible to participate.",
+            "1st": {"id": "红莲", "deck": "耀圣"},
+            "2nd": {"id": "小御门让叶", "deck": "盈彩月夜"},
+            "3_4th": [{"id": "jdx", "deck": "黯蜜"}, {"id": "五氟化锑", "deck": "狱神", "deck_file": true}],
+            "decks": [
+                {"name": "狱神", "num": 3},
+                {"name": "码丽丝", "num": 1},
+                {"name": "黯蜜", "num": 2},
+                {"name": "光与暗的仪式", "num": 4},
+                {"name": "耀圣", "num": 3},
+                {"name": "D.D.ダイナマイト", "num": 1},
+                {"name": "黑魔导", "num": 1},
+                {"name": "拉比丽斯", "num": 1},
+                {"name": "烙印", "num": 3},
+                {"name": "盈彩月夜", "num": 4},
+                {"name": "枪弹", "num": 1},
+                {"name": "GMX", "num": 1},
+                {"name": "异解△", "num": 1},
+                {"name": "同步士", "num": 1},
+                {"name": "闪刀姬", "num": 2},
+                {"name": "绚岚", "num": 1},
+                {"name": "魔女工艺", "num": 1}
+            ]
         }
     ]
 }
