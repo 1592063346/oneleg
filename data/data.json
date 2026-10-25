@@ -674,9 +674,9 @@
             "type": "王中王邀请赛",
             "desc": "比赛为邀请赛，仅 2026/08/09 至 2026/09/27 期间内万籁阁积分赛八强以上（含）选手以及部分特邀选手可报名参赛。",
             "desc_en": "Only players who ranked Top 8 or higher in ONELEG ranking tournaments from 2026/08/09 to 2026/09/27, as well as certain invited players, are eligible to participate.",
-            "1st": {"id": "红莲", "deck": "耀圣"},
-            "2nd": {"id": "小御门让叶", "deck": "盈彩月夜"},
-            "3_4th": [{"id": "jdx", "deck": "黯蜜"}, {"id": "五氟化锑", "deck": "狱神", "deck_file": true}],
+            "1st": {"id": "红莲", "deck": "耀圣", "deck_file": true},
+            "2nd": {"id": "小御门让叶", "deck": "盈彩月夜", "deck_file": true},
+            "3_4th": [{"id": "jdx", "deck": "黯蜜", "deck_file": true}, {"id": "五氟化锑", "deck": "狱神", "deck_file": true}],
             "decks": [
                 {"name": "狱神", "num": 3},
                 {"name": "码丽丝", "num": 1},
