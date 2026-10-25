@@ -211,7 +211,7 @@ const MESSAGES = {
   "pieChart.archetypeGap": msg("", " "),
   "others.title": msg(
     "others 详情（共 {count} 种 / {sum} 个卡组）",
-    "Details of others ({count} themes / {sum} decks)"
+    "Detail of others ({count} themes / {sum} decks)"
   ),
 
   // ---- 折线图 ----
