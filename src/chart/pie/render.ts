@@ -306,19 +306,20 @@ function buildSvg(match: Match, slices: Slice[], loadOthersImage: boolean): SVGS
 
     if (Math.abs(sweep - 360) < 0.001) {
       // 情况1：整圆，图片中心直接对齐圆心
-      imgSize = R * 2.5; // 足够大以覆盖整个圆
+      imgSize = R * 2.5; // 无自定义焦点时的边长
       imgX = CX - imgSize / 2;
       imgY = CY - imgSize / 2;
 
-      // 如果有自定义中心，调整图片位置使自定义中心对齐圆心
+      // 有自定义焦点时，按焦点到四条边的最小距离放大，保证覆盖整圆
       if (customCenterConfig) {
         const [centerX, centerY] = customCenterConfig.center;
         const [originalWidth, originalHeight] = customCenterConfig.size;
-        // 使用宽度和高度的平均值作为缩放基准
-        const originalSize = (originalWidth + originalHeight) / 2;
-        const scaleRatio = imgSize / originalSize;
-        imgX = CX - centerX * scaleRatio;
-        imgY = CY - centerY * scaleRatio;
+        const normCenterX = centerX / originalWidth;
+        const normCenterY = centerY / originalHeight;
+        const minEdge = Math.min(normCenterX, 1 - normCenterX, normCenterY, 1 - normCenterY);
+        imgSize = Math.max(imgSize, R / Math.max(minEdge, 1e-6));
+        imgX = CX - normCenterX * imgSize;
+        imgY = CY - normCenterY * imgSize;
       }
     } else {
       // 情况2：扇形，图片的自定义中心必须在角平分线上
@@ -337,19 +338,8 @@ function buildSvg(match: Match, slices: Slice[], loadOthersImage: boolean): SVGS
           return { x: Math.cos(rad), y: Math.sin(rad) };
         };
 
-        // 需要覆盖的关键点（固定）
-        const keyPoints = [
-          { x: CX, y: CY }, // 圆心
-          polarToCartesian(CX, CY, R, s.start), // 圆弧起点
-          polarToCartesian(CX, CY, R, s.end), // 圆弧终点
-        ];
-
-        // 在圆弧上密集采样，确保覆盖所有点
-        const numSamples = 20;
-        for (let i = 1; i < numSamples; i++) {
-          const angle = s.start + (s.end - s.start) * (i / numSamples);
-          keyPoints.push(polarToCartesian(CX, CY, R, angle));
-        }
+        // 需要覆盖的关键点：圆心、圆弧两端点及区间内的四个方向点
+        const keyPoints = wedgeKeyPoints(s.start, s.end, R);
 
         // 焦点位置 = (CX, CY) + t * (dirX, dirY)，对每个关键点求覆盖它所需的最小边长
 
@@ -432,7 +422,7 @@ function buildSvg(match: Match, slices: Slice[], loadOthersImage: boolean): SVGS
         const midDir = dirOf(mid);
         let best = searchAlong(midDir.x, midDir.y);
 
-        // 角平分线近水平（与水平线夹角不超过 45°）时，再沿四等分线各做一次三分，取更优值
+        // 角平分线近水平（与水平线夹角不超过 45°）时，再沿四等分线做一次三分，取更优值
         if (s.pct >= FOCUS_SHIFT_MIN_PCT && s.pct <= FOCUS_SHIFT_MAX_PCT &&
           ((mid >= 45 && mid <= 135) || (mid >= 225 && mid <= 315))) {
           const q1 = dirOf(mid - sweep / 4);
@@ -685,6 +675,35 @@ function renderArchetypes(
     });
     svg.appendChild(innerArcLine);
   });
+}
+
+/** 圆周上四个坐标轴方向的角度（0° 在正上方，顺时针） */
+const CARDINAL_ANGLES = [0, 90, 180, 270];
+
+/**
+ * 覆盖扇形所需的关键点：圆心、圆弧两端点，以及落在圆弧角度区间内的四个方向点。
+ * 半径上的坐标关于半径线性，圆弧上的坐标是正弦、余弦型函数，各方向的极值只可能
+ * 出现在这些点上，因此覆盖这些点即可保证整个扇形落入图片内。
+ */
+function wedgeKeyPoints(
+  startAngle: number,
+  endAngle: number,
+  radius: number
+): Array<{ x: number; y: number }> {
+  const points = [
+    { x: CX, y: CY },
+    polarToCartesian(CX, CY, radius, startAngle),
+    polarToCartesian(CX, CY, radius, endAngle),
+  ];
+  for (const angle of CARDINAL_ANGLES) {
+    // 角度区间可能超出 0–360，按整圈展开后取落在区间内的方向点
+    const first = Math.ceil((startAngle - angle) / 360);
+    const last = Math.floor((endAngle - angle) / 360);
+    for (let k = first; k <= last; k++) {
+      points.push(polarToCartesian(CX, CY, radius, angle + k * 360));
+    }
+  }
+  return points;
 }
 
 /** 从给定中心点到扇形所有边界点的最大距离（含圆心尖端与外弧采样），用于保证完全覆盖 */
