@@ -1,18 +1,18 @@
 {
     "posts": [
         {
+            "id": "pieAlgo",
+            "author": "Imagine076",
+            "title": "饼图中的图片处理算法",
+            "date": "2026/10/29",
+            "desc": "QAQ……"
+        },
+        {
             "id": "init",
             "author": "Imagine076",
             "title": "这是哪儿？",
             "date": "2026/10/12",
             "desc": "你好像发现了一个隐藏的文章功能页面。"
-        },
-        {
-            "id": "pieTech",
-            "author": "Imagine076",
-            "title": "饼图中的图片处理算法",
-            "date": "2026/10/29",
-            "desc": "QAQ……"
         }
     ]
 }

@@ -20,6 +20,8 @@ const CROP_PAD = 8; // 收边时内容外侧留的余量
 // 焦点沿四等分线偏移的占比检测区间
 const FOCUS_SHIFT_MIN_PCT = 0.08;
 const FOCUS_SHIFT_MAX_PCT = 0.25;
+// 焦点归一化坐标之于图片的偏移检测幅度
+const FOCUS_NORM_SHIFT_DELTA = 0.1;
 
 // 基准画布：绘制坐标由它推出，实际幅面在画完后按标签实测收边（见 cropPies）
 const W = 760;
@@ -422,17 +424,30 @@ function buildSvg(match: Match, slices: Slice[], loadOthersImage: boolean): SVGS
         const midDir = dirOf(mid);
         let best = searchAlong(midDir.x, midDir.y);
 
-        // 角平分线近水平（与水平线夹角不超过 45°）时，再沿四等分线做一次三分，取更优值
-        if (s.pct >= FOCUS_SHIFT_MIN_PCT && s.pct <= FOCUS_SHIFT_MAX_PCT &&
-          ((mid >= 45 && mid <= 135) || (mid >= 225 && mid <= 315))) {
+        // 按焦点偏移方向选一条四等分线，再做一次三分；结果更优时替换角平分线方案。
+        // offsetAxis：水平饼块看纵坐标（焦点偏上/下），竖直饼块看横坐标（焦点偏左/右）。
+        const tryQuarterShift = (offsetAxis: "x" | "y") => {
+          const norm = offsetAxis === "x" ? normCenterX : normCenterY;
+          if (Math.abs(norm - 0.5) <= FOCUS_NORM_SHIFT_DELTA) return;
+
           const q1 = dirOf(mid - sweep / 4);
           const q2 = dirOf(mid + sweep / 4);
-          const upper = q1.y <= q2.y ? q1 : q2;
-          const lower = upper === q1 ? q2 : q1;
-          const quarter = normCenterY < 0.5 ? upper : lower;
+          const low = offsetAxis === "x"
+            ? (q1.x <= q2.x ? q1 : q2)
+            : (q1.y <= q2.y ? q1 : q2);
+          const high = low === q1 ? q2 : q1;
+          const quarter = norm < 0.5 ? low : high;
 
           const alt = searchAlong(quarter.x, quarter.y);
           if (alt.size < best.size) best = alt;
+        };
+
+        if (s.pct >= FOCUS_SHIFT_MIN_PCT && s.pct <= FOCUS_SHIFT_MAX_PCT) {
+          // 角平分线近水平时竖直方向是紧约束，近竖直时水平方向是紧约束
+          const nearHorizontal = Math.min(Math.abs(mid - 90), Math.abs(mid - 270)) <= 45;
+          const nearVertical = Math.min(mid, Math.abs(mid - 180), 360 - mid) <= 45;
+          if (nearHorizontal) tryQuarterShift("y");
+          else if (nearVertical) tryQuarterShift("x");
         }
 
         imgSize = best.size;
