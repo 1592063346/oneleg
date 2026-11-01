@@ -389,7 +389,7 @@ export const DECK_NAMES_EN: Record<string, string> = {
   植物族: "Plants",
   水晶机巧: "Crystron",
   泪冠哀歌: "Tearlaments",
-  活死人的呼声: "Call of the Haunted",
+  活死人的呼唤: "Call of the Haunted",
   海皇: "Atlantean",
   海造贼: "Plunder Patroll",
   淘气仙星: "Trickstar",
@@ -447,6 +447,14 @@ export const DECK_NAMES_EN: Record<string, string> = {
   黯蜜: "Yummy",
   龙华: "Ryu-Ge",
   龙女仆: "Dragonmaid",
+  饿魔新飨: "Nouvelles",
+  方程式运动员: "F.A.",
+  黑影: "Umbral Horror",
+  疾行机人: "Speedroid",
+  連鎖爆撃: "Chain Strike",
+  仟年: "Millennium",
+  圣徒: "Azamina",
+  音服和弦: "Solfachord",
 };
 
 /** 按当前语言取卡组显示名；中文模式与未翻译的一律返回原名 */
