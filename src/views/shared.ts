@@ -13,9 +13,9 @@ import { getCardDetailUrl, setCardImage } from "../domain/deck.js";
 export function buildCardBrief(hit: CardInfo, primaryName: string): [HTMLElement, HTMLElement] {
   const img = document.createElement("img");
   img.className = "deck-card-image"; // 卡图尺寸复用构筑预览的 60px*88px
-  setCardImage(img, hit.id, "ocg");
   img.alt = primaryName || hit.jp_name || String(hit.id);
   img.loading = "lazy";
+  setCardImage(img, hit.id, "ocg");
 
   const meta = document.createElement("div");
   meta.className = "builder-result-meta";

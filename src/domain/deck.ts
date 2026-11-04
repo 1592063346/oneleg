@@ -223,38 +223,130 @@ export async function loadDeckFile(
   }
 }
 
+const REGION_MAP: Record<string, string> = {
+  ocg: 'jp',
+  sc: 'sc',
+  tcg: 'en',
+};
+
+const ID_CHANGELOG_URL = 'https://ygocdb.com/api/v0/idChangelog.jsonp';
+
+interface IdChangelog {
+  /** 先行编号 -> 官方密码 */
+  preToOfficial: Map<number, number>;
+  /** 官方密码 -> 先行编号 */
+  officialToPre: Map<number, number>;
+}
+
+let idChangelog: Promise<IdChangelog> | null = null;
+
+/** 先行编号与官方密码的对照表；请求失败时按空表处理 */
+function loadIdChangelog(): Promise<IdChangelog> {
+  if (!idChangelog) {
+    idChangelog = fetch(ID_CHANGELOG_URL)
+      .then((res) => (res.ok ? res.json() : {}))
+      .then((raw) => {
+        const preToOfficial = new Map<number, number>();
+        const officialToPre = new Map<number, number>();
+        for (const [pre, official] of Object.entries(raw as Record<string, number>)) {
+          const preId = Number(pre);
+          preToOfficial.set(preId, official);
+          officialToPre.set(official, preId);
+        }
+        return { preToOfficial, officialToPre };
+      })
+      .catch(() => ({
+        preToOfficial: new Map<number, number>(),
+        officialToPre: new Map<number, number>(),
+      }));
+  }
+  return idChangelog;
+}
+
+/** 卡图是否可取：该 CDN 不返回 CORS 头，只能用 Image 探测 */
+const imageLoadable = new Map<string, Promise<boolean>>();
+
+function canLoadImage(url: string): Promise<boolean> {
+  let pending = imageLoadable.get(url);
+  if (!pending) {
+    pending = new Promise<boolean>((resolve) => {
+      const img = new Image();
+      img.addEventListener('load', () => resolve(true), { once: true });
+      img.addEventListener('error', () => resolve(false), { once: true });
+      img.src = url;
+    });
+    imageLoadable.set(url, pending);
+  }
+  return pending;
+}
+
+const momobakoUrl = (id: number, env: string): string =>
+  `https://cdn.233.momobako.com/ygoimg/${REGION_MAP[env]}/${id}.webp!half`;
+
+const moecubeUrl = (id: number): string =>
+  `https://cdntx.moecube.com/ygopro-super-pre/data/pics/${id}.jpg`;
+
 /**
- * 获取卡片缩略图 URL
- * env 为卡图环境："sc" 使用简中卡图，其余（默认 ocg）使用日文卡图
+ * 获取卡片缩略图 URL。
+ * 优先常规图库；常规图库缺图时，官方密码反查先行编号，先行编号则退回临时编号的卡图。
  */
-export function getCardImageUrl(cardId: number, env: string = "ocg"): string {
-  // 先行卡的临时编号：若它已有官方密码（查询过卡片信息才会知道），说明该卡已发售，
-  // 卡图随之并入常规图库，按官方密码取即可；否则只有以临时编号命名的图
-  const id = cardId > OFFICIAL_ID_MAX ? originalCardId(cardId) : cardId;
-  if (id > OFFICIAL_ID_MAX) {
-    return `https://cdntx.moecube.com/ygopro-super-pre/data/pics/${id}.jpg`;
+export async function getCardImageUrl(cardId: number, env: string = "ocg"): Promise<string> {
+  if (cardId > OFFICIAL_ID_MAX) {
+    // 卡片信息已查询过时，别名里直接有官方密码，无需再取对照表
+    const knownOfficial = originalCardId(cardId);
+    const officialId = knownOfficial <= OFFICIAL_ID_MAX
+      ? knownOfficial
+      : (await loadIdChangelog()).preToOfficial.get(cardId);
+    if (officialId === undefined) return moecubeUrl(cardId);
+    const officialUrl = momobakoUrl(officialId, env);
+    return (await canLoadImage(officialUrl)) ? officialUrl : moecubeUrl(cardId);
   }
 
-  const REGION_MAP: Record<string, string> = {
-    ocg: 'jp',
-    sc: 'sc',
-    tcg: 'en',
-  };
+  const officialUrl = momobakoUrl(cardId, env);
+  if (await canLoadImage(officialUrl)) return officialUrl;
 
-  const region = REGION_MAP[env];
-  return `https://cdn.233.momobako.com/ygoimg/${region}/${id}.webp!half`;
+  const { officialToPre } = await loadIdChangelog();
+  const preId = officialToPre.get(cardId);
+  return moecubeUrl(preId ?? cardId);
 }
 
 /** 卡图取不到时的占位图 */
 const UNKNOWN_IMAGE = './sources/unknown.jpg';
 
-/**
- * 设置卡图，并挂上加载失败的兜底。
- * 先行卡与个别图库缺失的卡都会取不到图，此时退回占位图。
- */
+/** 设置卡图，并挂上加载失败的兜底 */
 export function setCardImage(img: HTMLImageElement, cardId: number, env: string = "ocg"): void {
-  img.addEventListener('error', () => { img.src = UNKNOWN_IMAGE; }, { once: true });
-  img.src = getCardImageUrl(cardId, env);
+  // 先设置一个可立即显示的地址，避免等待地址解析期间元素处于无图状态
+  const provisional = cardId > OFFICIAL_ID_MAX ? moecubeUrl(cardId) : momobakoUrl(cardId, env);
+
+  let generation = 0;
+  let placeholder = false;
+
+  // 换源后旧请求的迟到错误不再处理
+  const setSrc = (url: string, onError?: () => void): void => {
+    const gen = ++generation;
+    if (onError) {
+      img.addEventListener('error', () => {
+        if (gen === generation) onError();
+      }, { once: true });
+    }
+    img.src = url;
+  };
+
+  const showPlaceholder = (): void => {
+    if (placeholder) return;
+    placeholder = true;
+    setSrc(UNKNOWN_IMAGE);
+  };
+
+  setSrc(provisional, showPlaceholder);
+
+  void getCardImageUrl(cardId, env).then(async (url) => {
+    if (url === provisional) return;
+    // 确认新地址可取后再切换，避免切换过程中再次出现破图
+    if (!(await canLoadImage(url))) return;
+    placeholder = false;
+    setSrc(url, showPlaceholder);
+  });
 }
 
 /**
@@ -427,10 +519,10 @@ export function createDeckSection(
     }
 
     const img = document.createElement('img');
-    setCardImage(img, cardId, env);
     img.alt = `Card ${cardId}`;
     img.className = 'deck-card-image';
     img.loading = 'lazy';
+    setCardImage(img, cardId, env);
 
     card.appendChild(img);
 
