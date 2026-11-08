@@ -263,90 +263,85 @@ function loadIdChangelog(): Promise<IdChangelog> {
   return idChangelog;
 }
 
-/** 卡图是否可取：该 CDN 不返回 CORS 头，只能用 Image 探测 */
-const imageLoadable = new Map<string, Promise<boolean>>();
-
-function canLoadImage(url: string): Promise<boolean> {
-  let pending = imageLoadable.get(url);
-  if (!pending) {
-    pending = new Promise<boolean>((resolve) => {
-      const img = new Image();
-      img.addEventListener('load', () => resolve(true), { once: true });
-      img.addEventListener('error', () => resolve(false), { once: true });
-      img.src = url;
-    });
-    imageLoadable.set(url, pending);
-  }
-  return pending;
-}
-
 const momobakoUrl = (id: number, env: string): string =>
   `https://cdn.233.momobako.com/ygoimg/${REGION_MAP[env]}/${id}.webp!half`;
 
 const moecubeUrl = (id: number): string =>
   `https://cdntx.moecube.com/ygopro-super-pre/data/pics/${id}.jpg`;
 
-/**
- * 获取卡片缩略图 URL。
- * 优先常规图库；常规图库缺图时，官方密码反查先行编号，先行编号则退回临时编号的卡图。
- */
-export async function getCardImageUrl(cardId: number, env: string = "ocg"): Promise<string> {
-  if (cardId > OFFICIAL_ID_MAX) {
-    // 卡片信息已查询过时，别名里直接有官方密码，无需再取对照表
-    const knownOfficial = originalCardId(cardId);
-    const officialId = knownOfficial <= OFFICIAL_ID_MAX
-      ? knownOfficial
-      : (await loadIdChangelog()).preToOfficial.get(cardId);
-    if (officialId === undefined) return moecubeUrl(cardId);
-    const officialUrl = momobakoUrl(officialId, env);
-    return (await canLoadImage(officialUrl)) ? officialUrl : moecubeUrl(cardId);
-  }
-
-  const officialUrl = momobakoUrl(cardId, env);
-  if (await canLoadImage(officialUrl)) return officialUrl;
-
-  const { officialToPre } = await loadIdChangelog();
-  const preId = officialToPre.get(cardId);
-  return moecubeUrl(preId ?? cardId);
-}
-
 /** 卡图取不到时的占位图 */
 const UNKNOWN_IMAGE = './sources/unknown.jpg';
 
-/** 设置卡图，并挂上加载失败的兜底 */
+/** 换用下一张卡图期间显示的透明图，避免露出破图 */
+const BLANK_IMAGE = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+
+/**
+ * 首选卡图：凡有官方密码可用（官方密码本身、已知官方密码的先行编号）的走常规图库，
+ * 其余先行编号只能用临时编号的卡图。
+ */
+function primaryImageUrl(cardId: number, env: string): string {
+  const known = cardId > OFFICIAL_ID_MAX ? originalCardId(cardId) : cardId;
+  return known <= OFFICIAL_ID_MAX ? momobakoUrl(known, env) : moecubeUrl(cardId);
+}
+
+/**
+ * 首选地址加载失败后的候选，按顺序尝试。
+ * 官方密码：常规图库缺图时反查先行编号，取该编号的卡图。
+ * 先行编号：常规图库缺图时，已知官方密码的取常规图库，否则取临时编号的卡图。
+ */
+async function fallbackImageUrls(cardId: number, env: string): Promise<string[]> {
+  if (cardId > OFFICIAL_ID_MAX) {
+    const known = originalCardId(cardId);
+    const officialId = known <= OFFICIAL_ID_MAX
+      ? known
+      : (await loadIdChangelog()).preToOfficial.get(cardId);
+    const urls = officialId === undefined ? [] : [momobakoUrl(officialId, env)];
+    return [...urls, moecubeUrl(cardId)];
+  }
+
+  const preId = (await loadIdChangelog()).officialToPre.get(cardId);
+  return preId === undefined ? [] : [moecubeUrl(preId)];
+}
+
+/**
+ * 设置卡图：按优先级依次加载各候选地址，全部取不到才换成占位图。
+ * 换源期间直接显示卡图本身，不使用占位图。
+ */
 export function setCardImage(img: HTMLImageElement, cardId: number, env: string = "ocg"): void {
-  // 先设置一个可立即显示的地址，避免等待地址解析期间元素处于无图状态
-  const provisional = cardId > OFFICIAL_ID_MAX ? moecubeUrl(cardId) : momobakoUrl(cardId, env);
+  /** 加载一张卡图，成功返回 true */
+  const load = (url: string): Promise<boolean> =>
+    new Promise((resolve) => {
+      const settle = (ok: boolean): void => {
+        img.removeEventListener('load', onLoad);
+        img.removeEventListener('error', onError);
+        resolve(ok);
+      };
+      const onLoad = (): void => settle(true);
+      const onError = (): void => settle(false);
+      img.addEventListener('load', onLoad, { once: true });
+      img.addEventListener('error', onError, { once: true });
+      img.src = url;
+    });
 
-  let generation = 0;
-  let placeholder = false;
+  void (async () => {
+    const attempted = new Set<string>();
 
-  // 换源后旧请求的迟到错误不再处理
-  const setSrc = (url: string, onError?: () => void): void => {
-    const gen = ++generation;
-    if (onError) {
-      img.addEventListener('error', () => {
-        if (gen === generation) onError();
-      }, { once: true });
+    const primary = primaryImageUrl(cardId, env);
+    attempted.add(primary);
+    if (await load(primary)) return;
+
+    // 撤下破图，等候选地址
+    img.src = BLANK_IMAGE;
+
+    for (const url of await fallbackImageUrls(cardId, env)) {
+      if (attempted.has(url)) continue;
+      attempted.add(url);
+      if (await load(url)) return;
+      img.src = BLANK_IMAGE;
     }
-    img.src = url;
-  };
 
-  const showPlaceholder = (): void => {
-    if (placeholder) return;
-    placeholder = true;
-    setSrc(UNKNOWN_IMAGE);
-  };
-
-  setSrc(provisional, showPlaceholder);
-
-  void getCardImageUrl(cardId, env).then(async (url) => {
-    if (url === provisional) return;
-    // 确认新地址可取后再切换，避免切换过程中再次出现破图
-    if (!(await canLoadImage(url))) return;
-    placeholder = false;
-    setSrc(url, showPlaceholder);
-  });
+    await load(UNKNOWN_IMAGE);
+  })();
 }
 
 /**

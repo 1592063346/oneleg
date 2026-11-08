@@ -705,7 +705,7 @@
             "type": "积分赛",
             "1st": {"id": "油饼", "deck": "黯蜜", "deck_file": true},
             "2nd": {"id": "Reborn", "deck": "三幻魔", "deck_file": true},
-            "3_4th": [{"id": "yswlll", "deck": "耀圣", "deck_file": true}, {"id": "Cosmos", "deck": "太阳神"}],
+            "3_4th": [{"id": "yswlll", "deck": "耀圣", "deck_file": true}, {"id": "Cosmos", "deck": "太阳神", "deck_file": true}],
             "decks": [
                 {"name": "黯蜜", "num": 3},
                 {"name": "枪弹", "num": 1},
