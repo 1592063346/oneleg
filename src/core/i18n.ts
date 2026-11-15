@@ -458,6 +458,8 @@ export const DECK_NAMES_EN: Record<string, string> = {
   轮回虫龙: "Reindsurm",
   六花: "Rikka",
   太阳神: "Sun God",
+  亚马逊: "Amazoness",
+  死灵脸: "Necroface",
 };
 
 /** 按当前语言取卡组显示名；中文模式与未翻译的一律返回原名 */
