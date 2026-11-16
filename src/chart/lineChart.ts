@@ -247,6 +247,7 @@ function attachHover(
     crosshair.setAttribute("opacity", "1");
 
     const rows = series
+      .filter((s) => s.points[i].value !== 0)
       .map((s) => {
         const c = seriesColor(s.colorIndex);
         return `<div class="tt-row"><span class="tt-dot" style="background:${c}"></span>${escapeHtml(
