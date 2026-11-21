@@ -214,6 +214,21 @@ select {
 .match-desc a { color: #2a78d6; text-decoration: none; }
 .match-desc a:hover { color: #1e5fa8; }
 
+/* 排名与 others 明细：自左向右滑入并渐显，排名按行错开 */
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-24px); }
+  to { opacity: 1; transform: none; }
+}
+.rankings .ranking-line,
+.others-detail {
+  animation: slide-in-left .45s cubic-bezier(.2, .85, .3, 1.04) both;
+}
+.rankings .ranking-line:nth-child(2) { animation-delay: .08s; }
+.rankings .ranking-line:nth-child(3) { animation-delay: .16s; }
+@media (prefers-reduced-motion: reduce) {
+  .rankings .ranking-line, .others-detail { animation: none; }
+}
+
 /* 排名展示（已合并到饼图框内） */
 .rankings { margin-bottom: 16px; }
 .ranking-line { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 8px; }

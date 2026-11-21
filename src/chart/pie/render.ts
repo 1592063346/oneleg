@@ -255,6 +255,9 @@ function buildSvg(match: Match, slices: Slice[], loadOthersImage: boolean): SVGS
   svg.appendChild(defs);
   const uid = Math.random().toString(36).slice(2, 8);
 
+  // 饼体单独成组，便于整体裁剪出展开动画（见 animateSweep）
+  const content = el("g", { class: "pie-sweep" });
+
   // 追踪调试信息（已禁用）
   // const debugInfo: Array<{ name: string; centerX: number; centerY: number; mid: number }> = [];
 
@@ -287,7 +290,7 @@ function buildSvg(match: Match, slices: Slice[], loadOthersImage: boolean): SVGS
       path.style.opacity = "1";
       hideTooltip();
     });
-    svg.appendChild(path);
+    content.appendChild(path);
 
     // 饼块背景图：根据 center.json 中指定的图片中心进行定位
     // 根据 loadOthersImage 参数决定是否为 others 添加背景图
@@ -481,12 +484,13 @@ function buildSvg(match: Match, slices: Slice[], loadOthersImage: boolean): SVGS
       image.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", imageHref(s.name));
       // 加载失败（无对应图片）时移除图片，保留纯色底
       image.addEventListener("error", () => image.remove());
-      svg.appendChild(image);
+      content.appendChild(image);
     }
   });
 
   // 渲染子卡组（双层饼图）
-  renderArchetypes(svg, slices, defs, uid, surface);
+  renderArchetypes(content, slices, defs, uid, surface);
+  svg.appendChild(content);
 
   // 引导线标签：每块饼旁标注"名称 数量（占比）"。
   // 单独成组：收边只量这一组，不连带被裁剪的图片
@@ -494,12 +498,62 @@ function buildSvg(match: Match, slices: Slice[], loadOthersImage: boolean): SVGS
   drawLeaderLabels(leaders, slices);
   svg.appendChild(leaders);
 
+  animateSweep(svg, content, defs, leaders, uid);
   return svg;
+}
+
+/** 展开动画时长（毫秒） */
+const SWEEP_MS = 800;
+/** 展开到该进度后，引导线标签开始淡入 */
+const SWEEP_LABEL_AT = 0.85;
+
+/**
+ * 以扇形裁剪区让饼体从 0° 顺时针展开到 360°，先快后慢。
+ * 引导线标签不在饼体内，待展开将尽时再淡入。
+ */
+function animateSweep(
+  svg: SVGSVGElement,
+  content: SVGGElement,
+  defs: SVGDefsElement,
+  leaders: SVGGElement,
+  uid: string
+): void {
+  const full = arcPath(CX, CY, R + 4, 0, 360);
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+  const clipShape = el("path", { d: arcPath(CX, CY, R + 4, 0, 0) });
+  const clip = el("clipPath", { id: `pie-sweep-${uid}` }, [clipShape]);
+  defs.appendChild(clip);
+  content.setAttribute("clip-path", `url(#pie-sweep-${uid})`);
+
+  leaders.style.opacity = "0";
+  leaders.style.transition = "opacity .3s ease";
+
+  const start = performance.now();
+  let labelsShown = false;
+  const frame = (now: number) => {
+    // 视图已切换时停止，避免空转
+    if (!svg.isConnected) return;
+    const t = Math.min(1, (now - start) / SWEEP_MS);
+    const eased = 1 - Math.pow(1 - t, 3); // easeOutCubic
+    clipShape.setAttribute("d", arcPath(CX, CY, R + 4, 0, eased * 360));
+    if (!labelsShown && eased >= SWEEP_LABEL_AT) {
+      labelsShown = true;
+      leaders.style.opacity = "1";
+    }
+    if (t < 1) {
+      requestAnimationFrame(frame);
+    } else {
+      clipShape.setAttribute("d", full);
+      leaders.style.opacity = "1";
+    }
+  };
+  requestAnimationFrame(frame);
 }
 
 /** 渲染子卡组在外圈 (0.8R 到 R) */
 function renderArchetypes(
-  svg: SVGSVGElement,
+  svg: SVGGElement,
   slices: Slice[],
   defs: SVGDefsElement,
   uid: string,
