@@ -52,7 +52,7 @@ const MESSAGES = {
   // ---- 导航 ----
   "menu.main": msg("主站", "Home"),
   "menu.event": msg("国内赛事数据站", "China Event Data"),
-  "menu.builder": msg("构筑导出", "Deck Builder"),
+  "menu.builder": msg("构筑编辑", "Deck Builder"),
   "menu.faq": msg("关于网站", "About"),
   "nav.siteMenu": msg("切换站点", "Switch site"),
   "nav.view.pie": msg("比赛详情", "Tournaments"),

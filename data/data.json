@@ -771,11 +771,12 @@
             "title": "2026/11/22 万籁阁积分赛",
             "title_en": "2026/11/22 ONELEG Ranking Tournament",
             "type": "积分赛",
-            "1st": {"id": "[TBD]", "deck": "[TBD]"},
-            "2nd": {"id": "[TBD]", "deck": "[TBD]"},
-            "3_4th": [{"id": "[TBD]", "deck": "[TBD]"}, {"id": "[TBD]", "deck": "[TBD]"}],
+            "1st": {"id": "Cosmos", "deck": "太阳神"},
+            "2nd": {"id": "五氟化锑", "deck": "亚马逊", "deck_file": true},
+            "3_4th": [{"id": "头选", "deck": "耀圣", "deck_file": true}, {"id": "人偶", "deck": "小丑戏帮", "deck_file": true}],
             "decks": [
-            ]
+            ],
+            "deck_num": 19
         }
     ]
 }
